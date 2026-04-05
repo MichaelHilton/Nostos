@@ -1,4 +1,4 @@
-# PhotoSorter
+# Nostos
 
 A self-hosted photo management tool that scans, deduplicates, and organises your photo library.
 
