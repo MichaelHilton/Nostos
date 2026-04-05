@@ -1,0 +1,19 @@
+services:
+  photosorter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: photosorter
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persistent database + thumbnails
+      - photosorter_data:/data
+      # Mount your photo library here (read-only recommended)
+      - ${PHOTO_LIBRARY:-./photos}:/photos:ro
+    environment:
+      - PHOTOSORTER_PORT=8080
+    restart: unless-stopped
+
+volumes:
+  photosorter_data:

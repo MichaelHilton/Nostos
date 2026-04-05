@@ -1,0 +1,42 @@
+{
+  "name": "PhotoSorter",
+  "image": "mcr.microsoft.com/devcontainers/go:1-1.23-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libimage-exiftool-perl && cd /workspaces/Photosorter/backend && go mod download && cd /workspaces/Photosorter/frontend && npm install",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "svelte.svelte-vscode",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true,
+        "editor.formatOnSave": true,
+        "[go]": {
+          "editor.defaultFormatter": "golang.go"
+        },
+        "[svelte]": {
+          "editor.defaultFormatter": "svelte.svelte-vscode"
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [8080, 5173],
+  "portsAttributes": {
+    "8080": { "label": "Go API server" },
+    "5173": { "label": "Vite dev server" }
+  },
+
+  "remoteUser": "vscode"
+}

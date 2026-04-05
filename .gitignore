@@ -1,0 +1,29 @@
+# Go
+backend/bin/
+*.exe
+*.test
+*.out
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# Thumbnails cache
+thumbnails/
+.photosorter/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Docker
+.env
