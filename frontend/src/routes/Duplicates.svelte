@@ -1,5 +1,5 @@
 <script>
-  import { listDuplicates, resolveDuplicate, thumbnailUrl } from '../lib/api.js'
+  import { listDuplicates, resolveDuplicate, getThumbnailDataURL } from '../lib/wailsbridge.js'
 
   let groups = []
   let loading = true
@@ -23,7 +23,6 @@
     saving = saving
     try {
       await resolveDuplicate(group.id, photo.id)
-      // Update locally
       groups = groups.map(g => {
         if (g.id !== group.id) return g
         return {
@@ -53,6 +52,11 @@
 
   function basename(path) {
     return path?.split('/')?.pop() ?? path
+  }
+
+  function thumbFor(photo) {
+    if (!photo.thumbnail_path) return Promise.resolve(null)
+    return getThumbnailDataURL(photo.id).catch(() => null)
   }
 </script>
 
@@ -90,11 +94,13 @@
           {#each group.photos as photo (photo.id)}
             <div class="photo-row" class:kept={photo.is_kept}>
               <div class="thumb">
-                {#if photo.thumbnail_path}
-                  <img src={thumbnailUrl(photo.id)} alt="" />
-                {:else}
-                  <div class="no-thumb">{basename(photo.path).split('.').pop()?.toUpperCase()}</div>
-                {/if}
+                {#await thumbFor(photo) then src}
+                  {#if src}
+                    <img {src} alt="" />
+                  {:else}
+                    <div class="no-thumb">{basename(photo.path).split('.').pop()?.toUpperCase()}</div>
+                  {/if}
+                {/await}
               </div>
 
               <div class="info">
@@ -212,11 +218,7 @@
   .cam { font-family: sans-serif; }
 
   .actions { flex-shrink: 0; }
-  .kept-badge {
-    font-size: 0.75rem;
-    color: #44cc88;
-    font-weight: 600;
-  }
+  .kept-badge { font-size: 0.75rem; color: #44cc88; font-weight: 600; }
   .keep-btn {
     background: #1a1a2a;
     border: 1px solid #4a9eff44;

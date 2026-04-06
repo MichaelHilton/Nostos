@@ -1,5 +1,5 @@
 <script>
-  import { startOrganize, getOrganizeJob } from '../lib/api.js'
+  import { startOrganize, getOrganizeJob, pickDestinationDirectory, onEvent, offEvent } from '../lib/wailsbridge.js'
 
   let destRoot   = ''
   let folderFmt  = 'YYYY/MM/DD'
@@ -7,7 +7,6 @@
   let running    = false
   let job        = null
   let results    = []
-  let pollTimer  = null
   let error      = ''
 
   const ACTION_LABELS = {
@@ -15,6 +14,15 @@
     skip_exists:      { icon: '⏭',  label: 'Skip (exists)',     color: '#4a9eff' },
     skip_duplicate:   { icon: '🔁',  label: 'Skip (duplicate)',  color: '#ff9944' },
     rename_conflict:  { icon: '✏️',  label: 'Rename (conflict)', color: '#ffcc44' },
+  }
+
+  async function browseDest() {
+    try {
+      const path = await pickDestinationDirectory()
+      if (path) destRoot = path
+    } catch (e) {
+      error = e.message
+    }
   }
 
   async function submit() {
@@ -30,24 +38,21 @@
         dry_run: dryRun,
       })
       job = { id: res.job_id, status: 'running' }
-      pollTimer = setInterval(poll, 1000)
+
+      onEvent('organize:progress', (payload) => {
+        job     = payload.job
+        results = payload.results ?? []
+      })
+      onEvent('organize:done', (payload) => {
+        job     = payload.job
+        results = payload.results ?? []
+        running = false
+        offEvent('organize:progress', 'organize:done')
+      })
     } catch (e) {
       error = e.message
       running = false
     }
-  }
-
-  async function poll() {
-    try {
-      const res = await getOrganizeJob(job.id)
-      job     = res.job
-      results = res.results ?? []
-      if (job.status !== 'running') {
-        clearInterval(pollTimer)
-        pollTimer = null
-        running = false
-      }
-    } catch {}
   }
 
   function basename(path) {
@@ -70,13 +75,18 @@
   <form class="form" on:submit|preventDefault={submit}>
     <div class="field">
       <label for="dest">Destination folder</label>
-      <input
-        id="dest"
-        type="text"
-        bind:value={destRoot}
-        placeholder="/Volumes/Organized"
-        disabled={running}
-      />
+      <div class="dest-row">
+        <input
+          id="dest"
+          type="text"
+          bind:value={destRoot}
+          placeholder="/Volumes/Organized"
+          disabled={running}
+        />
+        <button type="button" class="browse-btn" on:click={browseDest} disabled={running}>
+          Browse
+        </button>
+      </div>
     </div>
 
     <div class="field">
@@ -176,11 +186,21 @@
   .fmt-preview { font-size: 0.75rem; color: #666; }
   .fmt-preview code { color: #aaa; }
 
+  .dest-row { display: flex; gap: 8px; }
+  .dest-row input { flex: 1; }
+  .browse-btn {
+    background: #2a2a2a; border: 1px solid #444; color: #ccc;
+    padding: 9px 16px; border-radius: 4px; cursor: pointer; font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .browse-btn:hover:not(:disabled) { border-color: #666; color: #eee; }
+  .browse-btn:disabled { opacity: 0.4; cursor: default; }
+
   .field.row { flex-direction: row; align-items: center; }
   .toggle { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #aaa; cursor: pointer; }
   .toggle input { accent-color: #4a9eff; }
 
-  form button {
+  form button[type="submit"] {
     align-self: flex-start;
     background: #44cc88;
     border: none; color: #000;
@@ -190,12 +210,11 @@
     cursor: pointer;
     font-size: 0.9rem;
   }
-  form button.dry { background: #4a9eff; }
-  form button:disabled { opacity: 0.4; cursor: default; }
+  form button[type="submit"].dry { background: #4a9eff; }
+  form button[type="submit"]:disabled { opacity: 0.4; cursor: default; }
 
   .err { color: #ff5555; font-size: 0.85rem; margin-top: 4px; }
 
-  /* ---- Job card ---- */
   .job-card {
     margin-top: 24px;
     background: #141414;
@@ -231,21 +250,14 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .stats {
-    display: flex;
-    padding: 14px 16px;
-    gap: 28px;
-  }
+  .stats { display: flex; padding: 14px 16px; gap: 28px; }
   .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
   .stat .n { font-size: 1.6rem; font-weight: 700; line-height: 1; }
   .stat .l { font-size: 0.68rem; color: #666; }
   .stat.green .n { color: #44cc88; }
   .stat.muted .n { color: #888; }
 
-  .action-counts {
-    padding: 0 16px 14px;
-    display: flex; flex-wrap: wrap; gap: 10px;
-  }
+  .action-counts { padding: 0 16px 14px; display: flex; flex-wrap: wrap; gap: 10px; }
   .ac {
     font-size: 0.75rem;
     color: var(--c, #888);
@@ -254,7 +266,6 @@
     border-radius: 10px;
   }
 
-  /* ---- Results table ---- */
   .results-table { margin-top: 28px; }
   h3 { font-size: 0.9rem; color: #666; margin-bottom: 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }

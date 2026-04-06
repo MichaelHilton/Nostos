@@ -1,5 +1,5 @@
 <script>
-  import { thumbnailUrl } from '../lib/api.js'
+  import { getThumbnailDataURL } from './wailsbridge.js'
 
   export let photo
   export let selected = false
@@ -9,6 +9,11 @@
     if (!d) return 'Unknown date'
     return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
   }
+
+  // Lazy-load the thumbnail as a base64 data URL only when this card renders.
+  const thumbPromise = photo.thumbnail_path
+    ? getThumbnailDataURL(photo.id).catch(() => null)
+    : Promise.resolve(null)
 </script>
 
 <button
@@ -19,13 +24,15 @@
   title={photo.path}
 >
   <div class="thumb-wrap">
-    {#if photo.thumbnail_path}
-      <img src={thumbnailUrl(photo.id)} alt={photo.path} loading="lazy" />
-    {:else}
-      <div class="no-thumb">
-        <span>{photo.path?.split('.').pop()?.toUpperCase() ?? '?'}</span>
-      </div>
-    {/if}
+    {#await thumbPromise then src}
+      {#if src}
+        <img {src} alt={photo.path} loading="lazy" />
+      {:else}
+        <div class="no-thumb">
+          <span>{photo.path?.split('.').pop()?.toUpperCase() ?? '?'}</span>
+        </div>
+      {/if}
+    {/await}
 
     {#if photo.duplicate_group_id}
       <span class="badge dup">DUP</span>
@@ -105,9 +112,7 @@
     color: #4a9eff;
   }
 
-  .meta {
-    padding: 5px 7px 6px;
-  }
+  .meta { padding: 5px 7px 6px; }
   .meta p { margin: 0; }
   .date   { font-size: 0.7rem; color: #aaa; }
   .camera { font-size: 0.65rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

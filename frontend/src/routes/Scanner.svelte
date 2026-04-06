@@ -1,43 +1,51 @@
 <script>
-  import { startScan, getScan, listScans } from '../lib/api.js'
+  import { startScan, listScans, pickDirectory, onEvent, offEvent } from '../lib/wailsbridge.js'
 
   let rootPath = ''
   let scanning = false
-  let pollInterval = null
   let currentRun = null
   let recentScans = []
   let error = ''
 
   async function loadScans() {
-    try { recentScans = (await listScans()) ?? [] } catch {}
+    try {
+      recentScans = (await listScans()) ?? []
+    } catch {}
   }
+
+  async function chooseDirectory() {
+    try {
+      const path = await pickDirectory()
+      if (path) rootPath = path
+    } catch (e) {
+      error = e.message
+    }
+  }
+
   loadScans()
 
   async function submitScan() {
     if (!rootPath.trim()) return
     error = ''
     scanning = true
+
     try {
       const res = await startScan(rootPath.trim())
       currentRun = { id: res.scan_run_id, status: 'running' }
-      pollInterval = setInterval(pollStatus, 1500)
+
+      onEvent('scan:progress', (run) => {
+        currentRun = run
+      })
+      onEvent('scan:done', (run) => {
+        currentRun = run
+        scanning = false
+        offEvent('scan:progress', 'scan:done')
+        loadScans()
+      })
     } catch (e) {
       error = e.message
       scanning = false
     }
-  }
-
-  async function pollStatus() {
-    try {
-      const run = await getScan(currentRun.id)
-      currentRun = run
-      if (run.status !== 'running') {
-        clearInterval(pollInterval)
-        pollInterval = null
-        scanning = false
-        loadScans()
-      }
-    } catch {}
   }
 
   function formatDate(d) {
@@ -48,13 +56,25 @@
 
 <div class="page">
   <h2>Scan a Directory</h2>
-  <p class="hint">Point the scanner at a folder on any connected drive. All sub-folders are scanned recursively. No files are moved or deleted.</p>
+  <p class="hint">
+    Point the scanner at a folder on any connected drive. All sub-folders are
+    scanned recursively. No files are moved or deleted.
+  </p>
 
   <form class="scan-form" on:submit|preventDefault={submitScan}>
+    <button
+      type="button"
+      class="picker-button"
+      on:click={chooseDirectory}
+      disabled={scanning}
+    >
+      {rootPath ? 'Change directory' : 'Choose directory'}
+    </button>
     <input
       type="text"
-      bind:value={rootPath}
-      placeholder="/Volumes/MyDrive/Photos"
+      readonly
+      value={rootPath}
+      placeholder="No folder selected"
       disabled={scanning}
       class:error={!!error}
     />
@@ -68,7 +88,11 @@
   {/if}
 
   {#if currentRun}
-    <div class="run-status" class:running={currentRun.status === 'running'} class:done={currentRun.status === 'completed'}>
+    <div
+      class="run-status"
+      class:running={currentRun.status === 'running'}
+      class:done={currentRun.status === 'completed'}
+    >
       <strong>Run #{currentRun.id}</strong>
       <span class="status-pill {currentRun.status}">{currentRun.status}</span>
       <div class="stats">
@@ -85,7 +109,9 @@
     <section class="history">
       <h3>Recent Scans</h3>
       <table>
-        <thead><tr><th>ID</th><th>Path</th><th>Started</th><th>Photos</th><th>Dups</th><th>Status</th></tr></thead>
+        <thead>
+          <tr><th>ID</th><th>Path</th><th>Started</th><th>Photos</th><th>Dups</th><th>Status</th></tr>
+        </thead>
         <tbody>
           {#each recentScans as run}
             <tr>
@@ -104,11 +130,24 @@
 </div>
 
 <style>
-  .page { padding: 24px; max-width: 900px; }
-  h2 { margin: 0 0 6px; font-size: 1.4rem; }
-  .hint { color: #888; margin: 0 0 20px; font-size: 0.9rem; }
+  .page {
+    padding: 24px;
+    max-width: 900px;
+  }
+  h2 {
+    margin: 0 0 6px;
+    font-size: 1.4rem;
+  }
+  .hint {
+    color: #888;
+    margin: 0 0 20px;
+    font-size: 0.9rem;
+  }
 
-  .scan-form { display: flex; gap: 8px; }
+  .scan-form {
+    display: flex;
+    gap: 8px;
+  }
   .scan-form input {
     flex: 1;
     background: #1a1a1a;
@@ -118,8 +157,13 @@
     border-radius: 4px;
     font-size: 0.95rem;
   }
-  .scan-form input.error { border-color: #ff5555; }
-  .scan-form input:focus { outline: none; border-color: #4a9eff; }
+  .scan-form input.error {
+    border-color: #ff5555;
+  }
+  .scan-form input:focus {
+    outline: none;
+    border-color: #4a9eff;
+  }
   .scan-form button {
     background: #4a9eff;
     border: none;
@@ -130,9 +174,16 @@
     cursor: pointer;
     white-space: nowrap;
   }
-  .scan-form button:disabled { opacity: 0.5; cursor: default; }
+  .scan-form button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 
-  .err { color: #ff5555; font-size: 0.85rem; margin-top: 8px; }
+  .err {
+    color: #ff5555;
+    font-size: 0.85rem;
+    margin-top: 8px;
+  }
 
   .run-status {
     margin-top: 20px;
@@ -147,7 +198,12 @@
   .run-status.running { border-color: #4a9eff; }
   .run-status.done    { border-color: #44cc88; }
 
-  .stats { display: flex; gap: 20px; color: #aaa; font-size: 0.85rem; }
+  .stats {
+    display: flex;
+    gap: 20px;
+    color: #aaa;
+    font-size: 0.85rem;
+  }
 
   .status-pill {
     display: inline-block;
@@ -163,7 +219,8 @@
   .status-pill.failed    { background: #ff444433; color: #ff5555; }
 
   .spinner {
-    width: 20px; height: 20px;
+    width: 20px;
+    height: 20px;
     border: 2px solid #333;
     border-top-color: #4a9eff;
     border-radius: 50%;
@@ -176,5 +233,13 @@
   table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
   th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #222; }
   th { color: #666; font-weight: 500; }
-  td.path { color: #aaa; font-family: monospace; font-size: 0.78rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  td.path {
+    color: #aaa;
+    font-family: monospace;
+    font-size: 0.78rem;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 </style>

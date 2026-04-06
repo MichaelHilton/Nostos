@@ -1,7 +1,6 @@
 <script>
-  import { listPhotos, getPhoto } from '../lib/api.js'
+  import { listPhotos, getPhoto, getThumbnailDataURL } from '../lib/wailsbridge.js'
   import PhotoGrid from '../lib/PhotoGrid.svelte'
-  import { thumbnailUrl } from '../lib/api.js'
 
   const PAGE = 100
 
@@ -11,6 +10,7 @@
   let loading = false
   let selectedIds = new Set()
   let detail = null
+  let detailThumb = null
 
   // Filters
   let filterStatus = ''
@@ -24,11 +24,11 @@
     loading = true
     try {
       const params = { limit: PAGE, offset }
-      if (filterStatus)          params.status       = filterStatus
-      if (filterCamera)          params.cameraModel  = filterCamera
-      if (filterFrom)            params.dateFrom     = filterFrom
-      if (filterTo)              params.dateTo       = filterTo
-      if (filterDups !== '')     params.hasDuplicates = filterDups === 'true'
+      if (filterStatus)      params.status        = filterStatus
+      if (filterCamera)      params.cameraModel   = filterCamera
+      if (filterFrom)        params.dateFrom      = filterFrom
+      if (filterTo)          params.dateTo        = filterTo
+      if (filterDups !== '') params.hasDuplicates = filterDups === 'true'
       const res = await listPhotos(params)
       photos = reset ? (res.photos ?? []) : [...photos, ...(res.photos ?? [])]
       total  = res.total ?? 0
@@ -43,11 +43,15 @@
   function toggleSelect(photo) {
     if (selectedIds.has(photo.id)) selectedIds.delete(photo.id)
     else selectedIds.add(photo.id)
-    selectedIds = selectedIds // trigger reactivity
+    selectedIds = selectedIds
   }
 
   async function openDetail(photo) {
     detail = await getPhoto(photo.id)
+    detailThumb = null
+    if (detail?.thumbnail_path) {
+      detailThumb = await getThumbnailDataURL(detail.id).catch(() => null)
+    }
   }
 
   function formatDate(d) {
@@ -118,9 +122,9 @@
   <!-- Detail panel -->
   {#if detail}
     <aside class="detail">
-      <button class="close" on:click={() => detail = null}>✕</button>
-      {#if detail.thumbnail_path}
-        <img src={thumbnailUrl(detail.id)} alt="preview" class="preview" />
+      <button class="close" on:click={() => { detail = null; detailThumb = null }}>✕</button>
+      {#if detailThumb}
+        <img src={detailThumb} alt="preview" class="preview" />
       {/if}
       <h4>Details</h4>
       <dl>
@@ -142,7 +146,6 @@
 <style>
   .layout { display: flex; height: 100%; overflow: hidden; }
 
-  /* ---- Sidebar ---- */
   .filters {
     width: 200px;
     flex-shrink: 0;
@@ -169,10 +172,8 @@
   .count { margin: 0; font-size: 0.78rem; color: #555; }
   .sel   { margin: 0; font-size: 0.78rem; color: #4a9eff; }
 
-  /* ---- Main grid ---- */
   .main { flex: 1; overflow-y: auto; }
 
-  /* ---- Detail panel ---- */
   .detail {
     width: 240px;
     flex-shrink: 0;
