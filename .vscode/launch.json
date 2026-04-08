@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Nostos}/Nostos",
+            "name": "Debug Nostos (Nostos)",
+            "target": "Nostos",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Nostos (Nostos)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Nostos}/Nostos",
+            "name": "Release Nostos (Nostos)",
+            "target": "Nostos",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Nostos (Nostos)"
+        }
+    ]
+}

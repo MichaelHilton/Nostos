@@ -27,3 +27,6 @@ Thumbs.db
 
 # Docker
 .env
+
+# Swift Build
+Nostos/.build/
