@@ -34,6 +34,10 @@ final class AppState: ObservableObject {
         Task { await loadInitialData() }
     }
 
+    init(db: AppDatabase) {
+        self.db = db
+    }
+
     // MARK: - Data loading
 
     func loadInitialData() async {

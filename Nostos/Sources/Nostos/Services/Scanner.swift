@@ -55,8 +55,8 @@ final class Scanner {
                     active -= 1
                 }
                 let runId = run.id!
-                group.addTask { [weak self] in
-                    await self?.processPhoto(url: url, scanRunId: runId, counter: counter)
+                group.addTask { [self] in
+                    await self.processPhoto(url: url, scanRunId: runId, counter: counter)
                 }
                 active += 1
 

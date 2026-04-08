@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.0.0"),
+        .package(url: "https://github.com/nalexn/ViewInspector.git", from: "0.9.0"),
     ],
     targets: [
         .executableTarget(
@@ -17,7 +18,10 @@ let package = Package(
         ),
         .testTarget(
             name: "NostosTests",
-            dependencies: ["Nostos"],
+            dependencies: [
+                "Nostos",
+                .product(name: "ViewInspector", package: "ViewInspector"),
+            ],
             path: "Tests/NostosTests"
         )
     ]
