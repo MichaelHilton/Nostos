@@ -31,3 +31,4 @@ Thumbs.db
 # Swift Build
 Nostos/.build/
 .build/
+coverage/

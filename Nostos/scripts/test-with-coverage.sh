@@ -4,7 +4,7 @@ set -euo pipefail
 # Run Swift tests with code coverage enabled and generate an HTML report.
 # Usage: ./scripts/test-with-coverage.sh
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_CODECOV_DIR="$ROOT_DIR/.build/debug/codecov"
 OUTPUT_DIR="$ROOT_DIR/coverage"
 
@@ -33,15 +33,19 @@ trap cleanup EXIT
 
 # Merge any .profraw files into a single .profdata (if llvm-profdata exists)
 PROFRAW_FILES=("$BUILD_CODECOV_DIR"/*.profraw)
-if command -v xcrun >/dev/null 2>&1; then
+# Prefer system llvm tools if available, fall back to xcrun if present.
+if command -v llvm-profdata >/dev/null 2>&1 && command -v llvm-cov >/dev/null 2>&1; then
+  LLVM_PROFDATA="llvm-profdata"
+  LLVM_COV="llvm-cov"
+elif command -v xcrun >/dev/null 2>&1; then
   LLVM_PROFDATA="xcrun llvm-profdata"
   LLVM_COV="xcrun llvm-cov"
 else
-  LLVM_PROFDATA="llvm-profdata"
-  LLVM_COV="llvm-cov"
+  echo "Neither llvm-profdata/llvm-cov nor xcrun were found in PATH. Install llvm or Xcode command line tools." >&2
+  exit 1
 fi
 
-if compgen -G "${BUILD_CODECOV_DIR}/*.profraw" >/dev/null; then
+if compgen -G "${BUILD_CODECOV_DIR}/*.profraw" >/dev/null 2>&1; then
   echo "Merging profraw files to default.profdata"
   $LLVM_PROFDATA merge -sparse "${BUILD_CODECOV_DIR}"/*.profraw -o "$BUILD_CODECOV_DIR/default.profdata"
 fi
@@ -53,15 +57,21 @@ if [ ! -f "$PROFDATA" ]; then
   exit 1
 fi
 
-# Locate the test executable
-TEST_EXECUTABLE="$(ls -1 "$ROOT_DIR/.build/x86_64-apple-macosx/debug"/*Tests*.xctest/Contents/MacOS/* 2>/dev/null | head -n1 || true)"
-if [ -z "$TEST_EXECUTABLE" ]; then
-  echo "Unable to locate test executable in .build; attempting generic binary list..."
-  TEST_EXECUTABLE="$(ls -1 "$ROOT_DIR/.build/x86_64-apple-macosx/debug"/* 2>/dev/null | head -n1 || true)"
+# Locate the test executable. Prefer an executable inside an .xctest bundle
+# (Contents/MacOS/*). If none found, fall back to any executable file in .build.
+TEST_EXECUTABLE=""
+SEARCH_DIR="$ROOT_DIR/.build"
+if command -v find >/dev/null 2>&1; then
+  # Prefer test bundle executables first (any file under a Contents/MacOS directory)
+  TEST_EXECUTABLE=$(find "$SEARCH_DIR" -path '*/Contents/MacOS/*' -type f -perm -111 -print -quit 2>/dev/null || true)
+  if [ -z "$TEST_EXECUTABLE" ]; then
+    # Fall back to any executable (skip common non-executable artifacts)
+    TEST_EXECUTABLE=$(find "$SEARCH_DIR" -type f -perm -111 \( ! -name '*.dylib' ! -name '*.so' ! -name '*.a' ! -name '*.o' ! -name '*.swiftmodule' \) -print -quit 2>/dev/null || true)
+  fi
 fi
 
-if [ -z "$TEST_EXECUTABLE" ] || [ ! -f "$TEST_EXECUTABLE" ]; then
-  echo "Test executable not found. Looked for .xctest bundles in .build/x86_64-apple-macosx/debug" >&2
+if [ -z "$TEST_EXECUTABLE" ]; then
+  echo "Test executable not found in .build; ensure 'swift test --enable-code-coverage' ran successfully." >&2
   exit 1
 fi
 
