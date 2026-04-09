@@ -21,9 +21,9 @@ actor ScanCounter {
 
 final class Scanner {
     private let db: AppDatabase
-    private let onProgress: @Sendable (ScanProgress) -> Void
+    private let onProgress: @Sendable (ScanProgress) async -> Void
 
-    init(db: AppDatabase, onProgress: @Sendable @escaping (ScanProgress) -> Void) {
+    init(db: AppDatabase, onProgress: @Sendable @escaping (ScanProgress) async -> Void) {
         self.db = db
         self.onProgress = onProgress
     }
@@ -42,7 +42,7 @@ final class Scanner {
         let paths = collectPhotoPaths(in: rootURL)
         let total = paths.count
 
-        onProgress(ScanProgress(total: total, processed: 0, isScanning: true))
+        await onProgress(ScanProgress(total: total, processed: 0, isScanning: true))
 
         let counter = ScanCounter()
 
@@ -61,7 +61,7 @@ final class Scanner {
                 active += 1
 
                 let snap = await counter.snapshot()
-                onProgress(ScanProgress(total: total, processed: snap.processed, isScanning: true))
+                await onProgress(ScanProgress(total: total, processed: snap.processed, isScanning: true))
             }
             await group.waitForAll()
         }
@@ -74,7 +74,7 @@ final class Scanner {
         run.status = .completed
         try db.updateScanRun(run)
 
-        onProgress(ScanProgress(total: total, processed: snap.processed, duplicatesFound: snap.duplicatesFound, isScanning: false))
+        await onProgress(ScanProgress(total: total, processed: snap.processed, duplicatesFound: snap.duplicatesFound, isScanning: false))
         return run
     }
 

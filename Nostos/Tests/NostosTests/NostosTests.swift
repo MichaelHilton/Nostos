@@ -251,7 +251,7 @@ final class NostosTests: XCTestCase {
 
         let lastProgressBox = ActorBox(ScanProgress())
         let scanner = Scanner(db: db) { progress in
-            Task { await lastProgressBox.set(progress) }
+            await lastProgressBox.set(progress)
         }
 
         let run = try await scanner.scan(rootURL: sourceDir)

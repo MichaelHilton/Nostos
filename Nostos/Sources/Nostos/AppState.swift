@@ -95,7 +95,7 @@ final class AppState: ObservableObject {
 
         Task {
             let scanner = Scanner(db: db) { [weak self] progress in
-                Task { @MainActor [weak self] in
+                await MainActor.run { [weak self] in
                     self?.scanProgress = progress
                 }
             }
