@@ -61,9 +61,14 @@ struct PhotoFilter {
     var cameraModels: Set<String> = []
     var dateFrom: Date?
     var dateTo: Date?
+    // Year range filter (inclusive). Use `nil` for open-ended.
+    var yearFrom: Int?
+    var yearTo: Int?
     // Use Set<Bool> where `true` = has duplicates, `false` = no duplicates.
     // Empty set means no duplicates filter (any).
     var hasDuplicates: Set<Bool> = []
+    // Include images without camera metadata (camera_model IS NULL)
+    var includeNoCamera: Bool = false
 
     var limit: Int = 100
     var offset: Int = 0

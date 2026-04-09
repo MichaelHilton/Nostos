@@ -4,7 +4,6 @@ import AppKit
 struct GalleryView: View {
     @EnvironmentObject var state: AppState
     @State private var selectedPhoto: Photo?
-    @State private var showingFilters = false
 
     // Filter controls (local state, applied on demand)
     @State private var filterStatus: Set<PhotoStatus> = []
@@ -12,19 +11,16 @@ struct GalleryView: View {
     @State private var filterDateFrom: Date?
     @State private var filterDateTo: Date?
     @State private var filterHasDuplicates: Set<Bool> = []
+    @State private var filterIncludeNoCamera: Bool = false
+    @State private var filterYearFrom: Int?
+    @State private var filterYearTo: Int?
 
     private let columns = [GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 8)]
 
     var body: some View {
         HSplitView {
-            // Filter sidebar
-            if showingFilters {
-                filterPanel
-                    .frame(minWidth: 200, maxWidth: 240)
-            }
-
-            // Photo grid
-            VStack(spacing: 0) {
+                // Photo grid
+                VStack(spacing: 0) {
                 toolbar
                 Divider()
                 if state.photos.isEmpty {
@@ -55,6 +51,10 @@ struct GalleryView: View {
                     }
                 }
             }
+
+            // Filter sidebar (always visible on the right)
+            filterPanel
+                .frame(minWidth: 200, maxWidth: 240)
         }
         .sheet(item: $selectedPhoto) { photo in
             PhotoDetailView(photo: photo)
@@ -95,8 +95,6 @@ struct GalleryView: View {
             }
 
             Spacer()
-
-            // Per-page menu
             Menu {
                 Button("25") { var f = state.photoFilter; f.limit = 25; f.offset = 0; state.applyFilter(f) }
                 Button("50") { var f = state.photoFilter; f.limit = 50; f.offset = 0; state.applyFilter(f) }
@@ -108,12 +106,7 @@ struct GalleryView: View {
             }
             .menuStyle(.borderlessButton)
 
-            Button {
-                showingFilters.toggle()
-            } label: {
-                Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
-            }
-            .buttonStyle(.borderless)
+            // Filters are always visible on the right
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -129,6 +122,7 @@ struct GalleryView: View {
                             if on { filterStatus.insert(s) } else { filterStatus.remove(s) }
                         }
                     ))
+                    .toggleStyle(.checkbox)
                 }
             }
 
@@ -143,7 +137,14 @@ struct GalleryView: View {
                             if on { filterCameraModels.insert(model) } else { filterCameraModels.remove(model) }
                         }
                     ))
+                    .toggleStyle(.checkbox)
                 }
+                // Checkbox for images without camera metadata
+                Toggle("No camera", isOn: Binding(
+                    get: { filterIncludeNoCamera },
+                    set: { on in filterIncludeNoCamera = on }
+                ))
+                .toggleStyle(.checkbox)
             }
 
             Section("Duplicates") {
@@ -151,10 +152,62 @@ struct GalleryView: View {
                     get: { filterHasDuplicates.contains(true) },
                     set: { on in if on { filterHasDuplicates.insert(true) } else { filterHasDuplicates.remove(true) } }
                 ))
+                .toggleStyle(.checkbox)
                 Toggle("No duplicates", isOn: Binding(
                     get: { filterHasDuplicates.contains(false) },
                     set: { on in if on { filterHasDuplicates.insert(false) } else { filterHasDuplicates.remove(false) } }
                 ))
+                .toggleStyle(.checkbox)
+            }
+
+            Section("Years") {
+                if state.years.isEmpty {
+                    Text("No year data").foregroundColor(.secondary)
+                } else {
+                    HStack {
+                        Picker("From", selection: Binding(get: { filterYearFrom ?? -1 }, set: { v in
+                            let newFrom = v == -1 ? nil : v
+                            filterYearFrom = newFrom
+                            // Auto-clamp: if from > to, set to = from
+                            if let f = filterYearFrom, let t = filterYearTo, f > t {
+                                filterYearTo = f
+                            }
+                        })) {
+                            Text("Any").tag(-1)
+                            ForEach(state.years, id: \ .self) { y in Text(String(y)).tag(y) }
+                        }
+                        .labelsHidden()
+
+                        Picker("To", selection: Binding(get: { filterYearTo ?? -1 }, set: { v in
+                            let newTo = v == -1 ? nil : v
+                            filterYearTo = newTo
+                            // Auto-clamp: if to < from, set from = to
+                            if let f = filterYearFrom, let t = filterYearTo, t < f {
+                                filterYearFrom = t
+                            }
+                        })) {
+                            Text("Any").tag(-1)
+                            ForEach(state.years, id: \ .self) { y in Text(String(y)).tag(y) }
+                        }
+                        .labelsHidden()
+                    }
+
+                    // Validation / summary
+                    let yearRangeValid: Bool = {
+                        if let f = filterYearFrom, let t = filterYearTo { return f <= t }
+                        return true
+                    }()
+
+                    if filterYearFrom == nil && filterYearTo == nil {
+                        Text("Range: Any").foregroundColor(.secondary).font(.caption)
+                    } else if yearRangeValid {
+                        let fromText = filterYearFrom.map(String.init) ?? "Any"
+                        let toText = filterYearTo.map(String.init) ?? "Any"
+                        Text("Range: \(fromText) — \(toText)").foregroundColor(.secondary).font(.caption)
+                    } else {
+                        Text("Invalid range").foregroundColor(.red).font(.caption)
+                    }
+                }
             }
 
             HStack {
@@ -162,9 +215,18 @@ struct GalleryView: View {
                     state.applyFilter(PhotoFilter(
                         status: filterStatus,
                         cameraModels: filterCameraModels,
-                        hasDuplicates: filterHasDuplicates
+                        dateFrom: filterDateFrom,
+                        dateTo: filterDateTo,
+                        yearFrom: filterYearFrom,
+                        yearTo: filterYearTo,
+                        hasDuplicates: filterHasDuplicates,
+                        includeNoCamera: filterIncludeNoCamera
                     ))
                 }
+                .disabled({
+                    if let f = filterYearFrom, let t = filterYearTo { return f > t }
+                    return false
+                }())
                 .buttonStyle(.borderedProminent)
 
                 Spacer()
@@ -174,6 +236,9 @@ struct GalleryView: View {
                     filterStatus.removeAll()
                     filterCameraModels.removeAll()
                     filterHasDuplicates.removeAll()
+                    filterIncludeNoCamera = false
+                    filterYearFrom = nil
+                    filterYearTo = nil
                     state.applyFilter(PhotoFilter())
                 }
                 .foregroundColor(.red)
@@ -181,6 +246,7 @@ struct GalleryView: View {
         }
         .padding(8)
         .ifAvailableFormStyleGrouped()
+        .onAppear { }
     }
 }
 

@@ -100,20 +100,20 @@ final class NostosTests: XCTestCase {
         try db.insertPhoto(&photoB)
         try db.insertPhoto(&photoC)
 
-        let newPhotos = try db.fetchPhotos(filter: PhotoFilter(status: .new))
+        let newPhotos = try db.fetchPhotos(filter: PhotoFilter(status: Set([.new])))
         XCTAssertEqual(newPhotos.count, 2)
 
-        let nikonPhotos = try db.fetchPhotos(filter: PhotoFilter(cameraModel: "Nikon"))
+        let nikonPhotos = try db.fetchPhotos(filter: PhotoFilter(cameraModels: Set(["Nikon"])))
         XCTAssertEqual(nikonPhotos.count, 1)
         XCTAssertEqual(nikonPhotos.first?.path, "/tmp/b.jpg")
 
         let dateRangePhotos = try db.fetchPhotos(filter: PhotoFilter(dateFrom: date1, dateTo: date1))
         XCTAssertEqual(dateRangePhotos.count, 1)
 
-        let duplicated = try db.fetchPhotos(filter: PhotoFilter(hasDuplicates: true))
+        let duplicated = try db.fetchPhotos(filter: PhotoFilter(hasDuplicates: Set([true])))
         XCTAssertEqual(duplicated.count, 1)
 
-        let nonDuplicated = try db.fetchPhotos(filter: PhotoFilter(hasDuplicates: false))
+        let nonDuplicated = try db.fetchPhotos(filter: PhotoFilter(hasDuplicates: Set([false])))
         XCTAssertEqual(nonDuplicated.count, 2)
 
         let models = try db.fetchDistinctCameraModels()
@@ -414,10 +414,10 @@ final class NostosTests: XCTestCase {
         XCTAssertEqual(duplicateGroupsCount, 1)
         XCTAssertEqual(organizeJobsCount, 1)
 
-        await state.applyFilter(PhotoFilter(status: .new))
+        await state.applyFilter(PhotoFilter(status: Set([.new])))
         try await Task.sleep(nanoseconds: 100_000_000)
         let photoFilterStatus = await state.photoFilter.status
-        XCTAssertEqual(photoFilterStatus, .new)
+        XCTAssertTrue(photoFilterStatus.contains(.new))
 
         let groupId = group.id!
         let photo1Id = photo1.id!

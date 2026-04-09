@@ -13,6 +13,7 @@ final class AppState: ObservableObject {
     @Published var photos: [Photo] = []
     @Published var photoFilter = PhotoFilter()
     @Published var cameraModels: [String] = []
+    @Published var years: [Int] = []
 
     // MARK: - Duplicates state
     @Published var duplicateGroups: [DuplicateGroupWithPhotos] = []
@@ -68,6 +69,15 @@ final class AppState: ObservableObject {
         do {
             cameraModels = try db.fetchDistinctCameraModels()
         } catch {}
+        await loadYears()
+    }
+
+    func loadYears() async {
+        do {
+            years = try db.fetchDistinctYears()
+        } catch {
+            // ignore
+        }
     }
 
     func loadDuplicates() async {

@@ -159,10 +159,30 @@ extension AppDatabase {
                 let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
                 query = query.filter(sql: "status IN (\(placeholders))", arguments: StatementArguments(values))
             }
-            if !filter.cameraModels.isEmpty {
-                let values = Array(filter.cameraModels)
-                let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
-                query = query.filter(sql: "camera_model IN (\(placeholders))", arguments: StatementArguments(values))
+            if !filter.cameraModels.isEmpty || filter.includeNoCamera {
+                let hasModels = !filter.cameraModels.isEmpty
+                if hasModels && filter.includeNoCamera {
+                    let values = Array(filter.cameraModels)
+                    let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
+                    query = query.filter(sql: "(camera_model IN (\(placeholders)) OR camera_model IS NULL)", arguments: StatementArguments(values))
+                } else if hasModels {
+                    let values = Array(filter.cameraModels)
+                    let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
+                    query = query.filter(sql: "camera_model IN (\(placeholders))", arguments: StatementArguments(values))
+                } else {
+                    // only include photos with no camera metadata
+                    query = query.filter(sql: "camera_model IS NULL")
+                }
+            }
+
+            // Year range filtering (taken_at year)
+            if let from = filter.yearFrom, let to = filter.yearTo {
+                // Both bounds provided. Support numeric (unix epoch) and text datetime.
+                query = query.filter(sql: "CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) BETWEEN ? AND ?", arguments: StatementArguments([from, to]))
+            } else if let from = filter.yearFrom {
+                query = query.filter(sql: "CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) >= ?", arguments: StatementArguments([from]))
+            } else if let to = filter.yearTo {
+                query = query.filter(sql: "CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) <= ?", arguments: StatementArguments([to]))
             }
             if let from = filter.dateFrom {
                 query = query.filter(Column("taken_at") >= from)
@@ -215,6 +235,18 @@ extension AppDatabase {
         try dbWriter.read { db in
             let rows = try Row.fetchAll(db, sql: "SELECT DISTINCT camera_model FROM photos WHERE camera_model IS NOT NULL ORDER BY camera_model")
             return rows.compactMap { $0["camera_model"] as? String }
+        }
+    }
+
+    func fetchDistinctYears() throws -> [Int] {
+        try dbWriter.read { db in
+            let sql = "SELECT DISTINCT CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) AS year FROM photos WHERE taken_at IS NOT NULL ORDER BY year DESC"
+            let rows = try Row.fetchAll(db, sql: sql)
+            return rows.compactMap { (row) -> Int? in
+                if let i64 = row["year"] as? Int64 { return Int(i64) }
+                if let i = row["year"] as? Int { return i }
+                return nil
+            }
         }
     }
 
