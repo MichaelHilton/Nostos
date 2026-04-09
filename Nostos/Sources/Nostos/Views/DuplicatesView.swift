@@ -17,8 +17,8 @@ struct DuplicatesView: View {
             Divider()
 
             if state.duplicateGroups.isEmpty {
-                ContentUnavailableView(
-                    "No Duplicates Found",
+                EmptyStateView(
+                    title: "No Duplicates Found",
                     systemImage: "checkmark.seal",
                     description: Text("Run a scan to detect duplicate photos.")
                 )

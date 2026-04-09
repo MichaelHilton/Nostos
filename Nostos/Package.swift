@@ -1,9 +1,9 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 5.7.1
 import PackageDescription
 
 let package = Package(
     name: "Nostos",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v12)],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.0.0"),
         .package(url: "https://github.com/nalexn/ViewInspector.git", from: "0.9.0"),

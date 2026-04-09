@@ -67,31 +67,7 @@ struct ScannerView: View {
             // Recent scans table
             if !state.scanRuns.isEmpty {
                 GroupBox("Recent Scans") {
-                    Table(state.scanRuns) {
-                        TableColumn("Path") { run in
-                            Text(run.rootPath)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        TableColumn("Status") { run in
-                            Text(run.status.rawValue.capitalized)
-                                .foregroundColor(statusColor(run.status))
-                        }
-                        .width(80)
-                        TableColumn("Photos") { run in
-                            Text("\(run.photosFound)")
-                        }
-                        .width(60)
-                        TableColumn("Duplicates") { run in
-                            Text("\(run.duplicatesFound)")
-                        }
-                        .width(80)
-                        TableColumn("Started") { run in
-                            Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
-                        }
-                        .width(160)
-                    }
-                    .frame(minHeight: 140)
+                    recentScansTable
                 }
             }
 
@@ -123,5 +99,33 @@ struct ScannerView: View {
         case .completed: return .green
         case .failed:    return .red
         }
+    }
+
+    private var recentScansTable: some View {
+        Table(state.scanRuns) {
+            TableColumn("Path") { run in
+                Text(run.rootPath)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            TableColumn("Status") { run in
+                Text(run.status.rawValue.capitalized)
+                    .foregroundColor(statusColor(run.status))
+            }
+            .width(80)
+            TableColumn("Photos") { run in
+                Text("\(run.photosFound)")
+            }
+            .width(60)
+            TableColumn("Duplicates") { run in
+                Text("\(run.duplicatesFound)")
+            }
+            .width(80)
+            TableColumn("Started") { run in
+                Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
+            }
+            .width(160)
+        }
+        .frame(minHeight: 140)
     }
 }

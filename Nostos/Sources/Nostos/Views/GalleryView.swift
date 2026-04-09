@@ -28,8 +28,8 @@ struct GalleryView: View {
                 toolbar
                 Divider()
                 if state.photos.isEmpty {
-                    ContentUnavailableView(
-                        "No Photos",
+                    EmptyStateView(
+                        title: "No Photos",
                         systemImage: "photo.on.rectangle",
                         description: Text("Scan a folder to import photos.")
                     )
@@ -128,8 +128,8 @@ struct GalleryView: View {
             }
             .foregroundColor(.red)
         }
-        .formStyle(.grouped)
         .padding(8)
+        .ifAvailableFormStyleGrouped()
     }
 }
 
@@ -226,20 +226,33 @@ struct PhotoDetailView: View {
                     .frame(maxWidth: .infinity)
             }
 
-            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
-                row("Path", photo.path)
-                row("Size", ByteCountFormatter.string(fromByteCount: photo.fileSize, countStyle: .file))
-                if let date = photo.takenAt {
-                    row("Taken", date.formatted(date: .long, time: .standard))
+            if #available(macOS 13, *) {
+                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
+                    row("Path", photo.path)
+                    row("Size", ByteCountFormatter.string(fromByteCount: photo.fileSize, countStyle: .file))
+                    if let date = photo.takenAt {
+                        row("Taken", date.formatted(date: .long, time: .standard))
+                    }
+                    if let make = photo.cameraMake { row("Make", make) }
+                    if let model = photo.cameraModel { row("Model", model) }
+                    if let w = photo.width, let h = photo.height {
+                        row("Dimensions", "\(w) × \(h)")
+                    }
+                    row("Status", photo.status.rawValue)
+                    if photo.duplicateGroupId != nil {
+                        row("Duplicate", photo.isKept ? "Yes (kept)" : "Yes")
+                    }
                 }
-                if let make = photo.cameraMake { row("Make", make) }
-                if let model = photo.cameraModel { row("Model", model) }
-                if let w = photo.width, let h = photo.height {
-                    row("Dimensions", "\(w) × \(h)")
-                }
-                row("Status", photo.status.rawValue)
-                if photo.duplicateGroupId != nil {
-                    row("Duplicate", photo.isKept ? "Yes (kept)" : "Yes")
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    simpleRow("Path", photo.path)
+                    simpleRow("Size", ByteCountFormatter.string(fromByteCount: photo.fileSize, countStyle: .file))
+                    if let date = photo.takenAt { simpleRow("Taken", date.formatted(date: .long, time: .standard)) }
+                    if let make = photo.cameraMake { simpleRow("Make", make) }
+                    if let model = photo.cameraModel { simpleRow("Model", model) }
+                    if let w = photo.width, let h = photo.height { simpleRow("Dimensions", "\(w) × \(h)") }
+                    simpleRow("Status", photo.status.rawValue)
+                    if photo.duplicateGroupId != nil { simpleRow("Duplicate", photo.isKept ? "Yes (kept)" : "Yes") }
                 }
             }
 
@@ -249,6 +262,7 @@ struct PhotoDetailView: View {
         .frame(minWidth: 480, minHeight: 400)
     }
 
+    @available(macOS 13, *)
     @ViewBuilder
     private func row(_ label: String, _ value: String) -> some View {
         GridRow {
@@ -257,6 +271,30 @@ struct PhotoDetailView: View {
                 .gridColumnAlignment(.trailing)
             Text(value)
                 .textSelection(.enabled)
+        }
+    }
+
+    @ViewBuilder
+    private func simpleRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .top) {
+            Text(label)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .multilineTextAlignment(.trailing)
+                .textSelection(.enabled)
+        }
+    }
+}
+
+// small helper to conditionally apply macOS 13-only modifier
+fileprivate extension View {
+    @ViewBuilder
+    func ifAvailableFormStyleGrouped() -> some View {
+        if #available(macOS 13, *) {
+            self.formStyle(.grouped)
+        } else {
+            self
         }
     }
 }
