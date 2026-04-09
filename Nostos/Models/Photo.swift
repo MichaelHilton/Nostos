@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-enum PhotoStatus: String, Codable {
+enum PhotoStatus: String, Codable, CaseIterable {
     case new
     case copied
     case skippedDuplicate = "skipped_duplicate"
@@ -56,11 +56,15 @@ struct Photo: Identifiable, Codable, FetchableRecord, MutablePersistableRecord {
 }
 
 struct PhotoFilter {
-    var status: PhotoStatus?
-    var cameraModel: String?
+    // Multi-select filters
+    var status: Set<PhotoStatus> = []
+    var cameraModels: Set<String> = []
     var dateFrom: Date?
     var dateTo: Date?
-    var hasDuplicates: Bool?
+    // Use Set<Bool> where `true` = has duplicates, `false` = no duplicates.
+    // Empty set means no duplicates filter (any).
+    var hasDuplicates: Set<Bool> = []
+
     var limit: Int = 100
     var offset: Int = 0
 }

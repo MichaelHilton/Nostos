@@ -154,11 +154,15 @@ extension AppDatabase {
     func fetchPhotos(filter: PhotoFilter) throws -> [Photo] {
         try dbWriter.read { db in
             var query = Photo.all()
-            if let status = filter.status {
-                query = query.filter(Column("status") == status.rawValue)
+            if !filter.status.isEmpty {
+                let values = filter.status.map { $0.rawValue }
+                let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
+                query = query.filter(sql: "status IN (\(placeholders))", arguments: StatementArguments(values))
             }
-            if let model = filter.cameraModel {
-                query = query.filter(Column("camera_model") == model)
+            if !filter.cameraModels.isEmpty {
+                let values = Array(filter.cameraModels)
+                let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
+                query = query.filter(sql: "camera_model IN (\(placeholders))", arguments: StatementArguments(values))
             }
             if let from = filter.dateFrom {
                 query = query.filter(Column("taken_at") >= from)
@@ -166,12 +170,16 @@ extension AppDatabase {
             if let to = filter.dateTo {
                 query = query.filter(Column("taken_at") <= to)
             }
-            if let hasDups = filter.hasDuplicates {
-                if hasDups {
+            if !filter.hasDuplicates.isEmpty {
+                let set = filter.hasDuplicates
+                let wantsWith = set.contains(true)
+                let wantsWithout = set.contains(false)
+                if wantsWith && !wantsWithout {
                     query = query.filter(Column("duplicate_group_id") != nil)
-                } else {
+                } else if wantsWithout && !wantsWith {
                     query = query.filter(Column("duplicate_group_id") == nil)
                 }
+                // if both or neither are selected -> no extra filter (any)
             }
             return try query
                 .order(Column("taken_at").desc)

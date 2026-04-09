@@ -7,11 +7,11 @@ struct GalleryView: View {
     @State private var showingFilters = false
 
     // Filter controls (local state, applied on demand)
-    @State private var filterStatus: PhotoStatus?
-    @State private var filterCameraModel: String?
+    @State private var filterStatus: Set<PhotoStatus> = []
+    @State private var filterCameraModels: Set<String> = []
     @State private var filterDateFrom: Date?
     @State private var filterDateTo: Date?
-    @State private var filterHasDuplicates: Bool?
+    @State private var filterHasDuplicates: Set<Bool> = []
 
     private let columns = [GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 8)]
 
@@ -63,10 +63,51 @@ struct GalleryView: View {
     }
 
     private var toolbar: some View {
-        HStack {
+        HStack(spacing: 12) {
             Text("\(state.photos.count) photos")
                 .foregroundColor(.secondary)
+
+            // Pagination controls
+            let limit = state.photoFilter.limit
+            let offset = state.photoFilter.offset
+            if limit > 0 && limit < Int.max {
+                let page = (offset / max(1, limit)) + 1
+                HStack(spacing: 8) {
+                    Button("Prev") {
+                        var f = state.photoFilter
+                        f.offset = max(0, f.offset - f.limit)
+                        state.applyFilter(f)
+                    }
+                    .disabled(state.photoFilter.offset == 0)
+
+                    Text("Page \(page)")
+
+                    Button("Next") {
+                        var f = state.photoFilter
+                        f.offset += f.limit
+                        state.applyFilter(f)
+                    }
+                    .disabled(state.photos.count < state.photoFilter.limit)
+                }
+            } else {
+                Text("All pages")
+                    .foregroundColor(.secondary)
+            }
+
             Spacer()
+
+            // Per-page menu
+            Menu {
+                Button("25") { var f = state.photoFilter; f.limit = 25; f.offset = 0; state.applyFilter(f) }
+                Button("50") { var f = state.photoFilter; f.limit = 50; f.offset = 0; state.applyFilter(f) }
+                Button("100") { var f = state.photoFilter; f.limit = 100; f.offset = 0; state.applyFilter(f) }
+                Button("200") { var f = state.photoFilter; f.limit = 200; f.offset = 0; state.applyFilter(f) }
+                Button("All") { var f = state.photoFilter; f.limit = Int.max; f.offset = 0; state.applyFilter(f) }
+            } label: {
+                Label("Per Page", systemImage: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+
             Button {
                 showingFilters.toggle()
             } label: {
@@ -81,52 +122,62 @@ struct GalleryView: View {
     private var filterPanel: some View {
         Form {
             Section("Status") {
-                Picker("Status", selection: $filterStatus) {
-                    Text("Any").tag(PhotoStatus?.none)
-                    Text("New").tag(PhotoStatus?.some(.new))
-                    Text("Copied").tag(PhotoStatus?.some(.copied))
+                ForEach(PhotoStatus.allCases, id: \ .self) { s in
+                    Toggle(s.rawValue.capitalized, isOn: Binding(
+                        get: { filterStatus.contains(s) },
+                        set: { on in
+                            if on { filterStatus.insert(s) } else { filterStatus.remove(s) }
+                        }
+                    ))
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
             }
 
             Section("Camera") {
-                Picker("Camera Model", selection: $filterCameraModel) {
-                    Text("Any").tag(String?.none)
-                    ForEach(state.cameraModels, id: \.self) { model in
-                        Text(model).tag(String?.some(model))
-                    }
+                if state.cameraModels.isEmpty {
+                    Text("No camera models").foregroundColor(.secondary)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
+                ForEach(state.cameraModels, id: \.self) { model in
+                    Toggle(model, isOn: Binding(
+                        get: { filterCameraModels.contains(model) },
+                        set: { on in
+                            if on { filterCameraModels.insert(model) } else { filterCameraModels.remove(model) }
+                        }
+                    ))
+                }
             }
 
             Section("Duplicates") {
-                Picker("Duplicates", selection: $filterHasDuplicates) {
-                    Text("Any").tag(Bool?.none)
-                    Text("With duplicates").tag(Bool?.some(true))
-                    Text("No duplicates").tag(Bool?.some(false))
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-            }
-
-            Button("Apply Filters") {
-                state.applyFilter(PhotoFilter(
-                    status: filterStatus,
-                    cameraModel: filterCameraModel,
-                    hasDuplicates: filterHasDuplicates
+                Toggle("With duplicates", isOn: Binding(
+                    get: { filterHasDuplicates.contains(true) },
+                    set: { on in if on { filterHasDuplicates.insert(true) } else { filterHasDuplicates.remove(true) } }
+                ))
+                Toggle("No duplicates", isOn: Binding(
+                    get: { filterHasDuplicates.contains(false) },
+                    set: { on in if on { filterHasDuplicates.insert(false) } else { filterHasDuplicates.remove(false) } }
                 ))
             }
-            .buttonStyle(.borderedProminent)
 
-            Button("Clear") {
-                filterStatus = nil
-                filterCameraModel = nil
-                filterHasDuplicates = nil
-                state.applyFilter(PhotoFilter())
+            HStack {
+                Button("Apply Filters") {
+                    state.applyFilter(PhotoFilter(
+                        status: filterStatus,
+                        cameraModels: filterCameraModels,
+                        hasDuplicates: filterHasDuplicates
+                    ))
+                }
+                .buttonStyle(.borderedProminent)
+
+                Spacer()
+
+                Button("Remove All") {
+                    // Clear local selections and remove filters
+                    filterStatus.removeAll()
+                    filterCameraModels.removeAll()
+                    filterHasDuplicates.removeAll()
+                    state.applyFilter(PhotoFilter())
+                }
+                .foregroundColor(.red)
             }
-            .foregroundColor(.red)
         }
         .padding(8)
         .ifAvailableFormStyleGrouped()
@@ -172,21 +223,26 @@ struct PhotoTile: View {
 
     private func loadThumbnail() {
         guard image == nil else { return }
+        // Capture only Sendable values for the detached task
+        let localThumbnailPath = photo.thumbnailPath
+        let localPath = photo.path
+        let localId = photo.id
+
         Task.detached(priority: .userInitiated) {
-            let loaded: NSImage? = {
-                if let path = photo.thumbnailPath {
-                    return ThumbnailService.loadImage(path: path)
-                }
-                if let photoId = photo.id {
-                    let path = ThumbnailService.thumbnail(
-                        for: photoId,
-                        sourceURL: URL(fileURLWithPath: photo.path)
-                    )
-                    return path.flatMap { ThumbnailService.loadImage(path: $0) }
+            // Compute thumbnail path on background thread using Sendable values
+            let thumbPath: String? = {
+                if let p = localThumbnailPath { return p }
+                if let id = localId {
+                    return ThumbnailService.thumbnail(for: id, sourceURL: URL(fileURLWithPath: localPath))
                 }
                 return nil
             }()
-            await MainActor.run { image = loaded }
+
+            await MainActor.run {
+                if let p = thumbPath {
+                    image = ThumbnailService.loadImage(path: p)
+                }
+            }
         }
     }
 
