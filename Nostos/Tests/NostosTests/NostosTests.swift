@@ -221,6 +221,92 @@ final class NostosTests: XCTestCase {
         XCTAssertEqual(cachedPath, thumbnailPath)
     }
 
+    func testOrganizeJobAndResults() throws {
+        var job = OrganizeJob(
+            destinationRoot: "/tmp/dest",
+            folderFormat: "YYYY/MM/DD",
+            dryRun: true,
+            startedAt: Date(),
+            finishedAt: nil,
+            status: .running,
+            totalFiles: 0,
+            copiedFiles: 0,
+            skippedFiles: 0
+        )
+        try db.insertOrganizeJob(&job)
+        XCTAssertNotNil(job.id)
+        guard let jobId = job.id else { return }
+
+        let fetched = try db.fetchOrganizeJob(id: jobId)
+        XCTAssertEqual(fetched?.destinationRoot, job.destinationRoot)
+
+        job.status = .completed
+        job.finishedAt = Date()
+        try db.updateOrganizeJob(job)
+
+        let jobs = try db.fetchAllOrganizeJobs()
+        XCTAssertTrue(jobs.count >= 1)
+
+        var result = OrganizeResult(
+            jobId: jobId,
+            photoId: 123,
+            source: "/tmp/a.jpg",
+            destination: "/tmp/d.jpg",
+            action: .copy,
+            reason: nil
+        )
+        try db.insertOrganizeResult(&result)
+        let results = try db.fetchOrganizeResults(jobId: jobId)
+        XCTAssertEqual(results.count, 1)
+    }
+
+    func testFetchHashesDistinctModelsAndPhotoCount() throws {
+        var p1 = makePhoto(path: "/tmp/h1.jpg", hash: "hh1", cameraModel: "Canon")
+        var p2 = makePhoto(path: "/tmp/h2.jpg", hash: "hh2", cameraModel: "Nikon")
+        var p3 = makePhoto(path: "/tmp/nomodel.jpg", hash: nil, cameraModel: nil)
+        try db.insertPhoto(&p1)
+        try db.insertPhoto(&p2)
+        try db.insertPhoto(&p3)
+
+        let hashes = try db.fetchAllHashes()
+        XCTAssertEqual(hashes["hh1"], p1.id)
+
+        let models = try db.fetchDistinctCameraModels()
+        XCTAssertEqual(models, ["Canon", "Nikon"])
+
+        let count = try db.photoCount()
+        XCTAssertEqual(count, 3)
+    }
+
+    func testUpsertPhotoUpdatesExisting() throws {
+        var p = makePhoto(path: "/tmp/upsert.jpg", hash: nil, cameraModel: nil)
+        try db.upsertPhoto(&p)
+        let firstId = p.id!
+        p.hash = "newhash"
+        try db.upsertPhoto(&p)
+        let fetched = try db.fetchPhoto(id: firstId)
+        XCTAssertEqual(fetched?.hash, "newhash")
+    }
+
+    func testScanRunInsertAndUpdate() throws {
+        var run = ScanRun(
+            rootPath: "/tmp",
+            startedAt: Date(),
+            photosFound: 0,
+            duplicatesFound: 0,
+            status: .running
+        )
+        try db.insertScanRun(&run)
+        XCTAssertNotNil(run.id)
+        run.photosFound = 5
+        run.status = .completed
+        run.finishedAt = Date()
+        try db.updateScanRun(run)
+
+        let runs = try db.fetchAllScanRuns()
+        XCTAssertEqual(runs.first?.photosFound, 5)
+    }
+
     func testScannerScanInsertsPhotosAndGeneratesThumbnails() async throws {
         let sourceDir = try createTempDirectory()
         let sourceURL = sourceDir.appendingPathComponent("scan.jpg")
