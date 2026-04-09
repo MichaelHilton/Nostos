@@ -120,6 +120,7 @@ struct GalleryView: View {
                         get: { filterStatus.contains(s) },
                         set: { on in
                             if on { filterStatus.insert(s) } else { filterStatus.remove(s) }
+                            applyLocalFilters()
                         }
                     ))
                     .toggleStyle(.checkbox)
@@ -135,6 +136,7 @@ struct GalleryView: View {
                         get: { filterCameraModels.contains(model) },
                         set: { on in
                             if on { filterCameraModels.insert(model) } else { filterCameraModels.remove(model) }
+                            applyLocalFilters()
                         }
                     ))
                     .toggleStyle(.checkbox)
@@ -142,7 +144,7 @@ struct GalleryView: View {
                 // Checkbox for images without camera metadata
                 Toggle("No camera", isOn: Binding(
                     get: { filterIncludeNoCamera },
-                    set: { on in filterIncludeNoCamera = on }
+                    set: { on in filterIncludeNoCamera = on; applyLocalFilters() }
                 ))
                 .toggleStyle(.checkbox)
             }
@@ -150,12 +152,12 @@ struct GalleryView: View {
             Section("Duplicates") {
                 Toggle("With duplicates", isOn: Binding(
                     get: { filterHasDuplicates.contains(true) },
-                    set: { on in if on { filterHasDuplicates.insert(true) } else { filterHasDuplicates.remove(true) } }
+                    set: { on in if on { filterHasDuplicates.insert(true) } else { filterHasDuplicates.remove(true) }; applyLocalFilters() }
                 ))
                 .toggleStyle(.checkbox)
                 Toggle("No duplicates", isOn: Binding(
                     get: { filterHasDuplicates.contains(false) },
-                    set: { on in if on { filterHasDuplicates.insert(false) } else { filterHasDuplicates.remove(false) } }
+                    set: { on in if on { filterHasDuplicates.insert(false) } else { filterHasDuplicates.remove(false) }; applyLocalFilters() }
                 ))
                 .toggleStyle(.checkbox)
             }
@@ -172,6 +174,7 @@ struct GalleryView: View {
                             if let f = filterYearFrom, let t = filterYearTo, f > t {
                                 filterYearTo = f
                             }
+                            applyLocalFilters()
                         })) {
                             Text("Any").tag(-1)
                             ForEach(state.years, id: \ .self) { y in Text(String(y)).tag(y) }
@@ -185,6 +188,7 @@ struct GalleryView: View {
                             if let f = filterYearFrom, let t = filterYearTo, t < f {
                                 filterYearFrom = t
                             }
+                            applyLocalFilters()
                         })) {
                             Text("Any").tag(-1)
                             ForEach(state.years, id: \ .self) { y in Text(String(y)).tag(y) }
@@ -211,24 +215,6 @@ struct GalleryView: View {
             }
 
             HStack {
-                Button("Apply Filters") {
-                    state.applyFilter(PhotoFilter(
-                        status: filterStatus,
-                        cameraModels: filterCameraModels,
-                        dateFrom: filterDateFrom,
-                        dateTo: filterDateTo,
-                        yearFrom: filterYearFrom,
-                        yearTo: filterYearTo,
-                        hasDuplicates: filterHasDuplicates,
-                        includeNoCamera: filterIncludeNoCamera
-                    ))
-                }
-                .disabled({
-                    if let f = filterYearFrom, let t = filterYearTo { return f > t }
-                    return false
-                }())
-                .buttonStyle(.borderedProminent)
-
                 Spacer()
 
                 Button("Remove All") {
@@ -247,6 +233,20 @@ struct GalleryView: View {
         .padding(8)
         .ifAvailableFormStyleGrouped()
         .onAppear { }
+    }
+
+    // Apply the local filter selections to the global state
+    private func applyLocalFilters() {
+        state.applyFilter(PhotoFilter(
+            status: filterStatus,
+            cameraModels: filterCameraModels,
+            dateFrom: filterDateFrom,
+            dateTo: filterDateTo,
+            yearFrom: filterYearFrom,
+            yearTo: filterYearTo,
+            hasDuplicates: filterHasDuplicates,
+            includeNoCamera: filterIncludeNoCamera
+        ))
     }
 }
 
