@@ -19,6 +19,26 @@
             "target": "Nostos",
             "configuration": "release",
             "preLaunchTask": "swift: Build Release Nostos (Nostos)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Nostos}",
+            "name": "Debug Nostos",
+            "target": "Nostos",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Nostos"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Nostos}",
+            "name": "Release Nostos",
+            "target": "Nostos",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Nostos"
         }
     ]
 }

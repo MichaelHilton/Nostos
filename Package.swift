@@ -14,7 +14,7 @@ let package = Package(
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
             ],
-            path: "Sources/Nostos"
+            path: "Nostos"
         ),
         .testTarget(
             name: "NostosTests",
