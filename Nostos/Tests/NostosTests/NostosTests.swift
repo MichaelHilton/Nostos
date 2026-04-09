@@ -247,9 +247,11 @@ final class NostosTests: XCTestCase {
         let jobs = try db.fetchAllOrganizeJobs()
         XCTAssertTrue(jobs.count >= 1)
 
+        var photo = makePhoto(path: "/tmp/org.jpg", hash: "h-org", cameraModel: "Canon")
+        try db.insertPhoto(&photo)
         var result = OrganizeResult(
             jobId: jobId,
-            photoId: 123,
+            photoId: photo.id ?? 0,
             source: "/tmp/a.jpg",
             destination: "/tmp/d.jpg",
             action: .copy,
