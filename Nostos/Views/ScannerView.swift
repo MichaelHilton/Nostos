@@ -37,8 +37,7 @@ struct ScannerView: View {
                 .buttonStyle(.borderedProminent)
 
                 if state.scanProgress.isScanning {
-                    ProgressView()
-                        .scaleEffect(0.7)
+                    SpinnerView()
                         .padding(.leading, 4)
                 }
             }
@@ -146,6 +145,25 @@ private struct RecentScansTable: View {
         case .completed: return .green
         case .failed:    return .red
         }
+    }
+}
+
+/// Pure-SwiftUI spinner — avoids NSProgressIndicator which crashes with
+/// EXC_BAD_INSTRUCTION in validateDimension on macOS 12.
+private struct SpinnerView: View {
+    @State private var angle: Double = 0
+
+    var body: some View {
+        Circle()
+            .trim(from: 0.1, to: 0.9)
+            .stroke(Color.accentColor, lineWidth: 2)
+            .frame(width: 14, height: 14)
+            .rotationEffect(.degrees(angle))
+            .onAppear {
+                withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+                    angle = 360
+                }
+            }
     }
 }
 

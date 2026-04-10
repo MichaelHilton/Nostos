@@ -20,16 +20,24 @@ enum ThumbnailService {
     }()
 
     /// Returns the path to the thumbnail, generating it if needed.
-    static func thumbnail(for photoId: Int64, sourceURL: URL) -> String? {
+    static func thumbnail(for photoId: Int64, sourceURL: URL, imageSource: CGImageSource? = nil) -> String? {
         let dest = cacheDir.appendingPathComponent("\(photoId).jpg")
         if FileManager.default.fileExists(atPath: dest.path) {
             return dest.path
         }
-        return generate(from: sourceURL, to: dest)
+        return generate(from: sourceURL, imageSource: imageSource, to: dest)
     }
 
     @discardableResult
-    private static func generate(from source: URL, to dest: URL) -> String? {
+    private static func generate(from source: URL, imageSource: CGImageSource?, to dest: URL) -> String? {
+        let src: CGImageSource
+        if let provided = imageSource {
+            src = provided
+        } else {
+            guard let created = CGImageSourceCreateWithURL(source as CFURL, nil) else { return nil }
+            src = created
+        }
+
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -37,8 +45,7 @@ enum ThumbnailService {
             kCGImageSourceShouldCacheImmediately: false
         ]
 
-        guard let src = CGImageSourceCreateWithURL(source as CFURL, nil),
-              let thumb = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary) else {
+        guard let thumb = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary) else {
             return nil
         }
 
