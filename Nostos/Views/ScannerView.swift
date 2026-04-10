@@ -67,7 +67,11 @@ struct ScannerView: View {
             // Recent scans table
             if !state.scanRuns.isEmpty {
                 GroupBox("Recent Scans") {
-                    recentScansTable
+                    if #available(macOS 13, *) {
+                        recentScansTable
+                    } else {
+                        LegacyRecentScansTable(scanRuns: state.scanRuns)
+                    }
                 }
             }
 
@@ -101,8 +105,18 @@ struct ScannerView: View {
         }
     }
 
+    @available(macOS 13, *)
     private var recentScansTable: some View {
-        Table(state.scanRuns) {
+        RecentScansTable(scanRuns: state.scanRuns)
+    }
+}
+
+@available(macOS 13, *)
+private struct RecentScansTable: View {
+    let scanRuns: [ScanRun]
+
+    var body: some View {
+        Table(scanRuns) {
             TableColumn("Path") { run in
                 Text(run.rootPath)
                     .lineLimit(1)
@@ -127,5 +141,48 @@ struct ScannerView: View {
             .width(160)
         }
         .frame(minHeight: 140)
+    }
+
+    private func statusColor(_ status: ScanStatus) -> Color {
+        switch status {
+        case .running:   return .orange
+        case .completed: return .green
+        case .failed:    return .red
+        }
+    }
+}
+
+private struct LegacyRecentScansTable: View {
+    let scanRuns: [ScanRun]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(scanRuns) { run in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(run.rootPath)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    HStack(spacing: 12) {
+                        Text(run.status.rawValue.capitalized)
+                            .foregroundColor(statusColor(run.status))
+                        Text("Photos: \(run.photosFound)")
+                        Text("Duplicates: \(run.duplicatesFound)")
+                        Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
+                    }
+                    .font(.caption)
+                    Divider()
+                }
+            }
+        }
+        .frame(minHeight: 140)
+    }
+
+    private func statusColor(_ status: ScanStatus) -> Color {
+        switch status {
+        case .running:   return .orange
+        case .completed: return .green
+        case .failed:    return .red
+        }
     }
 }

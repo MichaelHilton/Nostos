@@ -12,46 +12,45 @@ struct ContentView: View {
         Group {
             if #available(macOS 13, *) {
                 NavigationSplitView {
-                List(selection: $selectedTab) {
-                    Label("Scanner", systemImage: "magnifyingglass")
-                        .tag(Tab.scanner)
-                    Label("Gallery", systemImage: "photo.on.rectangle.angled")
-                        .tag(Tab.gallery)
-                    Label("Duplicates", systemImage: "doc.on.doc")
-                        .tag(Tab.duplicates)
-                    Label("Organizer", systemImage: "folder.badge.gearshape")
-                        .tag(Tab.organizer)
+                    List(selection: $selectedTab) {
+                        Label("Scanner", systemImage: "magnifyingglass")
+                            .tag(Tab.scanner)
+                        Label("Gallery", systemImage: "photo.on.rectangle.angled")
+                            .tag(Tab.gallery)
+                        Label("Duplicates", systemImage: "doc.on.doc")
+                            .tag(Tab.duplicates)
+                        Label("Organizer", systemImage: "folder.badge.gearshape")
+                            .tag(Tab.organizer)
+                    }
+                    .navigationTitle("Nostos")
+                } detail: {
+                    switch selectedTab {
+                    case .scanner:    ScannerView()
+                    case .gallery:    GalleryView()
+                    case .duplicates: DuplicatesView()
+                    case .organizer:  OrganizerView()
+                    }
                 }
-                .navigationSplitViewColumnWidth(min: 160, ideal: 180)
-                .navigationTitle("Nostos")
-            } detail: {
-                switch selectedTab {
-                case .scanner:    ScannerView()
-                case .gallery:    GalleryView()
-                case .duplicates: DuplicatesView()
-                case .organizer:  OrganizerView()
-                }
-            }
-        } else {
-            NavigationView {
-                List {
-                    Button(action: { selectedTab = .scanner }) { Label("Scanner", systemImage: "magnifyingglass") }
-                    Button(action: { selectedTab = .gallery }) { Label("Gallery", systemImage: "photo.on.rectangle.angled") }
-                    Button(action: { selectedTab = .duplicates }) { Label("Duplicates", systemImage: "doc.on.doc") }
-                    Button(action: { selectedTab = .organizer }) { Label("Organizer", systemImage: "folder.badge.gearshape") }
-                }
-                .listStyle(SidebarListStyle())
-                .frame(minWidth: 160)
+            } else {
+                NavigationView {
+                    List {
+                        Button(action: { selectedTab = .scanner }) { Label("Scanner", systemImage: "magnifyingglass") }
+                        Button(action: { selectedTab = .gallery }) { Label("Gallery", systemImage: "photo.on.rectangle.angled") }
+                        Button(action: { selectedTab = .duplicates }) { Label("Duplicates", systemImage: "doc.on.doc") }
+                        Button(action: { selectedTab = .organizer }) { Label("Organizer", systemImage: "folder.badge.gearshape") }
+                    }
+                    .listStyle(SidebarListStyle())
+                    .frame(minWidth: 160)
 
-                switch selectedTab {
-                case .scanner:    ScannerView()
-                case .gallery:    GalleryView()
-                case .duplicates: DuplicatesView()
-                case .organizer:  OrganizerView()
+                    switch selectedTab {
+                    case .scanner:    ScannerView()
+                    case .gallery:    GalleryView()
+                    case .duplicates: DuplicatesView()
+                    case .organizer:  OrganizerView()
+                    }
                 }
+                .navigationTitle("Nostos")
             }
-            .navigationTitle("Nostos")
-        }
         }
         .modifier(ErrorAlert(state: state))
     }

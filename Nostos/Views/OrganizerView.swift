@@ -97,22 +97,27 @@ struct OrganizerView: View {
                     .padding(.bottom, 4)
 
                     if showResults {
-                        Table(state.lastOrganizeResults) {
-                            TableColumn("Source") { r in
-                                Text(URL(fileURLWithPath: r.source).lastPathComponent)
-                                    .lineLimit(1)
+                        if #available(macOS 13, *) {
+                            Table(state.lastOrganizeResults) {
+                                TableColumn("Source") { r in
+                                    Text(URL(fileURLWithPath: r.source).lastPathComponent)
+                                        .lineLimit(1)
+                                }
+                                TableColumn("Destination") { r in
+                                    Text(r.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
+                                        .lineLimit(1)
+                                }
+                                TableColumn("Action") { r in
+                                    Text(r.action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                        .foregroundColor(actionColor(r.action))
+                                }
+                                .width(120)
                             }
-                            TableColumn("Destination") { r in
-                                Text(r.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
-                                    .lineLimit(1)
-                            }
-                            TableColumn("Action") { r in
-                                Text(r.action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
-                                    .foregroundColor(actionColor(r.action))
-                            }
-                            .width(120)
+                            .frame(minHeight: 200)
+                        } else {
+                            LegacyOrganizeResultsView(results: state.lastOrganizeResults)
+                                .frame(minHeight: 200)
                         }
-                        .frame(minHeight: 200)
                     }
                 }
             }
@@ -140,6 +145,39 @@ struct OrganizerView: View {
             Text("\(value)")
                 .font(.title3).bold()
                 .foregroundColor(color)
+        }
+    }
+
+    private func actionColor(_ action: OrganizeAction) -> Color {
+        switch action {
+        case .copy:            return .green
+        case .skipExists:      return .secondary
+        case .skipDuplicate:   return .orange
+        case .renameConflict:  return .yellow
+        }
+    }
+}
+
+private struct LegacyOrganizeResultsView: View {
+    let results: [OrganizeResult]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(results) { result in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(URL(fileURLWithPath: result.source).lastPathComponent)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    HStack(spacing: 12) {
+                        Text(result.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
+                        Text(result.action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                            .foregroundColor(actionColor(result.action))
+                    }
+                    .font(.caption)
+                    Divider()
+                }
+            }
         }
     }
 
