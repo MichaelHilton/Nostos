@@ -26,17 +26,17 @@ final class Organizer {
         )
         try db.insertOrganizeJob(&job)
 
-        let photos = try db.fetchPhotos(filter: PhotoFilter(limit: Int.max, offset: 0))
-        job.totalFiles = photos.count
+        let total = (try? db.photoCount()) ?? 0
+        job.totalFiles = total
         try db.updateOrganizeJob(job)
 
-        onProgress(OrganizeProgress(total: photos.count, isRunning: true))
+        onProgress(OrganizeProgress(total: total, isRunning: true))
 
         var copied = 0
         var skipped = 0
 
-        for photo in photos {
-            guard let photoId = photo.id else { continue }
+        try db.enumerateAllPhotos { photo in
+            guard let photoId = photo.id else { return }
 
             let (action, reason, destPath) = planAction(
                 photo: photo,
@@ -80,7 +80,7 @@ final class Organizer {
             }
 
             try db.insertOrganizeResult(&result)
-            onProgress(OrganizeProgress(total: photos.count, copied: copied, skipped: skipped, isRunning: true))
+            onProgress(OrganizeProgress(total: total, copied: copied, skipped: skipped, isRunning: true))
         }
 
         job.finishedAt = Date()
@@ -89,7 +89,7 @@ final class Organizer {
         job.status = .completed
         try db.updateOrganizeJob(job)
 
-        onProgress(OrganizeProgress(total: photos.count, copied: copied, skipped: skipped, isRunning: false))
+        onProgress(OrganizeProgress(total: total, copied: copied, skipped: skipped, isRunning: false))
         return job
     }
 

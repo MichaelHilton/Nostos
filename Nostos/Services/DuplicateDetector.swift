@@ -19,44 +19,43 @@ final class DuplicateDetector {
     // MARK: - Hash-based detection
 
     private func detectHashDuplicates() throws -> Int {
-        // Group photos by hash, find groups with 2+ photos
-        let rows = try db.dbWriter.read { db in
-            try Row.fetchAll(db, sql: """
-                SELECT hash, COUNT(*) as cnt
-                FROM photos
-                WHERE hash IS NOT NULL AND duplicate_group_id IS NULL
-                GROUP BY hash
-                HAVING cnt >= 2
-            """)
+        // Fetch all photos that have a hash and are not yet grouped, in one query
+        let photos = try db.dbWriter.read { db in
+            try Photo.filter(
+                Column("hash") != nil && Column("duplicate_group_id") == nil
+            ).fetchAll(db)
         }
 
+        // Group in memory by hash
+        var byHash: [String: [Photo]] = [:]
+        for photo in photos {
+            guard let hash = photo.hash else { continue }
+            byHash[hash, default: []].append(photo)
+        }
+        let duplicateGroups = byHash.values.filter { $0.count >= 2 }
+        guard !duplicateGroups.isEmpty else { return 0 }
+
+        // Insert all groups and update all photos in a single transaction
         var created = 0
-        for row in rows {
-            guard let hash: String = row["hash"] else { continue }
+        try db.dbWriter.write { db in
+            for candidates in duplicateGroups {
+                var group = DuplicateGroup(reason: .hashMatch, keptPhotoId: candidates.first?.id)
+                try group.insert(db)
 
-            let photos = try db.dbWriter.read { db in
-                try Photo.filter(Column("hash") == hash && Column("duplicate_group_id") == nil).fetchAll(db)
-            }
-            guard photos.count >= 2 else { continue }
-
-            var group = DuplicateGroup(reason: .hashMatch, keptPhotoId: photos.first?.id)
-            try db.insertDuplicateGroup(&group)
-
-            // Mark the oldest (or first by id) as kept
-            var keptSet = false
-            try db.dbWriter.write { db in
-                for var photo in photos {
+                var keptSet = false
+                for var photo in candidates {
                     photo.duplicateGroupId = group.id
                     photo.isKept = !keptSet
                     keptSet = true
                     try photo.update(db)
                 }
+                // Update keptPhotoId after we have group.id set on the kept photo
+                if let keptId = candidates.first?.id {
+                    try db.execute(sql: "UPDATE duplicate_groups SET kept_photo_id = ? WHERE id = ?",
+                                   arguments: [keptId, group.id])
+                }
+                created += 1
             }
-            if let keptPhoto = photos.first {
-                group.keptPhotoId = keptPhoto.id
-                try db.updateDuplicateGroup(group)
-            }
-            created += 1
         }
         return created
     }
@@ -64,50 +63,45 @@ final class DuplicateDetector {
     // MARK: - EXIF-based near-duplicate detection
 
     private func detectExifDuplicates() throws -> Int {
-        // Group photos not yet in a duplicate group by (taken_at, camera_model)
-        let rows = try db.dbWriter.read { db in
-            try Row.fetchAll(db, sql: """
-                SELECT taken_at, camera_model, COUNT(*) as cnt
-                FROM photos
-                WHERE taken_at IS NOT NULL
-                  AND camera_model IS NOT NULL
-                  AND duplicate_group_id IS NULL
-                GROUP BY taken_at, camera_model
-                HAVING cnt >= 2
-            """)
+        // Fetch all ungrouped photos with both taken_at and camera_model, in one query
+        let photos = try db.dbWriter.read { db in
+            try Photo.filter(
+                Column("taken_at") != nil
+                    && Column("camera_model") != nil
+                    && Column("duplicate_group_id") == nil
+            ).fetchAll(db)
         }
 
+        // Group in memory by (taken_at, camera_model)
+        struct Key: Hashable { let takenAt: Date; let cameraModel: String }
+        var byKey: [Key: [Photo]] = [:]
+        for photo in photos {
+            guard let t = photo.takenAt, let m = photo.cameraModel else { continue }
+            byKey[Key(takenAt: t, cameraModel: m), default: []].append(photo)
+        }
+        let duplicateGroups = byKey.values.filter { $0.count >= 2 }
+        guard !duplicateGroups.isEmpty else { return 0 }
+
+        // Insert all groups and update all photos in a single transaction
         var created = 0
-        for row in rows {
-            guard let takenAt: Date = row["taken_at"],
-                  let cameraModel: String = row["camera_model"] else { continue }
+        try db.dbWriter.write { db in
+            for candidates in duplicateGroups {
+                var group = DuplicateGroup(reason: .exifMatch, keptPhotoId: candidates.first?.id)
+                try group.insert(db)
 
-            let photos = try db.dbWriter.read { db in
-                try Photo
-                    .filter(Column("taken_at") == takenAt
-                        && Column("camera_model") == cameraModel
-                        && Column("duplicate_group_id") == nil)
-                    .fetchAll(db)
-            }
-            guard photos.count >= 2 else { continue }
-
-            var group = DuplicateGroup(reason: .exifMatch, keptPhotoId: photos.first?.id)
-            try db.insertDuplicateGroup(&group)
-
-            var keptSet = false
-            try db.dbWriter.write { db in
-                for var photo in photos {
+                var keptSet = false
+                for var photo in candidates {
                     photo.duplicateGroupId = group.id
                     photo.isKept = !keptSet
                     keptSet = true
                     try photo.update(db)
                 }
+                if let keptId = candidates.first?.id {
+                    try db.execute(sql: "UPDATE duplicate_groups SET kept_photo_id = ? WHERE id = ?",
+                                   arguments: [keptId, group.id])
+                }
+                created += 1
             }
-            if let keptPhoto = photos.first {
-                group.keptPhotoId = keptPhoto.id
-                try db.updateDuplicateGroup(group)
-            }
-            created += 1
         }
         return created
     }

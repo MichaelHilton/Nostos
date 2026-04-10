@@ -109,6 +109,9 @@ final class AppDatabase {
                 )
             """)
         }
+        m.registerMigration("v2") { db in
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS photos_taken_at_camera_model ON photos(taken_at, camera_model)")
+        }
         return m
     }
 }
@@ -138,12 +141,7 @@ extension AppDatabase {
 
     func upsertPhoto(_ photo: inout Photo) throws {
         try dbWriter.write { db in
-            if let existing = try Photo.filter(Column("path") == photo.path).fetchOne(db) {
-                photo.id = existing.id
-                try photo.update(db)
-            } else {
-                try photo.insert(db)
-            }
+            try photo.upsert(db)
         }
     }
 
@@ -218,6 +216,13 @@ extension AppDatabase {
         }
     }
 
+    func fetchAllPaths() throws -> Set<String> {
+        try dbWriter.read { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT path FROM photos")
+            return Set(rows.compactMap { $0["path"] as? String })
+        }
+    }
+
     func fetchAllHashes() throws -> [String: Int64] {
         try dbWriter.read { db in
             let rows = try Row.fetchAll(db, sql: "SELECT id, hash FROM photos WHERE hash IS NOT NULL")
@@ -253,6 +258,16 @@ extension AppDatabase {
     func photoCount() throws -> Int {
         try dbWriter.read { db in try Photo.fetchCount(db) }
     }
+
+    /// Streams all photos through a closure without loading them all into memory at once.
+    func enumerateAllPhotos(_ body: (Photo) throws -> Void) throws {
+        try dbWriter.read { db in
+            let cursor = try Photo.fetchCursor(db)
+            while let photo = try cursor.next() {
+                try body(photo)
+            }
+        }
+    }
 }
 
 // MARK: - DuplicateGroup queries
@@ -268,12 +283,25 @@ extension AppDatabase {
     func fetchDuplicateGroupsWithPhotos() throws -> [DuplicateGroupWithPhotos] {
         try dbWriter.read { db in
             let groups = try DuplicateGroup.fetchAll(db)
-            return try groups.map { group in
-                let photos = try Photo
-                    .filter(Column("duplicate_group_id") == group.id)
-                    .order(Column("taken_at").asc)
-                    .fetchAll(db)
-                return DuplicateGroupWithPhotos(group: group, photos: photos)
+            guard !groups.isEmpty else { return [] }
+
+            // Fetch all photos for all groups in one query, then group in memory
+            let groupIds = groups.compactMap { $0.id }
+            let placeholders = groupIds.map { _ in "?" }.joined(separator: ",")
+            let photos = try Photo
+                .filter(sql: "duplicate_group_id IN (\(placeholders))",
+                        arguments: StatementArguments(groupIds))
+                .order(Column("taken_at").asc)
+                .fetchAll(db)
+
+            var photosByGroupId: [Int64: [Photo]] = [:]
+            for photo in photos {
+                guard let gid = photo.duplicateGroupId else { continue }
+                photosByGroupId[gid, default: []].append(photo)
+            }
+
+            return groups.map { group in
+                DuplicateGroupWithPhotos(group: group, photos: photosByGroupId[group.id ?? -1] ?? [])
             }
         }
     }
