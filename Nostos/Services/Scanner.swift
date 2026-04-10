@@ -49,6 +49,8 @@ final class Scanner {
         // Process with bounded concurrency
         await withTaskGroup(of: Void.self) { group in
             var active = 0
+            var lastProgressDate = Date.distantPast
+            let progressThrottle = 0.15 // seconds between UI updates
             for url in paths {
                 if active >= maxConcurrency {
                     await group.next()
@@ -60,8 +62,12 @@ final class Scanner {
                 }
                 active += 1
 
-                let snap = await counter.snapshot()
-                await onProgress(ScanProgress(total: total, processed: snap.processed, isScanning: true))
+                let now = Date()
+                if now.timeIntervalSince(lastProgressDate) >= progressThrottle {
+                    lastProgressDate = now
+                    let snap = await counter.snapshot()
+                    await onProgress(ScanProgress(total: total, processed: min(snap.processed, total), isScanning: true))
+                }
             }
             await group.waitForAll()
         }

@@ -46,14 +46,11 @@ struct ScannerView: View {
             if state.scanProgress.isScanning || state.scanProgress.processed > 0 {
                 GroupBox("Progress") {
                     VStack(alignment: .leading, spacing: 8) {
-                        if state.scanProgress.total > 0 {
-                            ProgressView(
-                                value: Double(state.scanProgress.processed),
-                                total: Double(state.scanProgress.total)
-                            )
-                        } else {
-                            ProgressView()
-                        }
+                        ProgressView(
+                            value: Double(state.scanProgress.processed),
+                            total: max(1.0, Double(state.scanProgress.total))
+                        )
+                        .progressViewStyle(SafeLinearProgressStyle())
                         HStack(spacing: 24) {
                             stat("Files Found", state.scanProgress.total)
                             stat("Processed", state.scanProgress.processed)
@@ -149,6 +146,23 @@ private struct RecentScansTable: View {
         case .completed: return .green
         case .failed:    return .red
         }
+    }
+}
+
+/// Pure-SwiftUI linear progress bar — avoids NSProgressIndicator which
+/// crashes with EXC_BAD_INSTRUCTION in validateDimension on macOS 12.
+private struct SafeLinearProgressStyle: ProgressViewStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.secondary.opacity(0.25))
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.accentColor)
+                    .frame(width: geo.size.width * CGFloat(configuration.fractionCompleted ?? 0))
+            }
+        }
+        .frame(height: 6)
     }
 }
 
