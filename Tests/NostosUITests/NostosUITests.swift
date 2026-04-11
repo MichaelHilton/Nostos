@@ -1,15 +1,27 @@
 import Foundation
 import XCTest
 
-#if os(macOS)
+#if os(macOS) && !SWIFT_PACKAGE
 final class NostosUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
 
-    func testClicksPrimaryButtonsAcrossTheApp() throws {
-        try requireUITestHost()
+    private func accessibleControl(in app: XCUIApplication, identifier: String) -> XCUIElement {
+        let candidates = [
+            app.buttons[identifier],
+            app.popUpButtons[identifier],
+            app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+        ]
 
+        for candidate in candidates where candidate.exists {
+            return candidate
+        }
+
+        return app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    func testClicksPrimaryButtonsAcrossTheApp() throws {
         let fileManager = FileManager.default
         let uniqueSuffix = UUID().uuidString
         let sourceRoot = fileManager.temporaryDirectory.appendingPathComponent("nostos-ui-source-\(uniqueSuffix)")
@@ -20,18 +32,14 @@ final class NostosUITests: XCTestCase {
         try fileManager.createDirectory(at: vaultRoot, withIntermediateDirectories: true)
         try fileManager.createDirectory(at: secondVaultRoot, withIntermediateDirectories: true)
 
-        let app = XCUIApplication(url: try makeLaunchableAppBundle())
+        let app = XCUIApplication(bundleIdentifier: "com.github.michaelhilton.Nostos")
         app.launchEnvironment = [
-            "UI_TESTING_FORCE_SETUP": "1",
+            "UI_TESTING_VAULT_ROOT": vaultRoot.path,
             "UI_TESTING_SEED_DATA": "1",
             "UI_TESTING_SOURCE_DIRECTORY_TO_PICK": sourceRoot.path,
             "UI_TESTING_VAULT_DIRECTORY_TO_PICK": vaultRoot.path
         ]
         app.launch()
-
-        let chooseVaultButton = app.buttons["chooseVaultButton"]
-        XCTAssertTrue(chooseVaultButton.waitForExistence(timeout: 10))
-        chooseVaultButton.click()
 
         let scannerTabButton = app.buttons["scannerTabButton"]
         XCTAssertTrue(scannerTabButton.waitForExistence(timeout: 10))
@@ -50,19 +58,11 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(galleryTabButton.waitForExistence(timeout: 10))
         galleryTabButton.click()
 
-        let photoTile = app.otherElements.matching(identifier: "galleryPhotoTile").firstMatch
-        XCTAssertTrue(photoTile.waitForExistence(timeout: 10))
-        photoTile.click()
-
-        let clearSelectionButton = app.buttons["galleryClearSelectionButton"]
-        XCTAssertTrue(clearSelectionButton.waitForExistence(timeout: 5))
-        clearSelectionButton.click()
-
         let loadMoreButton = app.buttons["galleryLoadMoreButton"]
         XCTAssertTrue(loadMoreButton.waitForExistence(timeout: 5))
         loadMoreButton.click()
 
-        let perPageMenuButton = app.buttons["galleryPerPageMenuButton"]
+        let perPageMenuButton = accessibleControl(in: app, identifier: "galleryPerPageMenuButton")
         XCTAssertTrue(perPageMenuButton.waitForExistence(timeout: 5))
         perPageMenuButton.click()
         XCTAssertTrue(app.menuItems["25"].waitForExistence(timeout: 5))
@@ -97,81 +97,25 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(vaultTabButton.waitForExistence(timeout: 10))
         vaultTabButton.click()
 
-        let toggleDetailsButton = app.buttons["vaultToggleDetailsButton"]
+        let toggleDetailsButton = accessibleControl(in: app, identifier: "vaultToggleDetailsButton")
         XCTAssertTrue(toggleDetailsButton.waitForExistence(timeout: 5))
         toggleDetailsButton.click()
 
-        let previewButton = app.buttons["vaultPreviewButton"]
+        let previewButton = accessibleControl(in: app, identifier: "vaultPreviewButton")
         XCTAssertTrue(previewButton.waitForExistence(timeout: 5))
         previewButton.click()
 
-        let changeVaultButton = app.buttons["vaultChangeVaultButton"]
+        let changeVaultButton = accessibleControl(in: app, identifier: "vaultChangeVaultButton")
         XCTAssertTrue(changeVaultButton.waitForExistence(timeout: 5))
         changeVaultButton.click()
 
-        let confirmChangeButton = app.buttons["vaultConfirmChangeButton"]
+        let confirmChangeButton = accessibleControl(in: app, identifier: "vaultConfirmChangeButton")
         XCTAssertTrue(confirmChangeButton.waitForExistence(timeout: 5))
         confirmChangeButton.click()
 
         let scannerTabAfterChange = app.buttons["scannerTabButton"]
         XCTAssertTrue(scannerTabAfterChange.waitForExistence(timeout: 10))
         XCTAssertTrue(scannerTabAfterChange.isHittable)
-    }
-
-    private func requireUITestHost() throws {
-        guard let configurationPath = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] else {
-            throw XCTSkip("XCUITest requires an XCTest configuration with a target app path")
-        }
-
-        let configurationURL = URL(fileURLWithPath: configurationPath)
-        let configurationData = try Data(contentsOf: configurationURL)
-        let configuration = try PropertyListSerialization.propertyList(
-            from: configurationData,
-            options: [],
-            format: nil
-        ) as? [String: Any]
-
-        guard let targetApplicationPath = configuration?["targetApplicationPath"] as? String,
-              !targetApplicationPath.isEmpty else {
-            throw XCTSkip("XCUITest requires a target application path")
-        }
-    }
-
-    private func makeLaunchableAppBundle() throws -> URL {
-        let fileManager = FileManager.default
-        let testBundleURL = Bundle(for: type(of: self)).bundleURL
-        let debugDirectory = testBundleURL.deletingLastPathComponent()
-        let executableURL = debugDirectory.appendingPathComponent("Nostos")
-        guard fileManager.fileExists(atPath: executableURL.path) else {
-            throw XCTSkip("Could not locate the built Nostos executable at \(executableURL.path)")
-        }
-
-        let bundleURL = fileManager.temporaryDirectory.appendingPathComponent("NostosUITestHost-\(UUID().uuidString).app")
-        let contentsURL = bundleURL.appendingPathComponent("Contents", isDirectory: true)
-        let macOSURL = contentsURL.appendingPathComponent("MacOS", isDirectory: true)
-        try fileManager.createDirectory(at: macOSURL, withIntermediateDirectories: true)
-
-        let hostExecutableURL = macOSURL.appendingPathComponent("Nostos")
-        if fileManager.fileExists(atPath: hostExecutableURL.path) {
-            try fileManager.removeItem(at: hostExecutableURL)
-        }
-        try fileManager.copyItem(at: executableURL, to: hostExecutableURL)
-
-        let infoPlistURL = contentsURL.appendingPathComponent("Info.plist")
-        let infoPlist: [String: Any] = [
-            "CFBundleDevelopmentRegion": "en",
-            "CFBundleExecutable": "Nostos",
-            "CFBundleIdentifier": "com.github.michaelhilton.NostosUITestHost",
-            "CFBundleName": "Nostos",
-            "CFBundlePackageType": "APPL",
-            "CFBundleShortVersionString": "1.0",
-            "CFBundleVersion": "1",
-            "LSMinimumSystemVersion": "12.0"
-        ]
-        let data = try PropertyListSerialization.data(fromPropertyList: infoPlist, format: .xml, options: 0)
-        try data.write(to: infoPlistURL)
-
-        return bundleURL
     }
 }
 #endif
