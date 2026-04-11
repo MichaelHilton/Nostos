@@ -37,8 +37,7 @@ struct ScannerView: View {
                 .buttonStyle(.borderedProminent)
 
                 if state.scanProgress.isScanning {
-                    ProgressView()
-                        .scaleEffect(0.7)
+                    SpinnerView()
                         .padding(.leading, 4)
                 }
             }
@@ -46,14 +45,11 @@ struct ScannerView: View {
             if state.scanProgress.isScanning || state.scanProgress.processed > 0 {
                 GroupBox("Progress") {
                     VStack(alignment: .leading, spacing: 8) {
-                        if state.scanProgress.total > 0 {
-                            ProgressView(
-                                value: Double(state.scanProgress.processed),
-                                total: Double(state.scanProgress.total)
-                            )
-                        } else {
-                            ProgressView()
-                        }
+                        ProgressView(
+                            value: Double(state.scanProgress.processed),
+                            total: max(1.0, Double(state.scanProgress.total))
+                        )
+                        .progressViewStyle(SafeLinearProgressStyle())
                         HStack(spacing: 24) {
                             stat("Files Found", state.scanProgress.total)
                             stat("Processed", state.scanProgress.processed)
@@ -67,7 +63,11 @@ struct ScannerView: View {
             // Recent scans table
             if !state.scanRuns.isEmpty {
                 GroupBox("Recent Scans") {
-                    recentScansTable
+                    if #available(macOS 13, *) {
+                        recentScansTable
+                    } else {
+                        LegacyRecentScansTable(scanRuns: state.scanRuns)
+                    }
                 }
             }
 
@@ -101,8 +101,18 @@ struct ScannerView: View {
         }
     }
 
+    @available(macOS 13, *)
     private var recentScansTable: some View {
-        Table(state.scanRuns) {
+        RecentScansTable(scanRuns: state.scanRuns)
+    }
+}
+
+@available(macOS 13, *)
+private struct RecentScansTable: View {
+    let scanRuns: [ScanRun]
+
+    var body: some View {
+        Table(scanRuns) {
             TableColumn("Path") { run in
                 Text(run.rootPath)
                     .lineLimit(1)
@@ -127,5 +137,84 @@ struct ScannerView: View {
             .width(160)
         }
         .frame(minHeight: 140)
+    }
+
+    private func statusColor(_ status: ScanStatus) -> Color {
+        switch status {
+        case .running:   return .orange
+        case .completed: return .green
+        case .failed:    return .red
+        }
+    }
+}
+
+/// Pure-SwiftUI spinner — avoids NSProgressIndicator which crashes with
+/// EXC_BAD_INSTRUCTION in validateDimension on macOS 12.
+private struct SpinnerView: View {
+    @State private var angle: Double = 0
+
+    var body: some View {
+        Circle()
+            .trim(from: 0.1, to: 0.9)
+            .stroke(Color.accentColor, lineWidth: 2)
+            .frame(width: 14, height: 14)
+            .rotationEffect(.degrees(angle))
+            .onAppear {
+                withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+                    angle = 360
+                }
+            }
+    }
+}
+
+/// Pure-SwiftUI linear progress bar — avoids NSProgressIndicator which
+/// crashes with EXC_BAD_INSTRUCTION in validateDimension on macOS 12.
+private struct SafeLinearProgressStyle: ProgressViewStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.secondary.opacity(0.25))
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.accentColor)
+                    .frame(width: geo.size.width * CGFloat(configuration.fractionCompleted ?? 0))
+            }
+        }
+        .frame(height: 6)
+    }
+}
+
+private struct LegacyRecentScansTable: View {
+    let scanRuns: [ScanRun]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(scanRuns) { run in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(run.rootPath)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    HStack(spacing: 12) {
+                        Text(run.status.rawValue.capitalized)
+                            .foregroundColor(statusColor(run.status))
+                        Text("Photos: \(run.photosFound)")
+                        Text("Duplicates: \(run.duplicatesFound)")
+                        Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
+                    }
+                    .font(.caption)
+                    Divider()
+                }
+            }
+        }
+        .frame(minHeight: 140)
+    }
+
+    private func statusColor(_ status: ScanStatus) -> Color {
+        switch status {
+        case .running:   return .orange
+        case .completed: return .green
+        case .failed:    return .red
+        }
     }
 }

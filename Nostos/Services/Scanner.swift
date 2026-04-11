@@ -61,7 +61,8 @@ final class Scanner {
 
         await withTaskGroup(of: Void.self) { group in
             var active = 0
-            var queued = 0
+            var lastProgressDate = Date.distantPast
+            let progressThrottle = 0.15 // seconds between UI updates
             for case let url as URL in enumerator {
                 guard (try? url.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true else { continue }
                 guard supportedExtensions.contains(url.pathExtension.lowercased()) else { continue }
@@ -75,11 +76,12 @@ final class Scanner {
                     await self.processPhoto(url: url, scanRunId: runId, knownPaths: knownPaths, counter: counter)
                 }
                 active += 1
-                queued += 1
 
-                if queued % 50 == 0 {
+                let now = Date()
+                if now.timeIntervalSince(lastProgressDate) >= progressThrottle {
+                    lastProgressDate = now
                     let snap = await counter.snapshot()
-                    await onProgress(ScanProgress(total: total, processed: snap.processed, isScanning: true))
+                    await onProgress(ScanProgress(total: total, processed: min(snap.processed, total), isScanning: true))
                 }
             }
             await group.waitForAll()
