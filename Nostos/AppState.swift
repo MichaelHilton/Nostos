@@ -121,6 +121,11 @@ final class AppState: ObservableObject {
     func loadOrganizeJobs() async {
         do {
             organizeJobs = try db.fetchAllOrganizeJobs()
+            if let latestJobId = organizeJobs.first?.id {
+                lastOrganizeResults = (try? db.fetchOrganizeResults(jobId: latestJobId)) ?? []
+            } else {
+                lastOrganizeResults = []
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

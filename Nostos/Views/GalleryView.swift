@@ -180,9 +180,9 @@ struct GalleryView: View {
                 Button("All") { var f = state.photoFilter; f.limit = Int.max; f.offset = 0; state.applyFilter(f) }
             } label: {
                 Label("Per Page", systemImage: "ellipsis.circle")
+                    .accessibilityIdentifier("galleryPerPageMenuButton")
             }
             .menuStyle(.borderlessButton)
-            .accessibilityIdentifier("galleryPerPageMenuButton")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

@@ -13,20 +13,39 @@ struct ContentView: View {
         Group {
             if #available(macOS 13, *) {
                 NavigationSplitView {
-                    List(selection: $selectedTab) {
-                        Label("Scanner", systemImage: "magnifyingglass")
-                            .accessibilityIdentifier("scannerTabButton")
-                            .tag(Tab.scanner)
-                        Label("Gallery", systemImage: "photo.on.rectangle.angled")
-                            .accessibilityIdentifier("galleryTabButton")
-                            .tag(Tab.gallery)
-                        Label("Duplicates", systemImage: "doc.on.doc")
-                            .accessibilityIdentifier("duplicatesTabButton")
-                            .tag(Tab.duplicates)
-                        Label("Vault", systemImage: "archivebox")
-                            .accessibilityIdentifier("vaultTabButton")
-                            .tag(Tab.vault)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button(action: { selectedTab = .scanner }) {
+                            Label("Scanner", systemImage: "magnifyingglass")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("scannerTabButton")
+
+                        Button(action: { selectedTab = .gallery }) {
+                            Label("Gallery", systemImage: "photo.on.rectangle.angled")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("galleryTabButton")
+
+                        Button(action: { selectedTab = .duplicates }) {
+                            Label("Duplicates", systemImage: "doc.on.doc")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("duplicatesTabButton")
+
+                        Button(action: { selectedTab = .vault }) {
+                            Label("Vault", systemImage: "archivebox")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("vaultTabButton")
+
+                        Spacer()
                     }
+                    .padding(16)
+                    .frame(minWidth: 180, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .navigationTitle("")
                     .toolbar {
                         ToolbarItem(placement: .principal) {

@@ -1,0 +1,505 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+	800000000000000000000001 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000001 /* AppState.swift */; };
+	800000000000000000000002 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* AppDatabase.swift */; };
+	800000000000000000000003 /* DuplicateGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* DuplicateGroup.swift */; };
+	800000000000000000000004 /* OrganizeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000004 /* OrganizeJob.swift */; };
+	800000000000000000000005 /* Photo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000005 /* Photo.swift */; };
+	800000000000000000000006 /* ScanRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* ScanRun.swift */; };
+	800000000000000000000007 /* NostosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* NostosApp.swift */; };
+	800000000000000000000008 /* DuplicateDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000008 /* DuplicateDetector.swift */; };
+	800000000000000000000009 /* EXIFReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000009 /* EXIFReader.swift */; };
+	80000000000000000000000A /* Organizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000A /* Organizer.swift */; };
+	80000000000000000000000B /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000B /* Scanner.swift */; };
+	80000000000000000000000C /* ThumbnailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000C /* ThumbnailService.swift */; };
+	80000000000000000000000D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000D /* ContentView.swift */; };
+	80000000000000000000000E /* DuplicatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000E /* DuplicatesView.swift */; };
+	80000000000000000000000F /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000F /* EmptyStateView.swift */; };
+	800000000000000000000010 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* GalleryView.swift */; };
+	800000000000000000000011 /* OrganizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* OrganizerView.swift */; };
+	800000000000000000000012 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* ScannerView.swift */; };
+	800000000000000000000013 /* NostosUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* NostosUITests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+	100000000000000000000002 /* PBXContainerItemProxy */ = {
+		isa = PBXContainerItemProxy;
+		containerPortal = 100000000000000000000001 /* Project object */;
+		proxyType = 1;
+		remoteGlobalIDString = 500000000000000000000001 /* Nostos */;
+		remoteInfo = Nostos;
+	};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+	200000000000000000000001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/AppState.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000002 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Database/AppDatabase.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000003 /* DuplicateGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Models/DuplicateGroup.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000004 /* OrganizeJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Models/OrganizeJob.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000005 /* Photo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Models/Photo.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000006 /* ScanRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Models/ScanRun.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000007 /* NostosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/NostosApp.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000008 /* DuplicateDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/DuplicateDetector.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000009 /* EXIFReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/EXIFReader.swift; sourceTree = SOURCE_ROOT; };
+	20000000000000000000000A /* Organizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/Organizer.swift; sourceTree = SOURCE_ROOT; };
+	20000000000000000000000B /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/Scanner.swift; sourceTree = SOURCE_ROOT; };
+	20000000000000000000000C /* ThumbnailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/ThumbnailService.swift; sourceTree = SOURCE_ROOT; };
+	20000000000000000000000D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/ContentView.swift; sourceTree = SOURCE_ROOT; };
+	20000000000000000000000E /* DuplicatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/DuplicatesView.swift; sourceTree = SOURCE_ROOT; };
+	20000000000000000000000F /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/EmptyStateView.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000010 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/GalleryView.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000011 /* OrganizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/OrganizerView.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000012 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/ScannerView.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000013 /* NostosUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/NostosUITests/NostosUITests.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000020 /* Nostos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nostos.app; sourceTree = BUILT_PRODUCTS_DIR; };
+	200000000000000000000021 /* NostosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NostosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+	400000000000000000000001 /* Frameworks */ = {
+		isa = PBXFrameworksBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+	400000000000000000000002 /* Frameworks */ = {
+		isa = PBXFrameworksBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+	300000000000000000000001 = {
+		isa = PBXGroup;
+		children = (
+			300000000000000000000002 /* Nostos */,
+			300000000000000000000007 /* Tests */,
+			300000000000000000000009 /* Products */,
+		);
+		sourceTree = "<group>";
+	};
+	300000000000000000000002 /* Nostos */ = {
+		isa = PBXGroup;
+		children = (
+			200000000000000000000001 /* AppState.swift */,
+			300000000000000000000003 /* Database */,
+			300000000000000000000004 /* Models */,
+			200000000000000000000007 /* NostosApp.swift */,
+			300000000000000000000005 /* Services */,
+			300000000000000000000006 /* Views */,
+		);
+		path = Nostos;
+		sourceTree = "<group>";
+	};
+	300000000000000000000003 /* Database */ = {
+		isa = PBXGroup;
+		children = (
+			200000000000000000000002 /* AppDatabase.swift */,
+		);
+		path = Database;
+		sourceTree = "<group>";
+	};
+	300000000000000000000004 /* Models */ = {
+		isa = PBXGroup;
+		children = (
+			200000000000000000000003 /* DuplicateGroup.swift */,
+			200000000000000000000004 /* OrganizeJob.swift */,
+			200000000000000000000005 /* Photo.swift */,
+			200000000000000000000006 /* ScanRun.swift */,
+		);
+		path = Models;
+		sourceTree = "<group>";
+	};
+	300000000000000000000005 /* Services */ = {
+		isa = PBXGroup;
+		children = (
+			200000000000000000000008 /* DuplicateDetector.swift */,
+			200000000000000000000009 /* EXIFReader.swift */,
+			20000000000000000000000A /* Organizer.swift */,
+			20000000000000000000000B /* Scanner.swift */,
+			20000000000000000000000C /* ThumbnailService.swift */,
+		);
+		path = Services;
+		sourceTree = "<group>";
+	};
+	300000000000000000000006 /* Views */ = {
+		isa = PBXGroup;
+		children = (
+			20000000000000000000000D /* ContentView.swift */,
+			20000000000000000000000E /* DuplicatesView.swift */,
+			20000000000000000000000F /* EmptyStateView.swift */,
+			200000000000000000000010 /* GalleryView.swift */,
+			200000000000000000000011 /* OrganizerView.swift */,
+			200000000000000000000012 /* ScannerView.swift */,
+		);
+		path = Views;
+		sourceTree = "<group>";
+	};
+	300000000000000000000007 /* Tests */ = {
+		isa = PBXGroup;
+		children = (
+			300000000000000000000008 /* NostosUITests */,
+		);
+		path = Tests;
+		sourceTree = "<group>";
+	};
+	300000000000000000000008 /* NostosUITests */ = {
+		isa = PBXGroup;
+		children = (
+			200000000000000000000013 /* NostosUITests.swift */,
+		);
+		path = NostosUITests;
+		sourceTree = "<group>";
+	};
+	300000000000000000000009 /* Products */ = {
+		isa = PBXGroup;
+		children = (
+			200000000000000000000020 /* Nostos.app */,
+			200000000000000000000021 /* NostosUITests.xctest */,
+		);
+		name = Products;
+		sourceTree = "<group>";
+	};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+	500000000000000000000001 /* Nostos */ = {
+		isa = PBXNativeTarget;
+		buildConfigurationList = 700000000000000000000001 /* Build configuration list for PBXNativeTarget "Nostos" */;
+		buildPhases = (
+			400000000000000000000003 /* Sources */,
+			400000000000000000000001 /* Frameworks */,
+			400000000000000000000005 /* Resources */,
+		);
+		buildRules = (
+		);
+		dependencies = (
+		);
+		packageProductDependencies = (
+			100000000000000000000004 /* GRDB */,
+		);
+		name = Nostos;
+		productName = Nostos;
+		productReference = 200000000000000000000020 /* Nostos.app */;
+		productType = "com.apple.product-type.application";
+	};
+	500000000000000000000002 /* NostosUITests */ = {
+		isa = PBXNativeTarget;
+		buildConfigurationList = 700000000000000000000002 /* Build configuration list for PBXNativeTarget "NostosUITests" */;
+		buildPhases = (
+			400000000000000000000004 /* Sources */,
+			400000000000000000000002 /* Frameworks */,
+			400000000000000000000006 /* Resources */,
+		);
+		buildRules = (
+		);
+		dependencies = (
+			100000000000000000000005 /* PBXTargetDependency */,
+		);
+		name = NostosUITests;
+		productName = NostosUITests;
+		productReference = 200000000000000000000021 /* NostosUITests.xctest */;
+		productType = "com.apple.product-type.bundle.ui-testing";
+	};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+	100000000000000000000001 /* Project object */ = {
+		isa = PBXProject;
+		attributes = {
+			LastUpgradeCheck = 1520;
+			TargetAttributes = {
+				500000000000000000000001 = {
+					CreatedOnToolsVersion = 15.2;
+				};
+				500000000000000000000002 = {
+					CreatedOnToolsVersion = 15.2;
+				};
+			};
+		};
+		buildConfigurationList = 700000000000000000000003 /* Build configuration list for PBXProject "Nostos" */;
+		compatibilityVersion = "Xcode 15.0";
+		developmentRegion = en;
+		hasScannedForEncodings = 0;
+		knownRegions = (
+			en,
+			Base,
+		);
+		mainGroup = 300000000000000000000001;
+		packageReferences = (
+			100000000000000000000003 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+		);
+		productRefGroup = 300000000000000000000009 /* Products */;
+		projectDirPath = "";
+		projectRoot = "";
+		targets = (
+			500000000000000000000001 /* Nostos */,
+			500000000000000000000002 /* NostosUITests */,
+		);
+	};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+	400000000000000000000005 /* Resources */ = {
+		isa = PBXResourcesBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+	400000000000000000000006 /* Resources */ = {
+		isa = PBXResourcesBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+	400000000000000000000003 /* Sources */ = {
+		isa = PBXSourcesBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+			800000000000000000000001 /* AppState.swift in Sources */,
+			800000000000000000000002 /* AppDatabase.swift in Sources */,
+			800000000000000000000003 /* DuplicateGroup.swift in Sources */,
+			800000000000000000000004 /* OrganizeJob.swift in Sources */,
+			800000000000000000000005 /* Photo.swift in Sources */,
+			800000000000000000000006 /* ScanRun.swift in Sources */,
+			800000000000000000000007 /* NostosApp.swift in Sources */,
+			800000000000000000000008 /* DuplicateDetector.swift in Sources */,
+			800000000000000000000009 /* EXIFReader.swift in Sources */,
+			80000000000000000000000A /* Organizer.swift in Sources */,
+			80000000000000000000000B /* Scanner.swift in Sources */,
+			80000000000000000000000C /* ThumbnailService.swift in Sources */,
+			80000000000000000000000D /* ContentView.swift in Sources */,
+			80000000000000000000000E /* DuplicatesView.swift in Sources */,
+			80000000000000000000000F /* EmptyStateView.swift in Sources */,
+			800000000000000000000010 /* GalleryView.swift in Sources */,
+			800000000000000000000011 /* OrganizerView.swift in Sources */,
+			800000000000000000000012 /* ScannerView.swift in Sources */,
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+	400000000000000000000004 /* Sources */ = {
+		isa = PBXSourcesBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+			800000000000000000000013 /* NostosUITests.swift in Sources */,
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+	100000000000000000000005 /* PBXTargetDependency */ = {
+		isa = PBXTargetDependency;
+		target = 500000000000000000000001 /* Nostos */;
+		targetProxy = 100000000000000000000002 /* PBXContainerItemProxy */;
+	};
+/* End PBXTargetDependency section */
+
+/* Begin PBXProject build configuration section */
+	600000000000000000000005 /* Debug */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ARCHS = x86_64;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.Nostos;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Debug;
+	};
+	600000000000000000000006 /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ARCHS = x86_64;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.Nostos;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Release;
+	};
+	600000000000000000000001 /* Debug */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ARCHS = x86_64;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.Nostos;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Debug;
+	};
+	600000000000000000000002 /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ARCHS = x86_64;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.Nostos;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Release;
+	};
+	600000000000000000000003 /* Debug */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ARCHS = x86_64;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.NostosUITests;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			TEST_TARGET_NAME = Nostos;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Debug;
+	};
+	600000000000000000000004 /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ARCHS = x86_64;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.NostosUITests;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			TEST_TARGET_NAME = Nostos;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Release;
+	};
+/* End PBXProject build configuration section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+	100000000000000000000003 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+		isa = XCRemoteSwiftPackageReference;
+		repositoryURL = "https://github.com/groue/GRDB.swift.git";
+		requirement = {
+			kind = upToNextMajorVersion;
+			minimumVersion = 6.0.0;
+		};
+	};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+	100000000000000000000004 /* GRDB */ = {
+		isa = XCSwiftPackageProductDependency;
+		package = 100000000000000000000003 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+		productName = GRDB;
+	};
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin XCBuildConfiguration section */
+	600000000000000000000007 /* Debug */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			CODE_SIGN_STYLE = Automatic;
+			ARCHS = x86_64;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			ENABLE_TESTABILITY = YES;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.Nostos;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			SWIFT_VERSION = 5.0;
+		};
+		name = Debug;
+	};
+	600000000000000000000008 /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			CODE_SIGN_STYLE = Automatic;
+			ARCHS = x86_64;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.Nostos;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SWIFT_VERSION = 5.0;
+		};
+		name = Release;
+	};
+	600000000000000000000009 /* Debug */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			CODE_SIGN_STYLE = Automatic;
+			ARCHS = x86_64;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.NostosUITests;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SWIFT_VERSION = 5.0;
+		};
+		name = Debug;
+	};
+	60000000000000000000000A /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			CODE_SIGN_STYLE = Automatic;
+			ARCHS = x86_64;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 12.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.github.michaelhilton.NostosUITests;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SWIFT_VERSION = 5.0;
+		};
+		name = Release;
+	};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+	700000000000000000000001 /* Build configuration list for PBXNativeTarget "Nostos" */ = {
+		isa = XCConfigurationList;
+		buildConfigurations = (
+			600000000000000000000007 /* Debug */,
+			600000000000000000000008 /* Release */,
+		);
+		defaultConfigurationIsVisible = 0;
+		defaultConfigurationName = Release;
+	};
+	700000000000000000000002 /* Build configuration list for PBXNativeTarget "NostosUITests" */ = {
+		isa = XCConfigurationList;
+		buildConfigurations = (
+			600000000000000000000009 /* Debug */,
+			60000000000000000000000A /* Release */,
+		);
+		defaultConfigurationIsVisible = 0;
+		defaultConfigurationName = Release;
+	};
+	700000000000000000000003 /* Build configuration list for PBXProject "Nostos" */ = {
+		isa = XCConfigurationList;
+		buildConfigurations = (
+			600000000000000000000005 /* Debug */,
+			600000000000000000000006 /* Release */,
+		);
+		defaultConfigurationIsVisible = 0;
+		defaultConfigurationName = Release;
+	};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = 100000000000000000000001 /* Project object */;
+}
