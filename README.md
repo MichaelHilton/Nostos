@@ -1,137 +1,106 @@
 # Nostos
 
-A self-hosted photo management tool that scans, deduplicates, and organises your photo library.
+A native macOS app for scanning, deduplicating, and organising your photo library. Built with SwiftUI and backed by a local SQLite database — no server, no cloud, no subscriptions.
 
 ## Features
 
-- **Scan** — Recursively walks any directory and indexes photos (JPEG, PNG, HEIC, TIFF and 12 RAW formats).
-- **Metadata extraction** — Reads EXIF data (date taken, camera make/model, GPS) via a native Go parser with an `exiftool` fallback for RAW files.
-- **Duplicate detection** — Groups identical photos by SHA-256 hash and near-duplicates by EXIF timestamp + camera model.
-- **Thumbnail generation** — Creates 300 × 300 cached thumbnails; uses embedded JPEG previews for RAW files.
-- **Gallery** — Browse photos with filters for status, camera model, date range, and duplicates.
-- **Organizer** — Copies photos into a date-based folder structure (`YYYY/MM/DD` or custom). Supports dry-run mode.
-- **Dark-mode UI** — Svelte single-page app with a sidebar for Scanner, Gallery, Duplicates, and Organizer views.
+- **Scan** — Recursively walks any directory and indexes photos (JPEG, PNG, HEIC, HEIF, TIFF, and 9 RAW formats including CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, PEF).
+- **EXIF extraction** — Reads date taken, camera make/model, GPS coordinates, and image dimensions via `ImageIO` / `CoreGraphics` — no third-party tools required.
+- **Duplicate detection** — Groups exact duplicates by SHA-256 hash and near-duplicates by EXIF timestamp + camera model. Marks one photo as "kept" per group automatically.
+- **Thumbnail generation** — Creates 300 × 300 cached JPEG thumbnails per photo, stored inside the vault alongside the database.
+- **Gallery** — Browse all indexed photos with filters for status, camera model, year, and duplicate groups.
+- **Vault / Organizer** — Copies photos into a configurable date-based folder structure. Supports dry-run mode and detects rename conflicts.
+- **Vault workflow** — The app stores its database and thumbnails in a hidden `.nostos/` folder inside whichever directory you choose as your vault root.
 
-## Architecture
+## Requirements
+
+| Tool        | Version  |
+| ----------- | -------- |
+| macOS       | 12+      |
+| Xcode       | 14+      |
+| Swift       | 5.7+     |
+
+No external tools or dependencies are required at runtime. EXIF reading uses Apple's `ImageIO` framework and thumbnail generation uses `CoreGraphics`.
+
+## Getting started
+
+1. Clone the repo and open `Nostos.xcodeproj` (or `Package.swift`) in Xcode.
+2. Build and run the `Nostos` scheme (`⌘R`).
+3. On first launch you will be prompted to choose a **vault root** — the folder that contains (or will contain) your photo library. The app creates a hidden `.nostos/` directory there to store its database and thumbnail cache.
+4. Use the **Scanner** tab to index photos, then explore them in **Gallery**, resolve duplicates in **Duplicates**, and copy/organise them via the **Vault** tab.
+
+## Project structure
 
 ```
-PhotoSorter
-├── backend/          Go 1.23 HTTP API + SQLite database
-│   ├── cmd/server/   Entry-point (CLI flags)
-│   └── internal/
-│       ├── api/      REST handlers & router
-│       ├── db/       SQLite schema, models, CRUD
-│       ├── scanner/  Concurrent directory walker
-│       ├── duplicates/ Hash + EXIF dedup engine
-│       ├── organizer/  Date-folder copy jobs
-│       ├── exif/     Metadata reader
-│       └── thumbnails/ Thumbnail generator
-└── frontend/         Svelte + Vite SPA
-    └── src/
-        ├── routes/   Scanner, Gallery, Duplicates, Organizer
-        └── lib/      api.js, PhotoCard, PhotoGrid
+Nostos/
+├── NostosApp.swift          Entry point (@main); handles vault-root selection
+├── AppState.swift           @MainActor observable store — owns all published state
+├── Database/
+│   └── AppDatabase.swift    GRDB DatabasePool wrapper + WAL-mode migrations
+├── Models/
+│   ├── Photo.swift          Photo record + PhotoFilter + PhotoStatus
+│   ├── DuplicateGroup.swift DuplicateGroup + DuplicateGroupWithPhotos
+│   ├── OrganizeJob.swift    OrganizeJob + OrganizeResult + OrganizeAction
+│   └── ScanRun.swift        ScanRun record + ScanProgress
+├── Services/
+│   ├── Scanner.swift        Concurrent directory walker (CryptoKit SHA-256)
+│   ├── EXIFReader.swift     ImageIO/CoreGraphics metadata extraction
+│   ├── DuplicateDetector.swift  Hash-based + EXIF-based duplicate grouping
+│   ├── Organizer.swift      Date-folder copy engine with conflict handling
+│   └── ThumbnailService.swift   300×300 JPEG thumbnail generator + disk cache
+└── Views/
+    ├── ContentView.swift    NavigationSplitView sidebar + tab routing
+    ├── ScannerView.swift    Scan progress UI
+    ├── GalleryView.swift    Photo grid with filters
+    ├── DuplicatesView.swift Duplicate group resolution UI
+    └── OrganizerView.swift  (VaultView) Copy-job configuration + results
+Tests/
+├── NostosTests/             Unit + integration tests (Swift Testing / XCTest)
+└── NostosUITests/           UI tests (XCUITest)
 ```
 
-## Prerequisites
+## Dependencies
 
-| Tool     | Version                              |
-| -------- | ------------------------------------ |
-| Go       | 1.23+                                |
-| Node.js  | 20+                                  |
-| exiftool | any (optional, improves RAW support) |
+| Package       | Source                              | Used for                       |
+| ------------- | ----------------------------------- | ------------------------------ |
+| GRDB.swift 6  | github.com/groue/GRDB.swift         | SQLite ORM + migrations        |
+| ViewInspector | github.com/nalexn/ViewInspector     | SwiftUI view testing           |
 
-Install `exiftool` on macOS: `brew install exiftool`  
-Install `exiftool` on Debian/Ubuntu: `sudo apt install libimage-exiftool-perl`
+## Data storage
 
-## Running locally
+All app data lives inside the vault root you choose:
 
-### Backend
-
-```bash
-cd backend
-go run ./cmd/server             # listens on :8080 by default
-# Options:
-#   --port   8080
-#   --db     ~/.photosorter/photosorter.db
-#   --thumbs ~/.photosorter/thumbnails
+```
+<vault root>/
+└── .nostos/
+    ├── nostos.db        SQLite database (WAL mode)
+    └── thumbnails/
+        └── <id>.jpg     300×300 JPEG per photo
 ```
 
-### Frontend (dev)
-
-```bash
-cd frontend
-npm install
-npm run dev                     # Vite dev server on :5173, proxies /api → :8080
-```
-
-Open http://localhost:5173 in your browser.
-
-### Frontend (production build)
-
-```bash
-cd frontend
-npm run build                   # output in frontend/dist/
-```
-
-Serve `dist/` with any static file server or embed it behind the Go binary.
-
-## API Reference
-
-| Method | Path                           | Description                                                                                                  |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `POST` | `/api/scan`                    | Start a directory scan (`{"root_path": "..."}`)                                                              |
-| `GET`  | `/api/scan`                    | List all scan runs                                                                                           |
-| `GET`  | `/api/scan/{id}`               | Get scan run status                                                                                          |
-| `GET`  | `/api/photos`                  | List photos (filters: `status`, `camera_model`, `date_from`, `date_to`, `has_duplicates`, `limit`, `offset`) |
-| `GET`  | `/api/photos/{id}`             | Get single photo                                                                                             |
-| `GET`  | `/api/thumbnails/{id}`         | Serve thumbnail JPEG                                                                                         |
-| `GET`  | `/api/duplicates`              | List duplicate groups                                                                                        |
-| `POST` | `/api/duplicates/{id}/resolve` | Mark a photo as kept (`{"kept_photo_id": N}`)                                                                |
-| `POST` | `/api/organize`                | Start organize job (`destination_root`, `folder_format`, `dry_run`, `source_photo_ids`)                      |
-| `GET`  | `/api/organize/{id}`           | Get organize job status + results                                                                            |
-
-## Docker
-
-### Build & run with Docker Compose
-
-```bash
-# Mount your photo library at ./photos (read-only)
-PHOTO_LIBRARY=/path/to/your/photos docker compose up --build
-```
-
-The app is available at http://localhost:8080.
-
-Data (database + thumbnails) is persisted in a Docker volume (`photosorter_data`).
-
-### Build the image manually
-
-```bash
-docker build -t photosorter .
-docker run -p 8080:8080 \
-  -v photosorter_data:/data \
-  -v /path/to/photos:/photos:ro \
-  photosorter
-```
+If no vault root is configured (e.g. during unit tests), the database falls back to `~/Library/Application Support/Nostos/`.
 
 ## Running tests
 
+### In Xcode
+
+Press `⌘U` or use **Product → Test**.
+
+### From the command line
+
 ```bash
-cd backend
-go test ./...
+swift test
 ```
 
-All 7 packages have test coverage: `db`, `duplicates`, `organizer`, `scanner`, `api`, `exif`, `thumbnails`.
+### With HTML coverage report
 
-## Configuration
+```bash
+./Nostos/scripts/test-with-coverage.sh
+# Opens coverage/index.html
+```
 
-All configuration is via CLI flags (backend):
-
-| Flag       | Default                         | Description               |
-| ---------- | ------------------------------- | ------------------------- |
-| `--port`   | `8080`                          | HTTP listen port          |
-| `--db`     | `~/.photosorter/photosorter.db` | SQLite database path      |
-| `--thumbs` | `~/.photosorter/thumbnails`     | Thumbnail cache directory |
+The script runs `swift test --enable-code-coverage`, uses `llvm-cov` to produce an LCOV report, and renders it as HTML via `genhtml`.
 
 ## Supported file formats
 
-JPEG, PNG, HEIC, TIFF — Canon CR2/CR3 — Nikon NEF — Sony ARW — Adobe DNG — Fujifilm RAF — Olympus ORF — Panasonic RW2 — Pentax PEF
+JPEG · PNG · HEIC · HEIF · TIFF — Canon CR2/CR3 — Nikon NEF — Sony ARW — Adobe DNG — Fujifilm RAF — Olympus ORF — Panasonic RW2 — Pentax PEF
