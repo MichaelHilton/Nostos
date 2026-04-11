@@ -4,6 +4,12 @@ import SwiftUI
 struct NostosApp: App {
     @AppStorage("vaultRootPath") private var vaultRootPath: String = ""
 
+    init() {
+        if ProcessInfo.processInfo.environment["UI_TESTING_FORCE_SETUP"] == "1" {
+            UserDefaults.standard.removeObject(forKey: "vaultRootPath")
+        }
+    }
+
     private var launchVaultRootPath: String? {
         ProcessInfo.processInfo.environment["UI_TESTING_VAULT_ROOT"]
     }
@@ -29,7 +35,7 @@ struct NostosApp: App {
     }
 
     private var vaultRootURL: URL? {
-        if ProcessInfo.processInfo.environment["UI_TESTING_FORCE_SETUP"] == "1" {
+        if ProcessInfo.processInfo.environment["UI_TESTING_FORCE_SETUP"] == "1", vaultRootPath.isEmpty {
             return nil
         }
 

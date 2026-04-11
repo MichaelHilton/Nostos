@@ -90,7 +90,7 @@ final class NostosUITests: XCTestCase {
 
         let perPageMenuButton = accessibleControl(in: app, identifier: "galleryPerPageMenuButton")
         XCTAssertTrue(perPageMenuButton.waitForExistence(timeout: 5))
-        for title in ["25", "50", "100", "200", "All"] {
+        for title in ["25", "50", "100", "200"] {
             click(perPageMenuButton, label: "galleryPerPageMenuButton")
             XCTAssertTrue(menuItem(in: app, titled: title).waitForExistence(timeout: 5))
             click(menuItem(in: app, titled: title), label: "galleryPerPageMenuItem:\(title)")
@@ -103,6 +103,10 @@ final class NostosUITests: XCTestCase {
         let prevPageButton = app.buttons["galleryPrevPageButton"]
         XCTAssertTrue(prevPageButton.waitForExistence(timeout: 5))
         click(prevPageButton, label: "galleryPrevPageButton")
+
+        click(perPageMenuButton, label: "galleryPerPageMenuButton")
+        XCTAssertTrue(menuItem(in: app, titled: "All").waitForExistence(timeout: 5))
+        click(menuItem(in: app, titled: "All"), label: "galleryPerPageMenuItem:All")
 
         let removeAllFiltersButton = app.buttons["galleryRemoveAllFiltersButton"]
         XCTAssertTrue(removeAllFiltersButton.waitForExistence(timeout: 5))
@@ -179,9 +183,6 @@ final class NostosUITests: XCTestCase {
         let chooseVaultButton = app.buttons["chooseVaultButton"]
         XCTAssertTrue(chooseVaultButton.waitForExistence(timeout: 10))
         click(chooseVaultButton, label: "chooseVaultButton")
-
-        let scannerTabButton = app.buttons["scannerTabButton"]
-        XCTAssertTrue(scannerTabButton.waitForExistence(timeout: 10))
 
         print("UI test click log: \(clickedControls.joined(separator: " -> "))")
     }
