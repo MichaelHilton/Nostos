@@ -9,17 +9,26 @@ final class AppDatabase {
         try migrator.migrate(dbWriter)
     }
 
-    static func makeShared() throws -> AppDatabase {
+    static func makeShared(vaultRootURL: URL? = nil) throws -> AppDatabase {
         let fm = FileManager.default
-        let appSupport = try fm.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        )
-        let dir = appSupport.appendingPathComponent("Nostos", isDirectory: true)
-        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        let dbURL = dir.appendingPathComponent("nostos.db")
+        let dbURL: URL
+
+        if let vaultRootURL {
+            let storageDir = vaultRootURL.appendingPathComponent(".nostos", isDirectory: true)
+            try fm.createDirectory(at: storageDir, withIntermediateDirectories: true)
+            dbURL = storageDir.appendingPathComponent("nostos.db")
+        } else {
+            let appSupport = try fm.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+            let dir = appSupport.appendingPathComponent("Nostos", isDirectory: true)
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            dbURL = dir.appendingPathComponent("nostos.db")
+        }
+
         var config = Configuration()
         config.prepareDatabase { db in
             try db.execute(sql: "PRAGMA journal_mode = WAL")

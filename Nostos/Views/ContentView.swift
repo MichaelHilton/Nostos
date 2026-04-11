@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum Tab {
-    case scanner, gallery, duplicates, organizer
+    case scanner, gallery, duplicates, vault
 }
 
 struct ContentView: View {
@@ -19,8 +19,8 @@ struct ContentView: View {
                             .tag(Tab.gallery)
                         Label("Duplicates", systemImage: "doc.on.doc")
                             .tag(Tab.duplicates)
-                        Label("Organizer", systemImage: "folder.badge.gearshape")
-                            .tag(Tab.organizer)
+                        Label("Vault", systemImage: "archivebox")
+                            .tag(Tab.vault)
                     }
                     .navigationTitle("Nostos")
                 } detail: {
@@ -28,7 +28,7 @@ struct ContentView: View {
                     case .scanner:    ScannerView()
                     case .gallery:    GalleryView()
                     case .duplicates: DuplicatesView()
-                    case .organizer:  OrganizerView()
+                    case .vault:      VaultView()
                     }
                 }
             } else {
@@ -37,7 +37,7 @@ struct ContentView: View {
                         Button(action: { selectedTab = .scanner }) { Label("Scanner", systemImage: "magnifyingglass") }
                         Button(action: { selectedTab = .gallery }) { Label("Gallery", systemImage: "photo.on.rectangle.angled") }
                         Button(action: { selectedTab = .duplicates }) { Label("Duplicates", systemImage: "doc.on.doc") }
-                        Button(action: { selectedTab = .organizer }) { Label("Organizer", systemImage: "folder.badge.gearshape") }
+                        Button(action: { selectedTab = .vault }) { Label("Vault", systemImage: "archivebox") }
                     }
                     .listStyle(SidebarListStyle())
                     .frame(minWidth: 160)
@@ -46,7 +46,7 @@ struct ContentView: View {
                     case .scanner:    ScannerView()
                     case .gallery:    GalleryView()
                     case .duplicates: DuplicatesView()
-                    case .organizer:  OrganizerView()
+                    case .vault:      VaultView()
                     }
                 }
                 .navigationTitle("Nostos")

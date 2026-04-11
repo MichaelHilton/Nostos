@@ -4,6 +4,7 @@ import AppKit
 @MainActor
 final class AppState: ObservableObject {
     let db: AppDatabase
+    let vaultRootURL: URL?
 
     // MARK: - Scan state
     @Published var scanRuns: [ScanRun] = []
@@ -18,7 +19,7 @@ final class AppState: ObservableObject {
     // MARK: - Duplicates state
     @Published var duplicateGroups: [DuplicateGroupWithPhotos] = []
 
-    // MARK: - Organizer state
+    // MARK: - Vault state
     @Published var organizeJobs: [OrganizeJob] = []
     @Published var organizeProgress = OrganizeProgress()
     @Published var lastOrganizeResults: [OrganizeResult] = []
@@ -27,16 +28,31 @@ final class AppState: ObservableObject {
     @Published var errorMessage: String?
 
     init() {
+        let defaultVaultRoot = AppState.defaultVaultRootURL()
+        self.vaultRootURL = defaultVaultRoot
         do {
-            db = try AppDatabase.makeShared()
+            db = try AppDatabase.makeShared(vaultRootURL: defaultVaultRoot)
         } catch {
             fatalError("Failed to open database: \(error)")
         }
+        ThumbnailService.configure(vaultRootURL: defaultVaultRoot)
+        Task { await loadInitialData() }
+    }
+
+    init(vaultRootURL: URL) {
+        self.vaultRootURL = vaultRootURL
+        do {
+            db = try AppDatabase.makeShared(vaultRootURL: vaultRootURL)
+        } catch {
+            fatalError("Failed to open database: \(error)")
+        }
+        ThumbnailService.configure(vaultRootURL: vaultRootURL)
         Task { await loadInitialData() }
     }
 
     init(db: AppDatabase) {
         self.db = db
+        self.vaultRootURL = nil
     }
 
     // MARK: - Data loading
@@ -144,7 +160,15 @@ final class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Organizer
+    // MARK: - Vault
+
+    func startVault(folderFormat: String, dryRun: Bool) {
+        guard let vaultRootURL else {
+            errorMessage = "Select a vault before organizing files."
+            return
+        }
+        startOrganize(destination: vaultRootURL, folderFormat: folderFormat, dryRun: dryRun)
+    }
 
     func startOrganize(destination: URL, folderFormat: String, dryRun: Bool) {
         guard !organizeProgress.isRunning else { return }
@@ -189,13 +213,24 @@ final class AppState: ObservableObject {
         return panel.url
     }
 
-    func pickDestinationDirectory() -> URL? {
+    static func defaultVaultRootURL() -> URL {
+        let fm = FileManager.default
+        let appSupport = try! fm.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        return appSupport.appendingPathComponent("Nostos", isDirectory: true)
+    }
+
+    func pickVaultDirectory() -> URL? {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        panel.message = "Choose a destination folder"
+        panel.message = "Choose a vault folder"
         panel.prompt = "Select"
         guard panel.runModal() == .OK else { return nil }
         return panel.url

@@ -1,29 +1,23 @@
 import SwiftUI
 
-struct OrganizerView: View {
+struct VaultView: View {
     @EnvironmentObject var state: AppState
-    @State private var destinationPath = ""
     @State private var folderFormat = "YYYY/MM/DD"
     @State private var dryRun = true
     @State private var showResults = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Organizer")
+            Text("Vault")
                 .font(.largeTitle).bold()
 
-            GroupBox("Destination Folder") {
+            GroupBox("Vault Location") {
                 HStack {
-                    Text(destinationPath.isEmpty ? "No folder selected" : destinationPath)
-                        .foregroundColor(destinationPath.isEmpty ? .secondary : .primary)
+                    Text(state.vaultRootURL?.path ?? "No vault selected")
+                        .foregroundColor(state.vaultRootURL == nil ? .secondary : .primary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Button("Choose…") {
-                        if let url = state.pickDestinationDirectory() {
-                            destinationPath = url.path
-                        }
-                    }
                 }
                 .padding(4)
             }
@@ -49,12 +43,12 @@ struct OrganizerView: View {
                 Button(action: startOrganize) {
                     Label(
                         state.organizeProgress.isRunning
-                            ? "Organizing…"
-                            : (dryRun ? "Preview" : "Start Organizing"),
+                            ? "Vaulting…"
+                            : (dryRun ? "Preview" : "Save to Vault"),
                         systemImage: state.organizeProgress.isRunning ? "stop.circle" : "play.fill"
                     )
                 }
-                .disabled(destinationPath.isEmpty || state.organizeProgress.isRunning)
+                .disabled(state.vaultRootURL == nil || state.organizeProgress.isRunning)
                 .buttonStyle(.borderedProminent)
 
                 if state.organizeProgress.isRunning {
@@ -129,11 +123,7 @@ struct OrganizerView: View {
     }
 
     private func startOrganize() {
-        state.startOrganize(
-            destination: URL(fileURLWithPath: destinationPath),
-            folderFormat: folderFormat,
-            dryRun: dryRun
-        )
+        state.startVault(folderFormat: folderFormat, dryRun: dryRun)
     }
 
     @ViewBuilder
@@ -157,6 +147,8 @@ struct OrganizerView: View {
         }
     }
 }
+
+typealias OrganizerView = VaultView
 
 private struct LegacyOrganizeResultsView: View {
     let results: [OrganizeResult]

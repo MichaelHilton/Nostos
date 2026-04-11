@@ -19,6 +19,28 @@ enum ThumbnailService {
         return dir
     }()
 
+    static func configure(vaultRootURL: URL? = nil) {
+        let fm = FileManager.default
+
+        if let vaultRootURL {
+            let dir = vaultRootURL.appendingPathComponent(".nostos/thumbnails", isDirectory: true)
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            cacheDir = dir
+        } else {
+            cacheDir = {
+                let appSupport = try! fm.url(
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: true
+                )
+                let dir = appSupport.appendingPathComponent("Nostos/thumbnails", isDirectory: true)
+                try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+                return dir
+            }()
+        }
+    }
+
     /// Returns the path to the thumbnail, generating it if needed.
     static func thumbnail(for photoId: Int64, sourceURL: URL, imageSource: CGImageSource? = nil) -> String? {
         let dest = cacheDir.appendingPathComponent("\(photoId).jpg")

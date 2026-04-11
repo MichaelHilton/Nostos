@@ -273,38 +273,79 @@ private struct YearRangeSlider: View {
     private let rowHeight: CGFloat = 30
     private let railWidth: CGFloat = 2
     private let railInset: CGFloat = 14
-    private let dotSize: CGFloat = 8
-    private let handleSize: CGFloat = 18
+    private let tickWidth: CGFloat = 10
+    private let tickHeight: CGFloat = 2
+    private let handleWidth: CGFloat = 14
+    private let handleHeight: CGFloat = 22
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Older")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Label("Year Range", systemImage: "calendar")
+                    .font(.subheadline.weight(.semibold))
                 Spacer()
-                Text("Newer")
+                Text(selectionSummary)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                    )
             }
-            .font(.caption)
-            .foregroundColor(.secondary)
 
-            ZStack(alignment: .topLeading) {
-                if years.count > 1 {
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.18))
-                        .frame(width: railWidth, height: CGFloat(years.count - 1) * rowHeight)
-                        .padding(.leading, railInset + (handleSize - railWidth) / 2)
-                        .padding(.top, rowHeight / 2)
+            HStack(alignment: .top, spacing: 14) {
+                VStack(spacing: 0) {
+                    Text("Older")
+                    Spacer(minLength: 0)
+                    Text("Newer")
                 }
+                .font(.caption2.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundColor(.secondary)
+                .frame(width: 40, height: CGFloat(years.count) * rowHeight - 4, alignment: .leading)
+                .padding(.top, 2)
 
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(years.indices, id: \.self) { index in
-                        yearRow(for: index)
-                            .frame(height: rowHeight)
+                ZStack(alignment: .topLeading) {
+                    if years.count > 1 {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.secondary.opacity(0.10),
+                                        Color.secondary.opacity(0.22),
+                                        Color.secondary.opacity(0.10)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(width: railWidth, height: CGFloat(years.count - 1) * rowHeight)
+                            .padding(.leading, railInset + (handleWidth - railWidth) / 2)
+                            .padding(.top, rowHeight / 2)
+                    }
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(years.indices, id: \.self) { index in
+                            yearRow(for: index)
+                                .frame(height: rowHeight)
+                        }
                     }
                 }
+                .coordinateSpace(name: "year-range-slider")
+                .contentShape(Rectangle())
+                .gesture(dragGesture)
             }
-            .coordinateSpace(name: "year-range-slider")
-            .contentShape(Rectangle())
-            .gesture(dragGesture)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.secondary.opacity(0.12))
+            )
         }
     }
 
@@ -344,43 +385,50 @@ private struct YearRangeSlider: View {
         let isLower = index == lowerIndex
         let isUpper = index == upperIndex
 
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             ZStack {
-                if isInRange {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.accentColor.opacity(0.08))
-                        .frame(width: 34, height: 24)
+                if index > 0 {
+                    Capsule()
+                        .fill(isInRange ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.14))
+                        .frame(width: tickWidth, height: tickHeight)
                 }
 
-                Circle()
-                    .fill(isInRange ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18))
-                    .frame(width: dotSize, height: dotSize)
-
-                if isLower && isUpper {
-                    Circle()
-                        .fill(Color.accentColor)
-                        .frame(width: handleSize, height: handleSize)
-                        .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 2))
-                } else if isLower {
-                    Circle()
-                        .fill(Color.accentColor)
-                        .frame(width: handleSize, height: handleSize)
-                        .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 2))
-                } else if isUpper {
-                    Circle()
-                        .fill(Color(nsColor: .windowBackgroundColor))
-                        .frame(width: handleSize, height: handleSize)
-                        .overlay(Circle().stroke(Color.accentColor, lineWidth: 2))
+                if isLower || isUpper {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.accentColor.opacity(0.96),
+                                    Color.accentColor.opacity(0.82)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: handleWidth, height: handleHeight)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.70), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.14), radius: 1.5, x: 0, y: 1)
+                        .offset(x: -1)
                 }
             }
-            .frame(width: 34, height: rowHeight)
+            .frame(width: 36, height: rowHeight)
 
             Text(String(years[index]))
-                .font(.system(.body, design: .rounded).monospacedDigit())
-                .foregroundColor(isInRange ? .primary : .secondary)
+                .font(.system(size: 19, weight: isInRange ? .semibold : .medium, design: .rounded).monospacedDigit())
+                .foregroundColor(isInRange ? .primary : Color.primary.opacity(0.58))
+                .padding(.vertical, 2)
+                .padding(.horizontal, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isInRange ? Color.accentColor.opacity(0.08) : Color.clear)
+                )
 
             Spacer()
         }
+        .padding(.horizontal, 2)
         .contentShape(Rectangle())
         .onTapGesture {
             moveNearestHandle(to: index)
@@ -429,6 +477,12 @@ private struct YearRangeSlider: View {
         let clampedIndex = max(min(index, years.count - 1), lowerIndex)
         let newUpperYear = clampedIndex == years.count - 1 ? nil : years[clampedIndex]
         onChange(lowerYear, newUpperYear)
+    }
+
+    private var selectionSummary: String {
+        let lowerText = lowerYear.map(String.init) ?? "Any"
+        let upperText = upperYear.map(String.init) ?? "Any"
+        return "\(lowerText) - \(upperText)"
     }
 }
 
