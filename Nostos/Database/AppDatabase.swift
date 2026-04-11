@@ -259,6 +259,10 @@ extension AppDatabase {
         try dbWriter.read { db in try Photo.fetchCount(db) }
     }
 
+    func fetchAllPhotos() throws -> [Photo] {
+        try dbWriter.read { db in try Photo.fetchAll(db) }
+    }
+
     /// Streams all photos through a closure without loading them all into memory at once.
     func enumerateAllPhotos(_ body: (Photo) throws -> Void) throws {
         try dbWriter.read { db in

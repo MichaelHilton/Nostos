@@ -35,8 +35,9 @@ final class Organizer {
         var copied = 0
         var skipped = 0
 
-        try db.enumerateAllPhotos { photo in
-            guard let photoId = photo.id else { return }
+        let photos = try db.fetchAllPhotos()
+        for photo in photos {
+            guard let photoId = photo.id else { continue }
 
             let (action, reason, destPath) = planAction(
                 photo: photo,
