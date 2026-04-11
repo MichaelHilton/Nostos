@@ -59,11 +59,14 @@ struct GalleryView: View {
                 }
                 selectedPhotoPanel
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             // Filter sidebar (always visible on the right)
             filterPanel
                 .frame(minWidth: 240, maxWidth: 300)
+                .frame(maxHeight: .infinity, alignment: .top)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Gallery")
     }
 
@@ -136,7 +139,7 @@ struct GalleryView: View {
 
     private var toolbar: some View {
         HStack(spacing: 12) {
-            Text("\(state.photos.count) photos")
+            Text("\(state.photos.count) out of \(state.totalPhotoCount) photos")
                 .foregroundColor(.secondary)
 
             // Pagination controls
@@ -271,6 +274,7 @@ struct GalleryView: View {
             }
         }
         .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .ifAvailableFormStyleGrouped()
     }
 

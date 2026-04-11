@@ -12,6 +12,7 @@ final class AppState: ObservableObject {
 
     // MARK: - Gallery state
     @Published var photos: [Photo] = []
+    @Published var totalPhotoCount: Int = 0
     @Published var photoFilter = PhotoFilter()
     @Published var cameraModels: [String] = []
     @Published var years: [Int] = []
@@ -64,6 +65,7 @@ final class AppState: ObservableObject {
     func loadInitialData() async {
         await loadScanRuns()
         await loadPhotos()
+        await loadTotalPhotoCount()
         await loadCameraModels()
         await loadDuplicates()
         await loadOrganizeJobs()
@@ -80,6 +82,14 @@ final class AppState: ObservableObject {
     func loadPhotos() async {
         do {
             photos = try db.fetchPhotos(filter: photoFilter)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadTotalPhotoCount() async {
+        do {
+            totalPhotoCount = try db.photoCount()
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -67,6 +67,7 @@ struct ContentView: View {
                     case .vault:      VaultView(onVaultRootChange: vaultRootChangeHandler)
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 NavigationView {
                     List {
