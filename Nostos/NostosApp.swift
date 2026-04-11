@@ -4,10 +4,16 @@ import SwiftUI
 struct NostosApp: App {
     @AppStorage("vaultRootPath") private var vaultRootPath: String = ""
 
+    private var launchVaultRootPath: String? {
+        ProcessInfo.processInfo.environment["UI_TESTING_VAULT_ROOT"]
+    }
+
     var body: some Scene {
         WindowGroup {
             if let vaultRootURL {
-                MainAppView(vaultRootURL: vaultRootURL)
+                MainAppView(vaultRootURL: vaultRootURL) { newVaultURL in
+                    vaultRootPath = newVaultURL.path
+                }
             } else {
                 VaultSetupView { selectedURL in
                     vaultRootPath = selectedURL.path
@@ -23,22 +29,55 @@ struct NostosApp: App {
     }
 
     private var vaultRootURL: URL? {
+        if ProcessInfo.processInfo.environment["UI_TESTING_FORCE_SETUP"] == "1" {
+            return nil
+        }
+
+        if let launchVaultRootPath, !launchVaultRootPath.isEmpty {
+            return URL(fileURLWithPath: launchVaultRootPath)
+        }
         guard !vaultRootPath.isEmpty else { return nil }
         return URL(fileURLWithPath: vaultRootPath)
     }
 }
 
 private struct MainAppView: View {
+    let onVaultRootChange: (URL) -> Void
     @StateObject private var appState: AppState
 
-    init(vaultRootURL: URL) {
-        _appState = StateObject(wrappedValue: AppState(vaultRootURL: vaultRootURL))
+    init(vaultRootURL: URL, onVaultRootChange: @escaping (URL) -> Void) {
+        self.onVaultRootChange = onVaultRootChange
+        let rootURL = vaultRootURL
+        _appState = StateObject(wrappedValue: AppState(vaultRootURL: rootURL))
     }
 
     var body: some View {
-        ContentView()
+        ContentView(vaultRootChangeHandler: onVaultRootChange)
             .environmentObject(appState)
             .frame(minWidth: 900, minHeight: 600)
+    }
+}
+
+struct AppLogoView: View {
+    var body: some View {
+        if let image = NSImage(contentsOfFile: Self.logoPath) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+        } else {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.quaternary)
+                .overlay {
+                    Image(systemName: "photo")
+                        .font(.system(size: 32, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+        }
+    }
+
+    private static var logoPath: String {
+        let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        return cwd.appendingPathComponent("logos/logo_square.png").path
     }
 }
 
@@ -47,8 +86,14 @@ private struct VaultSetupView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Vault")
-                .font(.largeTitle).bold()
+            HStack(alignment: .center, spacing: 16) {
+                AppLogoView()
+                    .frame(width: 72, height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                Text("Vault")
+                    .font(.largeTitle).bold()
+            }
 
             Text("Choose a folder to store copied photos and Nostos metadata. The app will keep its database and thumbnails inside that vault.")
                 .foregroundColor(.secondary)
@@ -60,6 +105,7 @@ private struct VaultSetupView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("chooseVaultButton")
 
             Spacer()
         }
@@ -68,6 +114,10 @@ private struct VaultSetupView: View {
     }
 
     private func pickVaultDirectory() -> URL? {
+        if let uiTestingURL = ProcessInfo.processInfo.environment["UI_TESTING_VAULT_DIRECTORY_TO_PICK"], !uiTestingURL.isEmpty {
+            return URL(fileURLWithPath: uiTestingURL)
+        }
+
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true

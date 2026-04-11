@@ -2,7 +2,12 @@ import SwiftUI
 
 struct ScannerView: View {
     @EnvironmentObject var state: AppState
-    @State private var selectedPath: String = ""
+    @State private var selectedPath: String
+
+    init() {
+        let sourcePath = ProcessInfo.processInfo.environment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] ?? ""
+        _selectedPath = State(initialValue: sourcePath)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -23,6 +28,7 @@ struct ScannerView: View {
                             selectedPath = url.path
                         }
                     }
+                    .accessibilityIdentifier("scannerChooseDirectoryButton")
                 }
                 .padding(4)
             }
@@ -35,6 +41,7 @@ struct ScannerView: View {
                 }
                 .disabled(selectedPath.isEmpty || state.scanProgress.isScanning)
                 .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("scannerStartScanButton")
 
                 if state.scanProgress.isScanning {
                     SpinnerView()

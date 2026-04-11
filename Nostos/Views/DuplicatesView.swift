@@ -135,6 +135,7 @@ struct DuplicatePhotoCard: View {
             .controlSize(.small)
             .disabled(isKept)
             .frame(width: 140)
+            .accessibilityIdentifier("duplicateKeepButton")
         }
         .onAppear { loadThumbnail() }
     }

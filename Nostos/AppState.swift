@@ -3,8 +3,8 @@ import AppKit
 
 @MainActor
 final class AppState: ObservableObject {
-    let db: AppDatabase
-    let vaultRootURL: URL?
+    private(set) var db: AppDatabase
+    @Published private(set) var vaultRootURL: URL?
 
     // MARK: - Scan state
     @Published var scanRuns: [ScanRun] = []
@@ -47,6 +47,10 @@ final class AppState: ObservableObject {
             fatalError("Failed to open database: \(error)")
         }
         ThumbnailService.configure(vaultRootURL: vaultRootURL)
+        seedUITestDataIfNeeded()
+        if ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" {
+            photoFilter.limit = 10
+        }
         Task { await loadInitialData() }
     }
 
@@ -202,6 +206,10 @@ final class AppState: ObservableObject {
     // MARK: - Directory picker
 
     func pickDirectory() -> URL? {
+        if let uiTestingURL = ProcessInfo.processInfo.environment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"], !uiTestingURL.isEmpty {
+            return URL(fileURLWithPath: uiTestingURL)
+        }
+
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -225,6 +233,10 @@ final class AppState: ObservableObject {
     }
 
     func pickVaultDirectory() -> URL? {
+        if let uiTestingURL = ProcessInfo.processInfo.environment["UI_TESTING_VAULT_DIRECTORY_TO_PICK"], !uiTestingURL.isEmpty {
+            return URL(fileURLWithPath: uiTestingURL)
+        }
+
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -234,5 +246,131 @@ final class AppState: ObservableObject {
         panel.prompt = "Select"
         guard panel.runModal() == .OK else { return nil }
         return panel.url
+    }
+
+    func changeVaultRoot(to newVaultRootURL: URL) {
+        guard newVaultRootURL != vaultRootURL else { return }
+
+        do {
+            db = try AppDatabase.makeShared(vaultRootURL: newVaultRootURL)
+        } catch {
+            errorMessage = "Failed to open vault at \(newVaultRootURL.path): \(error.localizedDescription)"
+            return
+        }
+
+        vaultRootURL = newVaultRootURL
+        UserDefaults.standard.set(newVaultRootURL.path, forKey: "vaultRootPath")
+        ThumbnailService.configure(vaultRootURL: newVaultRootURL)
+        seedUITestDataIfNeeded()
+
+        scanRuns = []
+        scanProgress = ScanProgress()
+        photos = []
+        photoFilter = PhotoFilter()
+        if ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" {
+            photoFilter.limit = 10
+        }
+        cameraModels = []
+        years = []
+        duplicateGroups = []
+        organizeJobs = []
+        organizeProgress = OrganizeProgress()
+        lastOrganizeResults = []
+        errorMessage = nil
+
+        Task {
+            await loadInitialData()
+        }
+    }
+
+    private func seedUITestDataIfNeeded() {
+        guard ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" else { return }
+
+        do {
+            let now = Date()
+
+            var scanRun = ScanRun(
+                rootPath: "/tmp/ui-test-source",
+                startedAt: now.addingTimeInterval(-3600),
+                finishedAt: now.addingTimeInterval(-3500),
+                photosFound: 26,
+                duplicatesFound: 1,
+                status: .completed
+            )
+            try db.insertScanRun(&scanRun)
+
+            var duplicateGroup = DuplicateGroup(reason: .hashMatch, keptPhotoId: nil)
+            try db.insertDuplicateGroup(&duplicateGroup)
+
+            var seededPhotoIds: [Int64] = []
+
+            for index in 1...26 {
+                var photo = Photo(
+                    id: nil,
+                    path: "/tmp/ui-test-source/photo-\(index).jpg",
+                    hash: index <= 2 ? "shared-hash" : "hash-\(index)",
+                    fileSize: Int64(1_024 + index),
+                    width: 160,
+                    height: 160,
+                    takenAt: Calendar.current.date(byAdding: .day, value: -index, to: now),
+                    cameraMake: index.isMultiple(of: 2) ? "Canon" : "Nikon",
+                    cameraModel: index.isMultiple(of: 2) ? "EOS" : "Z8",
+                    gpsLat: nil,
+                    gpsLon: nil,
+                    thumbnailPath: nil,
+                    duplicateGroupId: index <= 2 ? duplicateGroup.id : nil,
+                    isKept: index == 1,
+                    status: index.isMultiple(of: 3) ? .copied : .new,
+                    scannedAt: now,
+                    scanRunId: scanRun.id
+                )
+                try db.insertPhoto(&photo)
+                if let photoId = photo.id {
+                    seededPhotoIds.append(photoId)
+                }
+            }
+
+            if let groupId = duplicateGroup.id, let firstPhotoId = seededPhotoIds.first {
+                try db.setKeptPhoto(groupId: groupId, photoId: firstPhotoId)
+            }
+
+            var organizeJob = OrganizeJob(
+                destinationRoot: "/tmp/ui-test-vault",
+                folderFormat: "YYYY/MM/DD",
+                dryRun: true,
+                startedAt: now.addingTimeInterval(-1800),
+                finishedAt: now.addingTimeInterval(-1700),
+                status: .completed,
+                totalFiles: 2,
+                copiedFiles: 1,
+                skippedFiles: 1
+            )
+            try db.insertOrganizeJob(&organizeJob)
+
+            guard let jobId = organizeJob.id else { return }
+
+            var result1 = OrganizeResult(
+                id: nil,
+                jobId: jobId,
+                photoId: 1,
+                source: "/tmp/ui-test-source/photo-1.jpg",
+                destination: "/tmp/ui-test-vault/2026/04/01/photo-1.jpg",
+                action: .copy,
+                reason: nil
+            )
+            var result2 = OrganizeResult(
+                id: nil,
+                jobId: jobId,
+                photoId: 2,
+                source: "/tmp/ui-test-source/photo-2.jpg",
+                destination: nil,
+                action: .skipExists,
+                reason: "Already exists"
+            )
+            try db.insertOrganizeResult(&result1)
+            try db.insertOrganizeResult(&result2)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }

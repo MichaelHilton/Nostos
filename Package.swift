@@ -23,6 +23,13 @@ let package = Package(
                 .product(name: "ViewInspector", package: "ViewInspector"),
             ],
             path: "Tests/NostosTests"
+        ),
+        .testTarget(
+            name: "NostosUITests",
+            dependencies: [
+                "Nostos",
+            ],
+            path: "Tests/NostosUITests"
         )
     ]
 )

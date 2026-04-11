@@ -37,8 +37,10 @@ struct GalleryView: View {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 8) {
                             ForEach(state.photos) { photo in
-                                PhotoTile(photo: photo)
-                                    .onTapGesture { selectedPhoto = photo }
+                                PhotoTile(photo: photo, isSelected: selectedPhoto?.id == photo.id)
+                                    .onTapGesture {
+                                        selectedPhoto = selectedPhoto?.id == photo.id ? nil : photo
+                                    }
                             }
                         }
                         .padding(12)
@@ -51,19 +53,85 @@ struct GalleryView: View {
                                 state.applyFilter(f)
                             }
                             .padding()
+                            .accessibilityIdentifier("galleryLoadMoreButton")
                         }
                     }
                 }
+                selectedPhotoPanel
             }
 
             // Filter sidebar (always visible on the right)
             filterPanel
                 .frame(minWidth: 240, maxWidth: 300)
         }
-        .sheet(item: $selectedPhoto) { photo in
-            PhotoDetailView(photo: photo)
-        }
         .navigationTitle("Gallery")
+    }
+
+    @ViewBuilder
+    private var selectedPhotoPanel: some View {
+        if let photo = selectedPhoto {
+            GroupBox {
+                HStack(alignment: .top, spacing: 16) {
+                    if let path = photo.thumbnailPath, let img = ThumbnailService.loadImage(path: path) {
+                        Image(nsImage: img)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 96, height: 96)
+                            .clipped()
+                            .cornerRadius(8)
+                    } else {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(nsColor: .windowBackgroundColor))
+                            .frame(width: 96, height: 96)
+                            .overlay(ProgressView().scaleEffect(0.7))
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Selected Photo")
+                                .font(.headline)
+                            Spacer()
+                            Button("Clear") {
+                                selectedPhoto = nil
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityIdentifier("galleryClearSelectionButton")
+                        }
+
+                        Text(photo.path)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .textSelection(.enabled)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            metadataRow("Size", ByteCountFormatter.string(fromByteCount: photo.fileSize, countStyle: .file))
+                            if let date = photo.takenAt {
+                                metadataRow("Taken", date.formatted(date: .abbreviated, time: .shortened))
+                            }
+                            if let make = photo.cameraMake {
+                                metadataRow("Make", make)
+                            }
+                            if let model = photo.cameraModel {
+                                metadataRow("Model", model)
+                            }
+                            if let width = photo.width, let height = photo.height {
+                                metadataRow("Dimensions", "\(width) × \(height)")
+                            }
+                            metadataRow("Status", photo.status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                            if photo.duplicateGroupId != nil {
+                                metadataRow("Duplicate", photo.isKept ? "Yes, kept" : "Yes")
+                            }
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 4)
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+        }
     }
 
     private var toolbar: some View {
@@ -83,6 +151,7 @@ struct GalleryView: View {
                         state.applyFilter(f)
                     }
                     .disabled(state.photoFilter.offset == 0)
+                    .accessibilityIdentifier("galleryPrevPageButton")
 
                     Text("Page \(page)")
 
@@ -92,6 +161,7 @@ struct GalleryView: View {
                         state.applyFilter(f)
                     }
                     .disabled(state.photos.count < state.photoFilter.limit)
+                    .accessibilityIdentifier("galleryNextPageButton")
                 }
             } else {
                 Text("All pages")
@@ -109,6 +179,7 @@ struct GalleryView: View {
                 Label("Per Page", systemImage: "ellipsis.circle")
             }
             .menuStyle(.borderlessButton)
+            .accessibilityIdentifier("galleryPerPageMenuButton")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -196,6 +267,7 @@ struct GalleryView: View {
                     state.applyFilter(PhotoFilter())
                 }
                 .foregroundColor(.red)
+                .accessibilityIdentifier("galleryRemoveAllFiltersButton")
             }
         }
         .padding(8)
@@ -490,6 +562,7 @@ private struct YearRangeSlider: View {
 
 struct PhotoTile: View {
     let photo: Photo
+    let isSelected: Bool
     @State private var image: NSImage?
 
     var body: some View {
@@ -509,18 +582,51 @@ struct PhotoTile: View {
             .clipped()
             .cornerRadius(6)
 
+            if isSelected {
+                LinearGradient(
+                    colors: [
+                        Color.black.opacity(0.05),
+                        Color.black.opacity(0.65)
+                    ],
+                    startPoint: .center,
+                    endPoint: .bottom
+                )
+                .frame(width: 160, height: 160)
+                .cornerRadius(6)
+            }
+
             // Badges
-            HStack(spacing: 4) {
-                if photo.duplicateGroupId != nil {
-                    badge("DUP", color: .orange)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    if photo.duplicateGroupId != nil {
+                        badge("DUP", color: .orange)
+                    }
+                    if photo.status == .copied {
+                        badge("✓", color: .green)
+                    }
+                    if isSelected {
+                        badge("Selected", color: .blue)
+                    }
                 }
-                if photo.status == .copied {
-                    badge("✓", color: .green)
+
+                if isSelected {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let model = photo.cameraModel {
+                            Text(model)
+                        }
+                        if let date = photo.takenAt {
+                            Text(date.formatted(date: .abbreviated, time: .omitted))
+                        }
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.65), radius: 1, x: 0, y: 1)
                 }
             }
             .padding(4)
         }
         .onAppear { loadThumbnail() }
+        .accessibilityIdentifier("galleryPhotoTile")
     }
 
     private func loadThumbnail() {
@@ -560,86 +666,14 @@ struct PhotoTile: View {
     }
 }
 
-// MARK: - PhotoDetailView
-
-struct PhotoDetailView: View {
-    @Environment(\.dismiss) var dismiss
-    let photo: Photo
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Photo Detail")
-                    .font(.title2).bold()
-                Spacer()
-                Button("Close") { dismiss() }
-            }
-
-            if let path = photo.thumbnailPath, let img = ThumbnailService.loadImage(path: path) {
-                Image(nsImage: img)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 300)
-                    .cornerRadius(8)
-                    .frame(maxWidth: .infinity)
-            }
-
-            if #available(macOS 13, *) {
-                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
-                    row("Path", photo.path)
-                    row("Size", ByteCountFormatter.string(fromByteCount: photo.fileSize, countStyle: .file))
-                    if let date = photo.takenAt {
-                        row("Taken", date.formatted(date: .long, time: .standard))
-                    }
-                    if let make = photo.cameraMake { row("Make", make) }
-                    if let model = photo.cameraModel { row("Model", model) }
-                    if let w = photo.width, let h = photo.height {
-                        row("Dimensions", "\(w) × \(h)")
-                    }
-                    row("Status", photo.status.rawValue)
-                    if photo.duplicateGroupId != nil {
-                        row("Duplicate", photo.isKept ? "Yes (kept)" : "Yes")
-                    }
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    simpleRow("Path", photo.path)
-                    simpleRow("Size", ByteCountFormatter.string(fromByteCount: photo.fileSize, countStyle: .file))
-                    if let date = photo.takenAt { simpleRow("Taken", date.formatted(date: .long, time: .standard)) }
-                    if let make = photo.cameraMake { simpleRow("Make", make) }
-                    if let model = photo.cameraModel { simpleRow("Model", model) }
-                    if let w = photo.width, let h = photo.height { simpleRow("Dimensions", "\(w) × \(h)") }
-                    simpleRow("Status", photo.status.rawValue)
-                    if photo.duplicateGroupId != nil { simpleRow("Duplicate", photo.isKept ? "Yes (kept)" : "Yes") }
-                }
-            }
-
-            Spacer()
-        }
-        .padding(24)
-        .frame(minWidth: 480, minHeight: 400)
-    }
-
-    @available(macOS 13, *)
+private extension GalleryView {
     @ViewBuilder
-    private func row(_ label: String, _ value: String) -> some View {
-        GridRow {
+    func metadataRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(label)
                 .foregroundColor(.secondary)
-                .gridColumnAlignment(.trailing)
+                .frame(width: 80, alignment: .leading)
             Text(value)
-                .textSelection(.enabled)
-        }
-    }
-
-    @ViewBuilder
-    private func simpleRow(_ label: String, _ value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(label)
-                .foregroundColor(.secondary)
-            Spacer()
-            Text(value)
-                .multilineTextAlignment(.trailing)
                 .textSelection(.enabled)
         }
     }

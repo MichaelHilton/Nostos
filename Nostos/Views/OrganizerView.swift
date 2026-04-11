@@ -2,9 +2,15 @@ import SwiftUI
 
 struct VaultView: View {
     @EnvironmentObject var state: AppState
+    let onVaultRootChange: (URL) -> Void
     @State private var folderFormat = "YYYY/MM/DD"
     @State private var dryRun = true
     @State private var showResults = false
+    @State private var pendingVaultURL: URL?
+
+    init(onVaultRootChange: @escaping (URL) -> Void = { _ in }) {
+        self.onVaultRootChange = onVaultRootChange
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -12,12 +18,18 @@ struct VaultView: View {
                 .font(.largeTitle).bold()
 
             GroupBox("Vault Location") {
-                HStack {
+                HStack(spacing: 12) {
                     Text(state.vaultRootURL?.path ?? "No vault selected")
                         .foregroundColor(state.vaultRootURL == nil ? .secondary : .primary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Button("Change Vault…") {
+                        pendingVaultURL = state.pickVaultDirectory()
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("vaultChangeVaultButton")
                 }
                 .padding(4)
             }
@@ -50,6 +62,7 @@ struct VaultView: View {
                 }
                 .disabled(state.vaultRootURL == nil || state.organizeProgress.isRunning)
                 .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier(dryRun ? "vaultPreviewButton" : "vaultSaveButton")
 
                 if state.organizeProgress.isRunning {
                     ProgressView()
@@ -87,6 +100,7 @@ struct VaultView: View {
                             showResults.toggle()
                         }
                         .buttonStyle(.borderless)
+                        .accessibilityIdentifier("vaultToggleDetailsButton")
                     }
                     .padding(.bottom, 4)
 
@@ -120,6 +134,28 @@ struct VaultView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .confirmationDialog(
+            "Change vault location?",
+            isPresented: Binding(
+                get: { pendingVaultURL != nil },
+                set: { if !$0 { pendingVaultURL = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Change Vault", role: .destructive) {
+                guard let url = pendingVaultURL else { return }
+                pendingVaultURL = nil
+                state.changeVaultRoot(to: url)
+                onVaultRootChange(url)
+            }
+            .accessibilityIdentifier("vaultConfirmChangeButton")
+            Button("Cancel", role: .cancel) {
+                pendingVaultURL = nil
+            }
+            .accessibilityIdentifier("vaultCancelChangeButton")
+        } message: {
+            Text("Nostos will reopen the database and thumbnails from the selected folder.")
+        }
     }
 
     private func startOrganize() {

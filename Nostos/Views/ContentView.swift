@@ -6,6 +6,7 @@ enum Tab {
 
 struct ContentView: View {
     @EnvironmentObject var state: AppState
+    let vaultRootChangeHandler: (URL) -> Void
     @State private var selectedTab: Tab = .scanner
 
     var body: some View {
@@ -14,39 +15,71 @@ struct ContentView: View {
                 NavigationSplitView {
                     List(selection: $selectedTab) {
                         Label("Scanner", systemImage: "magnifyingglass")
+                            .accessibilityIdentifier("scannerTabButton")
                             .tag(Tab.scanner)
                         Label("Gallery", systemImage: "photo.on.rectangle.angled")
+                            .accessibilityIdentifier("galleryTabButton")
                             .tag(Tab.gallery)
                         Label("Duplicates", systemImage: "doc.on.doc")
+                            .accessibilityIdentifier("duplicatesTabButton")
                             .tag(Tab.duplicates)
                         Label("Vault", systemImage: "archivebox")
+                            .accessibilityIdentifier("vaultTabButton")
                             .tag(Tab.vault)
                     }
-                    .navigationTitle("Nostos")
+                    .navigationTitle("")
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            HStack(spacing: 10) {
+                                AppLogoView()
+                                    .frame(width: 24, height: 24)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+
+                                Text("Nostos")
+                                    .font(.headline)
+                            }
+                        }
+                    }
                 } detail: {
                     switch selectedTab {
                     case .scanner:    ScannerView()
                     case .gallery:    GalleryView()
                     case .duplicates: DuplicatesView()
-                    case .vault:      VaultView()
+                    case .vault:      VaultView(onVaultRootChange: vaultRootChangeHandler)
                     }
                 }
             } else {
                 NavigationView {
                     List {
                         Button(action: { selectedTab = .scanner }) { Label("Scanner", systemImage: "magnifyingglass") }
+                            .accessibilityIdentifier("scannerTabButton")
                         Button(action: { selectedTab = .gallery }) { Label("Gallery", systemImage: "photo.on.rectangle.angled") }
+                            .accessibilityIdentifier("galleryTabButton")
                         Button(action: { selectedTab = .duplicates }) { Label("Duplicates", systemImage: "doc.on.doc") }
+                            .accessibilityIdentifier("duplicatesTabButton")
                         Button(action: { selectedTab = .vault }) { Label("Vault", systemImage: "archivebox") }
+                            .accessibilityIdentifier("vaultTabButton")
                     }
                     .listStyle(SidebarListStyle())
                     .frame(minWidth: 160)
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            HStack(spacing: 10) {
+                                AppLogoView()
+                                    .frame(width: 24, height: 24)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+
+                                Text("Nostos")
+                                    .font(.headline)
+                            }
+                        }
+                    }
 
                     switch selectedTab {
                     case .scanner:    ScannerView()
                     case .gallery:    GalleryView()
                     case .duplicates: DuplicatesView()
-                    case .vault:      VaultView()
+                    case .vault:      VaultView(onVaultRootChange: vaultRootChangeHandler)
                     }
                 }
                 .navigationTitle("Nostos")
@@ -66,6 +99,7 @@ fileprivate struct ErrorAlert: ViewModifier {
                 set: { if !$0 { state.errorMessage = nil } }
             )) {
                 Button("OK") { state.errorMessage = nil }
+                    .accessibilityIdentifier("errorAlertOKButton")
             } message: {
                 Text(state.errorMessage ?? "")
             }
