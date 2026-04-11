@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum Tab {
-    case scanner, gallery, duplicates, vault
+    case scanner, gallery, duplicates, vault, backup
 }
 
 struct ContentView: View {
@@ -42,6 +42,13 @@ struct ContentView: View {
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("vaultTabButton")
 
+                        Button(action: { selectedTab = .backup }) {
+                            Label("Backup", systemImage: "tray.and.arrow.down")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("backupTabButton")
+
                         Spacer()
                     }
                     .padding(16)
@@ -65,6 +72,7 @@ struct ContentView: View {
                     case .gallery:    GalleryView()
                     case .duplicates: DuplicatesView()
                     case .vault:      VaultView(onVaultRootChange: vaultRootChangeHandler)
+                    case .backup:     BackupView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -79,6 +87,8 @@ struct ContentView: View {
                             .accessibilityIdentifier("duplicatesTabButton")
                         Button(action: { selectedTab = .vault }) { Label("Vault", systemImage: "archivebox") }
                             .accessibilityIdentifier("vaultTabButton")
+                        Button(action: { selectedTab = .backup }) { Label("Backup", systemImage: "tray.and.arrow.down") }
+                            .accessibilityIdentifier("backupTabButton")
                     }
                     .listStyle(SidebarListStyle())
                     .frame(minWidth: 160)
@@ -100,6 +110,7 @@ struct ContentView: View {
                     case .gallery:    GalleryView()
                     case .duplicates: DuplicatesView()
                     case .vault:      VaultView(onVaultRootChange: vaultRootChangeHandler)
+                    case .backup:     BackupView()
                     }
                 }
                 .navigationTitle("Nostos")

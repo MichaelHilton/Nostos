@@ -121,6 +121,45 @@ final class AppDatabase {
         m.registerMigration("v2") { db in
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS photos_taken_at_camera_model ON photos(taken_at, camera_model)")
         }
+        m.registerMigration("v3") { db in
+            try db.execute(sql: """
+                CREATE TABLE backup_jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    folder_format TEXT NOT NULL,
+                    filter_summary TEXT,
+                    dry_run INTEGER NOT NULL DEFAULT 0,
+                    started_at DATETIME NOT NULL,
+                    finished_at DATETIME,
+                    status TEXT NOT NULL DEFAULT 'running',
+                    total_files INTEGER NOT NULL DEFAULT 0,
+                    copied_files INTEGER NOT NULL DEFAULT 0,
+                    skipped_files INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            try db.execute(sql: """
+                CREATE TABLE vault_photos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vault_path TEXT NOT NULL,
+                    hash TEXT NOT NULL,
+                    file_size INTEGER NOT NULL,
+                    source_path TEXT,
+                    backed_up_at DATETIME NOT NULL,
+                    backup_job_id INTEGER REFERENCES backup_jobs(id)
+                )
+            """)
+            try db.execute(sql: "CREATE INDEX vault_photos_hash ON vault_photos(hash)")
+            try db.execute(sql: """
+                CREATE TABLE backup_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_id INTEGER NOT NULL REFERENCES backup_jobs(id),
+                    photo_id INTEGER NOT NULL REFERENCES photos(id),
+                    source TEXT NOT NULL,
+                    vault_path TEXT,
+                    action TEXT NOT NULL,
+                    reason TEXT
+                )
+            """)
+        }
         return m
     }
 }
@@ -358,6 +397,94 @@ extension AppDatabase {
     func fetchAllOrganizeJobs() throws -> [OrganizeJob] {
         try dbWriter.read { db in
             try OrganizeJob.order(Column("started_at").desc).fetchAll(db)
+        }
+    }
+}
+
+// MARK: - Backup photo query helpers
+private extension AppDatabase {
+    /// Builds a base query for backup candidates: only photos that are not in a duplicate
+    /// group, or are the kept copy of their group. Camera, year, and date filters apply.
+    func backupBaseQuery(filter: PhotoFilter) -> QueryInterfaceRequest<Photo> {
+        var query = Photo.all()
+        query = query.filter(sql: "duplicate_group_id IS NULL OR is_kept = 1")
+
+        if !filter.cameraModels.isEmpty || filter.includeNoCamera {
+            let hasModels = !filter.cameraModels.isEmpty
+            if hasModels && filter.includeNoCamera {
+                let values = Array(filter.cameraModels)
+                let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
+                query = query.filter(sql: "(camera_model IN (\(placeholders)) OR camera_model IS NULL)", arguments: StatementArguments(values))
+            } else if hasModels {
+                let values = Array(filter.cameraModels)
+                let placeholders = Array(repeating: "?", count: values.count).joined(separator: ",")
+                query = query.filter(sql: "camera_model IN (\(placeholders))", arguments: StatementArguments(values))
+            } else {
+                query = query.filter(sql: "camera_model IS NULL")
+            }
+        }
+
+        if let from = filter.yearFrom, let to = filter.yearTo {
+            query = query.filter(sql: "CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) BETWEEN ? AND ?", arguments: StatementArguments([from, to]))
+        } else if let from = filter.yearFrom {
+            query = query.filter(sql: "CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) >= ?", arguments: StatementArguments([from]))
+        } else if let to = filter.yearTo {
+            query = query.filter(sql: "CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) <= ?", arguments: StatementArguments([to]))
+        }
+
+        if let from = filter.dateFrom {
+            query = query.filter(Column("taken_at") >= from)
+        }
+        if let to = filter.dateTo {
+            query = query.filter(Column("taken_at") <= to)
+        }
+
+        return query.order(Column("taken_at").desc)
+    }
+}
+
+// MARK: - Backup queries
+extension AppDatabase {
+    func fetchPhotosForBackup(filter: PhotoFilter) throws -> [Photo] {
+        try dbWriter.read { db in try backupBaseQuery(filter: filter).fetchAll(db) }
+    }
+
+    func countPhotosForBackup(filter: PhotoFilter) throws -> Int {
+        try dbWriter.read { db in try backupBaseQuery(filter: filter).fetchCount(db) }
+    }
+
+    func fetchAllVaultHashes() throws -> Set<String> {
+        try dbWriter.read { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT hash FROM vault_photos")
+            return Set(rows.compactMap { $0["hash"] as? String })
+        }
+    }
+
+    func insertVaultPhoto(_ vaultPhoto: inout VaultPhoto) throws {
+        try dbWriter.write { db in try vaultPhoto.insert(db) }
+    }
+
+    func insertBackupJob(_ job: inout BackupJob) throws {
+        try dbWriter.write { db in try job.insert(db) }
+    }
+
+    func updateBackupJob(_ job: BackupJob) throws {
+        try dbWriter.write { db in try job.update(db) }
+    }
+
+    func insertBackupResult(_ result: inout BackupResult) throws {
+        try dbWriter.write { db in try result.insert(db) }
+    }
+
+    func fetchAllBackupJobs() throws -> [BackupJob] {
+        try dbWriter.read { db in
+            try BackupJob.order(Column("started_at").desc).fetchAll(db)
+        }
+    }
+
+    func fetchBackupResults(jobId: Int64) throws -> [BackupResult] {
+        try dbWriter.read { db in
+            try BackupResult.filter(Column("job_id") == jobId).fetchAll(db)
         }
     }
 }

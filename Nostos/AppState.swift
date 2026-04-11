@@ -25,6 +25,11 @@ final class AppState: ObservableObject {
     @Published var organizeProgress = OrganizeProgress()
     @Published var lastOrganizeResults: [OrganizeResult] = []
 
+    // MARK: - Backup state
+    @Published var backupJobs: [BackupJob] = []
+    @Published var backupProgress = BackupProgress()
+    @Published var lastBackupResults: [BackupResult] = []
+
     // MARK: - General error state
     @Published var errorMessage: String?
 
@@ -69,6 +74,7 @@ final class AppState: ObservableObject {
         await loadCameraModels()
         await loadDuplicates()
         await loadOrganizeJobs()
+        await loadBackupJobs()
     }
 
     func loadScanRuns() async {
@@ -218,6 +224,58 @@ final class AppState: ObservableObject {
         }
     }
 
+    // MARK: - Backup
+
+    func loadBackupJobs() async {
+        do {
+            backupJobs = try db.fetchAllBackupJobs()
+            if let latestJobId = backupJobs.first?.id {
+                lastBackupResults = (try? db.fetchBackupResults(jobId: latestJobId)) ?? []
+            } else {
+                lastBackupResults = []
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func countPhotosForBackup(filter: PhotoFilter) -> Int {
+        (try? db.countPhotosForBackup(filter: filter)) ?? 0
+    }
+
+    func startBackup(folderFormat: String, filter: PhotoFilter, dryRun: Bool) {
+        guard let vaultRootURL else {
+            errorMessage = "Select a vault before backing up."
+            return
+        }
+        guard !backupProgress.isRunning else { return }
+        backupProgress = BackupProgress(isRunning: true)
+        errorMessage = nil
+
+        Task {
+            let service = BackupService(db: db) { [weak self] progress in
+                Task { @MainActor [weak self] in
+                    self?.backupProgress = progress
+                }
+            }
+            do {
+                let job = try await service.backup(
+                    vaultRootURL: vaultRootURL,
+                    folderFormat: folderFormat,
+                    filter: filter,
+                    dryRun: dryRun
+                )
+                if let jobId = job.id {
+                    lastBackupResults = (try? db.fetchBackupResults(jobId: jobId)) ?? []
+                }
+                await loadBackupJobs()
+            } catch {
+                errorMessage = error.localizedDescription
+                backupProgress.isRunning = false
+            }
+        }
+    }
+
     // MARK: - Directory picker
 
     func pickDirectory() -> URL? {
@@ -291,6 +349,9 @@ final class AppState: ObservableObject {
         organizeJobs = []
         organizeProgress = OrganizeProgress()
         lastOrganizeResults = []
+        backupJobs = []
+        backupProgress = BackupProgress()
+        lastBackupResults = []
         errorMessage = nil
 
         Task {
