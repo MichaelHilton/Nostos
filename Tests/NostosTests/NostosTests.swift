@@ -477,6 +477,19 @@ final class NostosTests: XCTestCase {
     }
 
     @MainActor
+    func testContentViewErrorAlertOKButtonDismissesError() throws {
+        let state = AppState(db: db)
+        state.errorMessage = "Something went wrong"
+
+        let view = ContentView(vaultRootChangeHandler: { _ in })
+            .environmentObject(state)
+
+        try view.inspect().find(button: "OK").tap()
+
+        XCTAssertNil(state.errorMessage)
+    }
+
+    @MainActor
     func testScannerViewButtonIsDisabledWhenNoSelectedPath() throws {
         let state = AppState(db: db)
         let view = ScannerView().environmentObject(state)

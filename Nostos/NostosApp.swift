@@ -29,7 +29,7 @@ struct NostosApp: App {
     }
 
     private var vaultRootURL: URL? {
-        if ProcessInfo.processInfo.environment["UI_TESTING_FORCE_SETUP"] == "1", vaultRootPath.isEmpty {
+        if ProcessInfo.processInfo.environment["UI_TESTING_FORCE_SETUP"] == "1" {
             return nil
         }
 
