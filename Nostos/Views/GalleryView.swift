@@ -17,10 +17,14 @@ struct GalleryView: View {
 
     private let columns = [GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 8)]
 
+    private var orderedYears: [Int] {
+        state.years.sorted()
+    }
+
     var body: some View {
         HSplitView {
-                // Photo grid
-                VStack(spacing: 0) {
+            // Photo grid
+            VStack(spacing: 0) {
                 toolbar
                 Divider()
                 if state.photos.isEmpty {
@@ -54,7 +58,7 @@ struct GalleryView: View {
 
             // Filter sidebar (always visible on the right)
             filterPanel
-                .frame(minWidth: 200, maxWidth: 240)
+                .frame(minWidth: 240, maxWidth: 300)
         }
         .sheet(item: $selectedPhoto) { photo in
             PhotoDetailView(photo: photo)
@@ -105,8 +109,6 @@ struct GalleryView: View {
                 Label("Per Page", systemImage: "ellipsis.circle")
             }
             .menuStyle(.borderlessButton)
-
-            // Filters are always visible on the right
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -115,7 +117,7 @@ struct GalleryView: View {
     private var filterPanel: some View {
         Form {
             Section("Status") {
-                ForEach(PhotoStatus.allCases, id: \ .self) { s in
+                ForEach(PhotoStatus.allCases, id: \.self) { s in
                     Toggle(s.rawValue.capitalized, isOn: Binding(
                         get: { filterStatus.contains(s) },
                         set: { on in
@@ -141,7 +143,6 @@ struct GalleryView: View {
                     ))
                     .toggleStyle(.checkbox)
                 }
-                // Checkbox for images without camera metadata
                 Toggle("No camera", isOn: Binding(
                     get: { filterIncludeNoCamera },
                     set: { on in filterIncludeNoCamera = on; applyLocalFilters() }
@@ -163,54 +164,22 @@ struct GalleryView: View {
             }
 
             Section("Years") {
-                if state.years.isEmpty {
+                if orderedYears.isEmpty {
                     Text("No year data").foregroundColor(.secondary)
                 } else {
-                    HStack {
-                        Picker("From", selection: Binding(get: { filterYearFrom ?? -1 }, set: { v in
-                            let newFrom = v == -1 ? nil : v
-                            filterYearFrom = newFrom
-                            // Auto-clamp: if from > to, set to = from
-                            if let f = filterYearFrom, let t = filterYearTo, f > t {
-                                filterYearTo = f
-                            }
-                            applyLocalFilters()
-                        })) {
-                            Text("Any").tag(-1)
-                            ForEach(state.years, id: \ .self) { y in Text(String(y)).tag(y) }
+                    YearRangeSlider(
+                        years: orderedYears,
+                        lowerYear: filterYearFrom,
+                        upperYear: filterYearTo,
+                        onChange: { lower, upper in
+                            updateYearRange(lower: lower, upper: upper)
                         }
-                        .labelsHidden()
+                    )
+                    .frame(height: max(CGFloat(orderedYears.count) * 30, 160))
 
-                        Picker("To", selection: Binding(get: { filterYearTo ?? -1 }, set: { v in
-                            let newTo = v == -1 ? nil : v
-                            filterYearTo = newTo
-                            // Auto-clamp: if to < from, set from = to
-                            if let f = filterYearFrom, let t = filterYearTo, t < f {
-                                filterYearFrom = t
-                            }
-                            applyLocalFilters()
-                        })) {
-                            Text("Any").tag(-1)
-                            ForEach(state.years, id: \ .self) { y in Text(String(y)).tag(y) }
-                        }
-                        .labelsHidden()
-                    }
-
-                    // Validation / summary
-                    let yearRangeValid: Bool = {
-                        if let f = filterYearFrom, let t = filterYearTo { return f <= t }
-                        return true
-                    }()
-
-                    if filterYearFrom == nil && filterYearTo == nil {
-                        Text("Range: Any").foregroundColor(.secondary).font(.caption)
-                    } else if yearRangeValid {
-                        let fromText = filterYearFrom.map(String.init) ?? "Any"
-                        let toText = filterYearTo.map(String.init) ?? "Any"
-                        Text("Range: \(fromText) — \(toText)").foregroundColor(.secondary).font(.caption)
-                    } else {
-                        Text("Invalid range").foregroundColor(.red).font(.caption)
-                    }
+                    Text(yearRangeSummary)
+                        .foregroundColor(.secondary)
+                        .font(.caption)
                 }
             }
 
@@ -218,7 +187,6 @@ struct GalleryView: View {
                 Spacer()
 
                 Button("Remove All") {
-                    // Clear local selections and remove filters
                     filterStatus.removeAll()
                     filterCameraModels.removeAll()
                     filterHasDuplicates.removeAll()
@@ -232,7 +200,6 @@ struct GalleryView: View {
         }
         .padding(8)
         .ifAvailableFormStyleGrouped()
-        .onAppear { }
     }
 
     // Apply the local filter selections to the global state
@@ -247,6 +214,221 @@ struct GalleryView: View {
             hasDuplicates: filterHasDuplicates,
             includeNoCamera: filterIncludeNoCamera
         ))
+    }
+
+    private var yearRangeSummary: String {
+        if filterYearFrom == nil && filterYearTo == nil {
+            return "Range: Any"
+        }
+
+        let fromText = filterYearFrom.map(String.init) ?? "Any"
+        let toText = filterYearTo.map(String.init) ?? "Any"
+        return "Range: \(fromText) — \(toText)"
+    }
+
+    private func updateYearRange(lower: Int?, upper: Int?) {
+        let normalized = normalizeYearRange(lower: lower, upper: upper)
+        filterYearFrom = normalized.lower
+        filterYearTo = normalized.upper
+        applyLocalFilters()
+    }
+
+    private func normalizeYearRange(lower: Int?, upper: Int?) -> (lower: Int?, upper: Int?) {
+        guard let minYear = orderedYears.first, let maxYear = orderedYears.last else {
+            return (lower, upper)
+        }
+
+        var normalizedLower = lower
+        var normalizedUpper = upper
+
+        if let lowerValue = normalizedLower, let upperValue = normalizedUpper, lowerValue > upperValue {
+            normalizedLower = upperValue
+            normalizedUpper = lowerValue
+        }
+
+        if normalizedLower == minYear {
+            normalizedLower = nil
+        }
+        if normalizedUpper == maxYear {
+            normalizedUpper = nil
+        }
+
+        return (normalizedLower, normalizedUpper)
+    }
+}
+
+private struct YearRangeSlider: View {
+    enum Handle {
+        case lower
+        case upper
+    }
+
+    let years: [Int]
+    let lowerYear: Int?
+    let upperYear: Int?
+    let onChange: (_ lowerYear: Int?, _ upperYear: Int?) -> Void
+
+    @State private var activeHandle: Handle?
+
+    private let rowHeight: CGFloat = 30
+    private let railWidth: CGFloat = 2
+    private let railInset: CGFloat = 14
+    private let dotSize: CGFloat = 8
+    private let handleSize: CGFloat = 18
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Older")
+                Spacer()
+                Text("Newer")
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
+
+            ZStack(alignment: .topLeading) {
+                if years.count > 1 {
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.18))
+                        .frame(width: railWidth, height: CGFloat(years.count - 1) * rowHeight)
+                        .padding(.leading, railInset + (handleSize - railWidth) / 2)
+                        .padding(.top, rowHeight / 2)
+                }
+
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(years.indices, id: \.self) { index in
+                        yearRow(for: index)
+                            .frame(height: rowHeight)
+                    }
+                }
+            }
+            .coordinateSpace(name: "year-range-slider")
+            .contentShape(Rectangle())
+            .gesture(dragGesture)
+        }
+    }
+
+    private var lowerIndex: Int {
+        index(for: lowerYear, fallback: 0)
+    }
+
+    private var upperIndex: Int {
+        index(for: upperYear, fallback: max(0, years.count - 1))
+    }
+
+    private var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("year-range-slider"))
+            .onChanged { value in
+                guard !years.isEmpty else { return }
+                if activeHandle == nil {
+                    activeHandle = handle(for: value.startLocation.y)
+                }
+
+                guard let activeHandle else { return }
+                let index = index(forLocation: value.location.y)
+                switch activeHandle {
+                case .lower:
+                    setLowerIndex(index)
+                case .upper:
+                    setUpperIndex(index)
+                }
+            }
+            .onEnded { _ in
+                activeHandle = nil
+            }
+    }
+
+    @ViewBuilder
+    private func yearRow(for index: Int) -> some View {
+        let isInRange = index >= lowerIndex && index <= upperIndex
+        let isLower = index == lowerIndex
+        let isUpper = index == upperIndex
+
+        HStack(spacing: 10) {
+            ZStack {
+                if isInRange {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.accentColor.opacity(0.08))
+                        .frame(width: 34, height: 24)
+                }
+
+                Circle()
+                    .fill(isInRange ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18))
+                    .frame(width: dotSize, height: dotSize)
+
+                if isLower && isUpper {
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: handleSize, height: handleSize)
+                        .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 2))
+                } else if isLower {
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: handleSize, height: handleSize)
+                        .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 2))
+                } else if isUpper {
+                    Circle()
+                        .fill(Color(nsColor: .windowBackgroundColor))
+                        .frame(width: handleSize, height: handleSize)
+                        .overlay(Circle().stroke(Color.accentColor, lineWidth: 2))
+                }
+            }
+            .frame(width: 34, height: rowHeight)
+
+            Text(String(years[index]))
+                .font(.system(.body, design: .rounded).monospacedDigit())
+                .foregroundColor(isInRange ? .primary : .secondary)
+
+            Spacer()
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            moveNearestHandle(to: index)
+        }
+    }
+
+    private func moveNearestHandle(to index: Int) {
+        let lowerDistance = abs(index - lowerIndex)
+        let upperDistance = abs(index - upperIndex)
+
+        if lowerDistance <= upperDistance {
+            setLowerIndex(index)
+        } else {
+            setUpperIndex(index)
+        }
+    }
+
+    private func handle(for locationY: CGFloat) -> Handle {
+        let lowerY = CGFloat(lowerIndex) * rowHeight + rowHeight / 2
+        let upperY = CGFloat(upperIndex) * rowHeight + rowHeight / 2
+        return abs(locationY - lowerY) <= abs(locationY - upperY) ? .lower : .upper
+    }
+
+    private func index(forLocation locationY: CGFloat) -> Int {
+        guard !years.isEmpty else { return 0 }
+        let rawIndex = Int(locationY / rowHeight)
+        return min(max(0, rawIndex), years.count - 1)
+    }
+
+    private func index(for year: Int?, fallback: Int) -> Int {
+        guard let year, let index = years.firstIndex(of: year) else {
+            return fallback
+        }
+        return index
+    }
+
+    private func setLowerIndex(_ index: Int) {
+        guard !years.isEmpty else { return }
+        let clampedIndex = min(max(0, index), upperIndex)
+        let newLowerYear = clampedIndex == 0 ? nil : years[clampedIndex]
+        onChange(newLowerYear, upperYear)
+    }
+
+    private func setUpperIndex(_ index: Int) {
+        guard !years.isEmpty else { return }
+        let clampedIndex = max(min(index, years.count - 1), lowerIndex)
+        let newUpperYear = clampedIndex == years.count - 1 ? nil : years[clampedIndex]
+        onChange(lowerYear, newUpperYear)
     }
 }
 
