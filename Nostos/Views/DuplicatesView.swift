@@ -103,6 +103,10 @@ struct DuplicatePhotoCard: View {
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(isKept ? Color.green : Color.clear, lineWidth: 3)
                 )
+                .onTapGesture {
+                    if !isKept { onKeep() }
+                }
+                .accessibilityIdentifier("duplicatePhotoTile")
 
                 if isKept {
                     Image(systemName: "checkmark.circle.fill")
@@ -128,14 +132,7 @@ struct DuplicatePhotoCard: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
-            Button(isKept ? "Kept" : "Keep This") {
-                onKeep()
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .disabled(isKept)
-            .frame(width: 140)
-            .accessibilityIdentifier("duplicateKeepButton")
+            // Tapping the photo itself now marks it as kept — button removed.
         }
         .onAppear { loadThumbnail() }
     }

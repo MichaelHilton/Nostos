@@ -116,12 +116,12 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(duplicatesTabButton.waitForExistence(timeout: 10))
         click(duplicatesTabButton, label: "duplicatesTabButton")
 
-        let duplicateKeepButtons = app.buttons.matching(identifier: "duplicateKeepButton")
-        XCTAssertGreaterThan(duplicateKeepButtons.count, 0)
-        for index in 0..<duplicateKeepButtons.count {
-            let keepButton = duplicateKeepButtons.element(boundBy: index)
-            if keepButton.waitForExistence(timeout: 5), keepButton.isHittable {
-                click(keepButton, label: "duplicateKeepButton[\(index)]")
+        let duplicatePhotoTiles = app.descendants(matching: .any).matching(identifier: "duplicatePhotoTile")
+        XCTAssertGreaterThan(duplicatePhotoTiles.count, 0)
+        for index in 0..<duplicatePhotoTiles.count {
+            let tile = duplicatePhotoTiles.element(boundBy: index)
+            if tile.waitForExistence(timeout: 5), tile.isHittable {
+                click(tile, label: "duplicatePhotoTile[\(index)]")
             }
         }
 

@@ -43,6 +43,8 @@ enum ThumbnailService {
 
     /// Returns the path to the thumbnail, generating it if needed.
     static func thumbnail(for photoId: Int64, sourceURL: URL, imageSource: CGImageSource? = nil) -> String? {
+        // ensure cache directory exists (tests may remove it between runs)
+        try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
         let dest = cacheDir.appendingPathComponent("\(photoId).jpg")
         if FileManager.default.fileExists(atPath: dest.path) {
             return dest.path
@@ -81,6 +83,8 @@ enum ThumbnailService {
         guard CGImageDestinationFinalize(imgDest) else { return nil }
 
         do {
+            // ensure parent directory still exists (some tests remove the vault)
+            try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
             try (data as Data).write(to: dest, options: .atomic)
             return dest.path
         } catch {

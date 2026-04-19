@@ -253,7 +253,7 @@ final class AppState: ObservableObject {
         errorMessage = nil
 
         Task {
-            let service = BackupService(db: db) { [weak self] progress in
+            let service = BackupService(db: db) { [weak self] (progress: BackupProgress) in
                 Task { @MainActor [weak self] in
                     self?.backupProgress = progress
                 }
