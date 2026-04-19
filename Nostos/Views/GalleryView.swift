@@ -15,6 +15,11 @@ struct GalleryView: View {
     @State private var filterYearFrom: Int?
     @State private var filterYearTo: Int?
 
+    // Backup options (exposed in the filter sidebar)
+    @State private var folderFormat: String = "YYYY/MM/DD"
+    @State private var dryRun: Bool = true
+    @State private var estimatedBackupCount: Int = 0
+
     private let columns = [GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 8)]
 
     private var orderedYears: [Int] {
@@ -68,6 +73,13 @@ struct GalleryView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Gallery")
+        .onChange(of: filterCameraModels) { _ in refreshBackupCount() }
+        .onChange(of: filterIncludeNoCamera) { _ in refreshBackupCount() }
+        .onChange(of: filterYearFrom) { _ in refreshBackupCount() }
+        .onChange(of: filterYearTo) { _ in refreshBackupCount() }
+        .onChange(of: filterDateFrom) { _ in refreshBackupCount() }
+        .onChange(of: filterDateTo) { _ in refreshBackupCount() }
+        .onAppear { refreshBackupCount() }
     }
 
     @ViewBuilder
@@ -257,6 +269,87 @@ struct GalleryView: View {
                 }
             }
 
+            Section("Exact date range") {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        DatePicker(
+                            "From",
+                            selection: Binding(
+                                get: { filterDateFrom ?? Date() },
+                                set: { filterDateFrom = $0 }
+                            ),
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
+                        .opacity(filterDateFrom == nil ? 0.4 : 1)
+                        .onTapGesture { if filterDateFrom == nil { filterDateFrom = Date() } }
+
+                        Text("–").foregroundColor(.secondary)
+
+                        DatePicker(
+                            "To",
+                            selection: Binding(
+                                get: { filterDateTo ?? Date() },
+                                set: { filterDateTo = $0 }
+                            ),
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
+                        .opacity(filterDateTo == nil ? 0.4 : 1)
+                        .onTapGesture { if filterDateTo == nil { filterDateTo = Date() } }
+
+                        if filterDateFrom != nil || filterDateTo != nil {
+                            Button("Clear") {
+                                filterDateFrom = nil
+                                filterDateTo = nil
+                                applyLocalFilters()
+                            }
+                            .buttonStyle(.borderless)
+                            .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Section("Backup") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Folder Format")
+                            .frame(width: 90, alignment: .trailing)
+                        TextField("YYYY/MM/DD", text: $folderFormat)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(maxWidth: 200)
+                    }
+
+                    Toggle("Dry Run (preview only)", isOn: $dryRun)
+
+                    HStack {
+                        Image(systemName: "photo.stack")
+                            .foregroundColor(.secondary)
+                        Text("**\(estimatedBackupCount)** photo\(estimatedBackupCount == 1 ? "" : "s") match current filter")
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+
+                    HStack {
+                        Spacer()
+                        Button(action: startBackup) {
+                            Label(
+                                state.backupProgress.isRunning
+                                    ? "Backing up…"
+                                    : (dryRun ? "Preview" : "Back Up Now"),
+                                systemImage: state.backupProgress.isRunning ? "stop.circle" : "tray.and.arrow.down.fill"
+                            )
+                        }
+                        .disabled(state.vaultRootURL == nil || state.backupProgress.isRunning || estimatedBackupCount == 0)
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier(dryRun ? "backupPreviewButton" : "backupRunButton")
+                        Spacer()
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
             HStack {
                 Spacer()
 
@@ -268,6 +361,8 @@ struct GalleryView: View {
                     filterYearFrom = nil
                     filterYearTo = nil
                     state.applyFilter(PhotoFilter())
+                    // refresh backup count when clearing filters
+                    refreshBackupCount()
                 }
                 .foregroundColor(.red)
                 .accessibilityIdentifier("galleryRemoveAllFiltersButton")
@@ -276,6 +371,28 @@ struct GalleryView: View {
         .padding(8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .ifAvailableFormStyleGrouped()
+    }
+
+    // Keep the backup count in sync with local filter selections
+    private func refreshBackupCount() {
+        estimatedBackupCount = state.countPhotosForBackup(filter: currentBackupFilter)
+    }
+
+    private func startBackup() {
+        state.startBackup(folderFormat: folderFormat, filter: currentBackupFilter, dryRun: dryRun)
+    }
+
+    private var currentBackupFilter: PhotoFilter {
+        var f = PhotoFilter()
+        f.cameraModels = filterCameraModels
+        f.includeNoCamera = filterIncludeNoCamera
+        f.yearFrom = filterYearFrom
+        f.yearTo = filterYearTo
+        f.dateFrom = filterDateFrom
+        f.dateTo = filterDateTo
+        f.limit = Int.max
+        f.offset = 0
+        return f
     }
 
     // Apply the local filter selections to the global state
