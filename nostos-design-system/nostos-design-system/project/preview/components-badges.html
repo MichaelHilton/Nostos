@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); font-family: var(--font-sans); padding: 20px 24px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  .badge {
+    font-size: 9px; font-weight: 700;
+    padding: 2px 5px;
+    border-radius: var(--radius-sm);
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .badge-dup { background: var(--nostos-orange); }
+  .badge-ok  { background: var(--nostos-green); }
+  .badge-sel { background: var(--nostos-blue); }
+  .badge-err { background: var(--nostos-red); }
+  .badge-run { background: var(--nostos-teal-mid); }
+
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px 3px 8px;
+    border-radius: var(--radius-full);
+    font-size: 11px; font-weight: 500;
+    background: var(--nostos-neutral-100);
+    color: var(--fg-primary);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  .pill-dev {
+    background: var(--nostos-teal-light);
+    color: white;
+    border-radius: var(--radius-full);
+    padding: 3px 10px;
+    font-size: 11px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="row">
+    <span class="badge badge-dup">DUP</span>
+    <span class="badge badge-ok">✓</span>
+    <span class="badge badge-sel">Selected</span>
+    <span class="badge badge-err">Error</span>
+    <span class="badge badge-run">Scanning</span>
+  </div>
+  <div class="row">
+    <div class="status-chip"><div class="dot" style="background:var(--nostos-green)"></div>Completed</div>
+    <div class="status-chip"><div class="dot" style="background:var(--nostos-orange)"></div>Running</div>
+    <div class="status-chip"><div class="dot" style="background:var(--nostos-red)"></div>Failed</div>
+    <div class="status-chip"><div class="dot" style="background:var(--fg-muted)"></div>Skipped</div>
+  </div>
+  <div class="row">
+    <span class="pill-dev">active development</span>
+  </div>
+</body>
+</html>

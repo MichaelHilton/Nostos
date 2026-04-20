@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: #2B3540; font-family: var(--font-sans); padding: 20px 24px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .tile {
+    width: 140px; height: 140px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    background: var(--nostos-neutral-700);
+    flex-shrink: 0;
+  }
+  .tile-img { width: 100%; height: 100%; object-fit: cover; background: linear-gradient(135deg, #1B7A8A 0%, #203238 100%); }
+  .tile-gradient {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.65) 100%);
+  }
+  .tile-badges {
+    position: absolute; bottom: 6px; left: 6px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .badge-row { display: flex; gap: 3px; }
+  .badge {
+    font-size: 9px; font-weight: 700;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: white;
+  }
+  .tile-selected { outline: 2px solid var(--nostos-teal-light); outline-offset: -2px; }
+  .tile-kept { outline: 3px solid var(--nostos-green); outline-offset: -3px; }
+  .check { position: absolute; top: 4px; right: 4px; font-size: 16px; }
+</style>
+</head>
+<body>
+  <!-- Normal tile -->
+  <div class="tile">
+    <div class="tile-img"></div>
+  </div>
+  <!-- Duplicate -->
+  <div class="tile">
+    <div class="tile-img" style="background: linear-gradient(135deg, #2B3540 0%, #1A5068 100%)"></div>
+    <div class="tile-gradient"></div>
+    <div class="tile-badges">
+      <div class="badge-row"><span class="badge" style="background:var(--nostos-orange)">DUP</span></div>
+    </div>
+  </div>
+  <!-- Copied/done -->
+  <div class="tile">
+    <div class="tile-img" style="background: linear-gradient(135deg, #1B7A8A 0%, #2B3540 100%)"></div>
+    <div class="tile-gradient"></div>
+    <div class="tile-badges">
+      <div class="badge-row"><span class="badge" style="background:var(--nostos-green)">✓</span></div>
+    </div>
+  </div>
+  <!-- Selected -->
+  <div class="tile tile-selected">
+    <div class="tile-img" style="background: linear-gradient(135deg, #203238 0%, #2BABB8 100%)"></div>
+    <div class="tile-gradient"></div>
+    <div class="tile-badges">
+      <div class="badge-row"><span class="badge" style="background:var(--nostos-blue)">Selected</span></div>
+      <div style="font-size:10px; font-weight:600; color:white; text-shadow: 0 1px 2px rgba(0,0,0,0.6)">Canon EOS R5</div>
+      <div style="font-size:9px; color:rgba(255,255,255,0.85); text-shadow: 0 1px 2px rgba(0,0,0,0.6)">Aug 12, 2024</div>
+    </div>
+  </div>
+  <!-- Kept duplicate -->
+  <div class="tile tile-kept">
+    <div class="tile-img" style="background: linear-gradient(135deg, #1A5068 0%, #1B7A8A 100%)"></div>
+    <div class="check">✅</div>
+  </div>
+</body>
+</html>

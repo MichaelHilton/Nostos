@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nostos — Wave-Lens Logo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0c1018; font-family: Inter, sans-serif; padding: 48px; color: #c8dce8; }
+
+  h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px; font-weight: 600; color: #2A7A8A;
+    text-transform: uppercase; letter-spacing: 0.16em;
+    margin-bottom: 20px; margin-top: 36px;
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  .row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin-bottom: 8px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .lbl { font-size: 9px; color: #2A5A6A; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* Light swatch */
+  .swatch-light {
+    background: #F8F6F1;
+    border-radius: 12px;
+    padding: 28px 36px;
+    display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  }
+  /* Dark swatch */
+  .swatch-dark {
+    background: #0D1E2E;
+    border-radius: 12px;
+    padding: 28px 36px;
+    display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+    border: 1px solid #1A3048;
+  }
+  /* Pure black swatch */
+  .swatch-black {
+    background: #000;
+    border-radius: 12px;
+    padding: 28px 36px;
+    display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  }
+
+  /* App icon wrapper */
+  .app-icon { border-radius: 22.5%; overflow: hidden; flex-shrink: 0; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+
+  /* Wordmark */
+  .wm { display: flex; align-items: center; gap: 12px; }
+  .wm-stack { display: flex; flex-direction: column; }
+  .wm-name { font-family: 'Cormorant Garamond', serif; font-weight: 700; letter-spacing: -0.025em; line-height: 1; }
+  .wm-sub  { font-family: Inter, sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; line-height: 1; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid #1A2A3A; margin: 36px 0; }
+
+  /* Notes section */
+  .notes {
+    background: #0E1822; border: 1px solid #1A2E3E;
+    border-radius: 10px; padding: 20px 24px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px; margin-top: 36px;
+  }
+  .note-title { font-size: 10px; font-weight: 700; color: #2A7A8A;
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 7px; }
+  .note-body { font-size: 11px; color: #4A7A90; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     MARK DEFINITION (reused via <use>)
+     We define 4 canonical versions as symbols
+════════════════════════════════════════ -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+
+    <!-- MARK on TEAL bg (for app icon) -->
+    <symbol id="mark-teal" viewBox="0 0 1 1">
+      <!-- bg -->
+      <rect width="1" height="1" fill="#1B7A8A"/>
+      <!-- outer ring -->
+      <circle cx=".5" cy=".5" r=".37" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width=".018"/>
+      <!-- wave / spiral path — graceful Archimedean sweep -->
+      <path d="
+        M .185 .5
+        C .185 .305  .305 .145  .5  .13
+        C .695 .115  .855 .275  .87 .47
+        C .885 .665  .73  .82   .535 .835
+        C .345 .85   .185 .72   .185 .5 Z"
+        fill="none" stroke="white" stroke-width=".04" stroke-linecap="round" opacity=".9"/>
+      <!-- inner aperture ring -->
+      <circle cx=".5" cy=".5" r=".12" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width=".022"/>
+      <!-- center dot -->
+      <circle cx=".5" cy=".5" r=".055" fill="white" opacity=".95"/>
+      <!-- North gold tick — top of outer ring -->
+      <line x1=".5" y1=".10" x2=".5" y2=".145" stroke="#D4A030" stroke-width=".032" stroke-linecap="round"/>
+      <!-- tiny gold dot at top for polish -->
+      <circle cx=".5" cy=".098" r=".016" fill="#D4A030"/>
+    </symbol>
+
+    <!-- MARK on LIGHT bg -->
+    <symbol id="mark-light" viewBox="0 0 1 1">
+      <circle cx=".5" cy=".5" r=".37" fill="none" stroke="#1B7A8A" stroke-width=".018" opacity=".28"/>
+      <path d="
+        M .185 .5
+        C .185 .305  .305 .145  .5  .13
+        C .695 .115  .855 .275  .87 .47
+        C .885 .665  .73  .82   .535 .835
+        C .345 .85   .185 .72   .185 .5 Z"
+        fill="none" stroke="#1B7A8A" stroke-width=".042" stroke-linecap="round"/>
+      <circle cx=".5" cy=".5" r=".12" fill="none" stroke="#1B7A8A" stroke-width=".02" opacity=".4"/>
+      <circle cx=".5" cy=".5" r=".054" fill="#1B7A8A"/>
+      <line x1=".5" y1=".095" x2=".5" y2=".148" stroke="#B8892A" stroke-width=".032" stroke-linecap="round"/>
+      <circle cx=".5" cy=".093" r=".016" fill="#B8892A"/>
+    </symbol>
+
+    <!-- MARK on DARK bg -->
+    <symbol id="mark-dark" viewBox="0 0 1 1">
+      <circle cx=".5" cy=".5" r=".37" fill="none" stroke="#2BABB8" stroke-width=".015" opacity=".3"/>
+      <path d="
+        M .185 .5
+        C .185 .305  .305 .145  .5  .13
+        C .695 .115  .855 .275  .87 .47
+        C .885 .665  .73  .82   .535 .835
+        C .345 .85   .185 .72   .185 .5 Z"
+        fill="none" stroke="#2BABB8" stroke-width=".042" stroke-linecap="round"/>
+      <circle cx=".5" cy=".5" r=".12" fill="none" stroke="#2BABB8" stroke-width=".02" opacity=".4"/>
+      <circle cx=".5" cy=".5" r=".054" fill="#2BABB8"/>
+      <line x1=".5" y1=".095" x2=".5" y2=".148" stroke="#D4A030" stroke-width=".032" stroke-linecap="round"/>
+      <circle cx=".5" cy=".093" r=".016" fill="#D4A030"/>
+    </symbol>
+
+    <!-- APP ICON (teal) square for rounded clipping -->
+    <symbol id="appicon-teal" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#1B7A8A"/>
+      <circle cx="50" cy="50" r="37" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.6"/>
+      <path d="
+        M 18.5 50
+        C 18.5 30.5  30.5 14.5  50  13
+        C 69.5 11.5  85.5 27.5  87  47
+        C 88.5 66.5  73  82   53.5 83.5
+        C 34.5 85   18.5 72   18.5 50 Z"
+        fill="none" stroke="white" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+      <circle cx="50" cy="50" r="12" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2.2"/>
+      <circle cx="50" cy="50" r="5.5" fill="white" opacity=".95"/>
+      <line x1="50" y1="10" x2="50" y2="14.5" stroke="#D4A030" stroke-width="3.2" stroke-linecap="round"/>
+      <circle cx="50" cy="9.5" r="1.8" fill="#D4A030"/>
+    </symbol>
+
+    <!-- APP ICON dark navy -->
+    <symbol id="appicon-navy" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#1C3040"/>
+      <circle cx="50" cy="50" r="37" fill="none" stroke="rgba(43,171,184,0.25)" stroke-width="1.6"/>
+      <path d="
+        M 18.5 50
+        C 18.5 30.5  30.5 14.5  50  13
+        C 69.5 11.5  85.5 27.5  87  47
+        C 88.5 66.5  73  82   53.5 83.5
+        C 34.5 85   18.5 72   18.5 50 Z"
+        fill="none" stroke="#2BABB8" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="12" fill="none" stroke="#2BABB8" stroke-width="2.2" opacity=".45"/>
+      <circle cx="50" cy="50" r="5.5" fill="#2BABB8"/>
+      <line x1="50" y1="10" x2="50" y2="14.5" stroke="#D4A030" stroke-width="3.2" stroke-linecap="round"/>
+      <circle cx="50" cy="9.5" r="1.8" fill="#D4A030"/>
+    </symbol>
+
+    <!-- APP ICON warm parchment -->
+    <symbol id="appicon-parchment" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#F8F6F1"/>
+      <circle cx="50" cy="50" r="37" fill="none" stroke="#1B7A8A" stroke-width="1.6" opacity=".25"/>
+      <path d="
+        M 18.5 50
+        C 18.5 30.5  30.5 14.5  50  13
+        C 69.5 11.5  85.5 27.5  87  47
+        C 88.5 66.5  73  82   53.5 83.5
+        C 34.5 85   18.5 72   18.5 50 Z"
+        fill="none" stroke="#1B7A8A" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="12" fill="none" stroke="#1B7A8A" stroke-width="2.2" opacity=".4"/>
+      <circle cx="50" cy="50" r="5.5" fill="#1B7A8A"/>
+      <line x1="50" y1="10" x2="50" y2="14.5" stroke="#B8892A" stroke-width="3.2" stroke-linecap="round"/>
+      <circle cx="50" cy="9.5" r="1.8" fill="#B8892A"/>
+    </symbol>
+
+  </defs>
+</svg>
+
+<!-- ══════════════ SECTION: APP ICONS ══════════════ -->
+<h2>App Icon — Color Variants</h2>
+<div class="row">
+  <!-- Teal -->
+  <div class="col">
+    <div class="app-icon" style="width:100px;height:100px">
+      <svg width="100" height="100"><use href="#appicon-teal"/></svg>
+    </div>
+    <div class="lbl">Teal</div>
+  </div>
+  <!-- Navy -->
+  <div class="col">
+    <div class="app-icon" style="width:100px;height:100px">
+      <svg width="100" height="100"><use href="#appicon-navy"/></svg>
+    </div>
+    <div class="lbl">Navy</div>
+  </div>
+  <!-- Parchment -->
+  <div class="col">
+    <div class="app-icon" style="width:100px;height:100px">
+      <svg width="100" height="100"><use href="#appicon-parchment"/></svg>
+    </div>
+    <div class="lbl">Parchment</div>
+  </div>
+
+  <!-- Sizes of teal icon -->
+  <div style="display:flex;align-items:flex-end;gap:10px;margin-left:24px;padding-left:24px;border-left:1px solid #1A2A3A">
+    <div class="col">
+      <div class="app-icon" style="width:64px;height:64px">
+        <svg width="64" height="64"><use href="#appicon-teal"/></svg>
+      </div>
+      <div class="lbl">64</div>
+    </div>
+    <div class="col">
+      <div class="app-icon" style="width:48px;height:48px">
+        <svg width="48" height="48"><use href="#appicon-teal"/></svg>
+      </div>
+      <div class="lbl">48</div>
+    </div>
+    <div class="col">
+      <div class="app-icon" style="width:32px;height:32px">
+        <svg width="32" height="32"><use href="#appicon-teal"/></svg>
+      </div>
+      <div class="lbl">32</div>
+    </div>
+    <div class="col">
+      <div class="app-icon" style="width:20px;height:20px">
+        <svg width="20" height="20"><use href="#appicon-teal"/></svg>
+      </div>
+      <div class="lbl">20</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ══════════════ SECTION: LIGHT BG ══════════════ -->
+<h2>On Light Background</h2>
+<div class="swatch-light">
+  <!-- Large wordmark -->
+  <div class="wm">
+    <svg width="56" height="56"><use href="#mark-light" width="56" height="56"/></svg>
+    <div class="wm-stack">
+      <span class="wm-name" style="font-size:34px;color:#1C3040">nostos</span>
+      <span class="wm-sub" style="font-size:10px;color:#9AAEBB;margin-top:4px">Self-Hosted Photo Management</span>
+    </div>
+  </div>
+  <!-- Medium wordmark -->
+  <div class="wm" style="border-left:1px solid #DDD8CE;padding-left:28px;margin-left:4px">
+    <svg width="32" height="32"><use href="#mark-light" width="32" height="32"/></svg>
+    <span class="wm-name" style="font-size:22px;color:#1C3040">nostos</span>
+  </div>
+  <!-- Mark only -->
+  <div style="border-left:1px solid #DDD8CE;padding-left:28px;margin-left:4px;display:flex;flex-direction:column;align-items:center;gap:6px">
+    <svg width="44" height="44"><use href="#mark-light" width="44" height="44"/></svg>
+    <div class="lbl" style="color:#B8C8D0">Mark only</div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ══════════════ SECTION: DARK BG ══════════════ -->
+<h2>On Dark Background</h2>
+<div class="swatch-dark">
+  <div class="wm">
+    <svg width="56" height="56"><use href="#mark-dark" width="56" height="56"/></svg>
+    <div class="wm-stack">
+      <span class="wm-name" style="font-size:34px;color:#D8EDF8">nostos</span>
+      <span class="wm-sub" style="font-size:10px;color:#3A6A7A;margin-top:4px">Self-Hosted Photo Management</span>
+    </div>
+  </div>
+  <div class="wm" style="border-left:1px solid #1A3048;padding-left:28px;margin-left:4px">
+    <svg width="32" height="32"><use href="#mark-dark" width="32" height="32"/></svg>
+    <span class="wm-name" style="font-size:22px;color:#D8EDF8">nostos</span>
+  </div>
+  <div style="border-left:1px solid #1A3048;padding-left:28px;margin-left:4px;display:flex;flex-direction:column;align-items:center;gap:6px">
+    <svg width="44" height="44"><use href="#mark-dark" width="44" height="44"/></svg>
+    <div class="lbl">Mark only</div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ══════════════ SECTION: BLACK ══════════════ -->
+<h2>On Black (menu bar / dock)</h2>
+<div class="swatch-black">
+  <div class="col">
+    <div class="app-icon" style="width:80px;height:80px">
+      <svg width="80" height="80"><use href="#appicon-teal"/></svg>
+    </div>
+    <div class="lbl" style="color:#333">App Icon</div>
+  </div>
+  <!-- Monochrome / template icon -->
+  <div class="col" style="border-left:1px solid #1A1A1A;padding-left:28px;margin-left:4px">
+    <svg width="22" height="22" viewBox="0 0 1 1">
+      <circle cx=".5" cy=".5" r=".37" fill="none" stroke="white" stroke-width=".018" opacity=".5"/>
+      <path d="M .185 .5 C .185 .305  .305 .145  .5  .13 C .695 .115  .855 .275  .87 .47 C .885 .665  .73  .82   .535 .835 C .345 .85   .185 .72   .185 .5 Z"
+        fill="none" stroke="white" stroke-width=".042" stroke-linecap="round"/>
+      <circle cx=".5" cy=".5" r=".054" fill="white"/>
+      <line x1=".5" y1=".095" x2=".5" y2=".148" stroke="white" stroke-width=".032" stroke-linecap="round"/>
+    </svg>
+    <div class="lbl" style="color:#333">Menu bar</div>
+  </div>
+  <div class="wm" style="padding-left:28px;margin-left:4px;border-left:1px solid #1A1A1A">
+    <div class="app-icon" style="width:36px;height:36px">
+      <svg width="36" height="36"><use href="#appicon-teal"/></svg>
+    </div>
+    <span class="wm-name" style="font-size:22px;color:white">nostos</span>
+  </div>
+</div>
+
+<hr>
+
+<!-- ══════════════ SECTION: ANATOMY ══════════════ -->
+<h2>Mark Anatomy</h2>
+<div style="background:#F8F6F1;border-radius:12px;padding:40px;display:flex;gap:48px;align-items:center;flex-wrap:wrap">
+  <svg width="200" height="200" viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg">
+    <!-- outer ring annotation -->
+    <circle cx=".5" cy=".5" r=".37" fill="none" stroke="#1B7A8A" stroke-width=".008" stroke-dasharray=".02 .015" opacity=".4"/>
+    <!-- wave -->
+    <path d="M .185 .5 C .185 .305  .305 .145  .5  .13 C .695 .115  .855 .275  .87 .47 C .885 .665  .73  .82   .535 .835 C .345 .85   .185 .72   .185 .5 Z"
+      fill="none" stroke="#1B7A8A" stroke-width=".038" stroke-linecap="round"/>
+    <!-- inner ring -->
+    <circle cx=".5" cy=".5" r=".12" fill="none" stroke="#1B7A8A" stroke-width=".016" opacity=".4"/>
+    <!-- center -->
+    <circle cx=".5" cy=".5" r=".054" fill="#1B7A8A"/>
+    <!-- north tick -->
+    <line x1=".5" y1=".095" x2=".5" y2=".148" stroke="#B8892A" stroke-width=".028" stroke-linecap="round"/>
+    <circle cx=".5" cy=".093" r=".015" fill="#B8892A"/>
+    <!-- annotation lines -->
+    <line x1=".5" y1=".13" x2=".75" y2=".05" stroke="#9AAEBB" stroke-width=".006"/>
+    <line x1=".87" y1=".5" x2=".98" y2=".38" stroke="#9AAEBB" stroke-width=".006"/>
+    <line x1=".5" y1=".5" x2=".78" y2=".65" stroke="#9AAEBB" stroke-width=".006"/>
+    <line x1=".5" y1=".093" x2=".7" y2=".02" stroke="#B8892A" stroke-width=".006" opacity=".6"/>
+  </svg>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#1B7A8A;font-family:Inter,sans-serif;margin-bottom:3px">Spiral Wave</div>
+      <div style="font-size:11px;color:#5A7080;font-family:Inter,sans-serif;max-width:240px;line-height:1.5">
+        An Archimedean spiral open on one side — suggesting an Aegean wave and an incomplete orbit, evoking a journey not yet finished.
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#1B7A8A;font-family:Inter,sans-serif;margin-bottom:3px">Lens Circle</div>
+      <div style="font-size:11px;color:#5A7080;font-family:Inter,sans-serif;max-width:240px;line-height:1.5">
+        The outer ring and central aperture reference a camera lens — the act of capturing and preserving memory.
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#B8892A;font-family:Inter,sans-serif;margin-bottom:3px">Gold North Point</div>
+      <div style="font-size:11px;color:#5A7080;font-family:Inter,sans-serif;max-width:240px;line-height:1.5">
+        A compass N-mark in gold — the needle pointing home, for <em style="font-family:'Cormorant Garamond',serif">nostos</em>, the Greek word for homecoming.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notes -->
+<div class="notes">
+  <div>
+    <div class="note-title">Minimum Size</div>
+    <div class="note-body">The mark holds down to 16px. Below 20px, use a simplified version without the outer ring and inner aperture circle.</div>
+  </div>
+  <div>
+    <div class="note-title">Clear Space</div>
+    <div class="note-body">Maintain clear space equal to the radius of the outer ring (≈ 37% of mark width) on all sides.</div>
+  </div>
+  <div>
+    <div class="note-title">Don't Do</div>
+    <div class="note-body">Don't rotate the mark. Don't change the gold north-point to any other color. Don't place on non-brand backgrounds without checking contrast.</div>
+  </div>
+</div>
+
+</body>
+</html>

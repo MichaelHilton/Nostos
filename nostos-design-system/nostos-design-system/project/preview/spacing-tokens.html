@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); font-family: var(--font-sans); padding: 20px 24px; }
+  .col { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+  .step { text-align: center; }
+  .step-bar { background: var(--nostos-teal-mid); opacity: 0.8; border-radius: 3px 3px 0 0; width: 28px; margin: 0 auto; }
+  .step-label { font-size: 10px; font-weight: 600; color: var(--fg-muted); margin-top: 4px; }
+  .step-val { font-size: 9px; color: var(--fg-secondary); font-family: var(--font-mono); }
+  .shadows { display: flex; gap: 16px; flex-wrap: wrap; }
+  .shadow-box { width: 72px; height: 48px; background: var(--bg-surface); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--fg-secondary); }
+</style>
+</head>
+<body>
+  <div class="col">
+    <div class="step"><div class="step-bar" style="height:4px"></div><div class="step-label">4</div><div class="step-val">4px</div></div>
+    <div class="step"><div class="step-bar" style="height:8px"></div><div class="step-label">8</div><div class="step-val">8px</div></div>
+    <div class="step"><div class="step-bar" style="height:12px"></div><div class="step-label">12</div><div class="step-val">12px</div></div>
+    <div class="step"><div class="step-bar" style="height:16px"></div><div class="step-label">16</div><div class="step-val">16px</div></div>
+    <div class="step"><div class="step-bar" style="height:20px"></div><div class="step-label">20</div><div class="step-val">20px</div></div>
+    <div class="step"><div class="step-bar" style="height:24px"></div><div class="step-label">24</div><div class="step-val">24px — page padding</div></div>
+    <div class="step"><div class="step-bar" style="height:32px"></div><div class="step-label">32</div><div class="step-val">32px</div></div>
+  </div>
+  <div class="shadows">
+    <div class="shadow-box" style="box-shadow:var(--shadow-sm)">sm</div>
+    <div class="shadow-box" style="box-shadow:var(--shadow-md)">md</div>
+    <div class="shadow-box" style="box-shadow:var(--shadow-lg)">lg</div>
+  </div>
+</body>
+</html>

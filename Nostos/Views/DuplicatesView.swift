@@ -5,16 +5,10 @@ struct DuplicatesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Duplicates")
-                    .font(.largeTitle).bold()
-                Spacer()
-                Text("\(state.duplicateGroups.count) groups")
-                    .foregroundColor(.secondary)
-            }
-            .padding(24)
-
-            Divider()
+            NostosPageHeader(
+                title: "Duplicates",
+                subtitle: "\(state.duplicateGroups.count) groups · \(totalPhotos) photos"
+            )
 
             if state.duplicateGroups.isEmpty {
                 EmptyStateView(
@@ -22,138 +16,235 @@ struct DuplicatesView: View {
                     systemImage: "checkmark.seal",
                     description: Text("Run a scan to detect duplicate photos.")
                 )
+                .background(NostosTheme.bg)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 16) {
-                        ForEach(state.duplicateGroups) { group in
-                            DuplicateGroupRow(group: group)
+                ZStack(alignment: .topLeading) {
+                    NostosTheme.bg.ignoresSafeArea()
+                    StarDotBackground()
+
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            LazyVGrid(
+                                columns: [GridItem(.adaptive(minimum: 280), spacing: 8)],
+                                spacing: 8
+                            ) {
+                                ForEach(Array(state.duplicateGroups.enumerated()), id: \.element.id) { _, group in
+                                    DuplicateGroupCard(group: group)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+
+                            // Footer actions
+                            HStack(spacing: 10) {
+                                Button("Keep First in All Groups") {
+                                    for group in state.duplicateGroups {
+                                        if let gId = group.group.id,
+                                           let first = group.photos.first,
+                                           let pId = first.id {
+                                            state.setKeptPhoto(groupId: gId, photoId: pId)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(NostosButtonStyle(variant: .bordered))
+
+                                let resolved = state.duplicateGroups.filter { g in
+                                    g.photos.contains { $0.isKept }
+                                }.count
+                                Button("Clear Selections") {
+                                    // resetting isn't directly supported; no-op in UI
+                                }
+                                .buttonStyle(NostosButtonStyle(variant: .danger))
+                                .disabled(resolved == 0)
+
+                                Spacer()
+
+                                let canRemove = resolved == state.duplicateGroups.count
+                                let dupsToRemove = totalPhotos - state.duplicateGroups.count
+                                Button("Remove \(dupsToRemove) Duplicates") { }
+                                    .buttonStyle(NostosButtonStyle(variant: .primary))
+                                    .disabled(!canRemove)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .overlay(alignment: .top) {
+                                Rectangle().fill(NostosTheme.border).frame(height: 1)
+                            }
                         }
                     }
-                    .padding(24)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
-}
 
-struct DuplicateGroupRow: View {
-    @EnvironmentObject var state: AppState
-    let group: DuplicateGroupWithPhotos
-
-    var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Label(group.group.reason == .hashMatch ? "Exact Match" : "Near Duplicate",
-                          systemImage: group.group.reason == .hashMatch ? "equal.circle" : "arrow.triangle.2.circlepath")
-                        .font(.headline)
-                    Spacer()
-                    Text("\(group.photos.count) photos")
-                        .foregroundColor(.secondary)
-                        .font(.subheadline)
-                }
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(group.photos) { photo in
-                            DuplicatePhotoCard(
-                                photo: photo,
-                                isKept: photo.isKept,
-                                onKeep: {
-                                    if let groupId = group.group.id, let photoId = photo.id {
-                                        state.setKeptPhoto(groupId: groupId, photoId: photoId)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-            .padding(8)
-        }
+    private var totalPhotos: Int {
+        state.duplicateGroups.reduce(0) { $0 + $1.photos.count }
     }
 }
 
-struct DuplicatePhotoCard: View {
+// MARK: - DuplicateGroupCard
+
+struct DuplicateGroupCard: View {
+    @EnvironmentObject var state: AppState
+    let group: DuplicateGroupWithPhotos
+    @State private var expanded = false
+
+    private var isResolved: Bool {
+        group.photos.contains { $0.isKept }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Header row
+            HStack(spacing: 6) {
+                // Match type badge
+                let isExact = group.group.reason == .hashMatch
+                HStack(spacing: 4) {
+                    DiamondAccent(color: isExact ? NostosTheme.orange : NostosTheme.accent, size: 4)
+                    Text(isExact ? "Exact" : "Near")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(isExact ? NostosTheme.orange : NostosTheme.accent)
+                }
+                .padding(.horizontal, 7).padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill((isExact ? NostosTheme.orange : NostosTheme.accent).opacity(0.1))
+                )
+
+                Text("\(group.photos.count) photos")
+                    .font(.system(size: 10))
+                    .foregroundColor(NostosTheme.fg3)
+
+                Spacer()
+
+                if isResolved {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(NostosTheme.green)
+                }
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() }
+                } label: {
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10))
+                        .foregroundColor(NostosTheme.fg3)
+                        .frame(width: 18, height: 18)
+                        .background(NostosTheme.surface2)
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .stroke(NostosTheme.border, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            // Thumbnails
+            let thumbSize: CGFloat = expanded ? 86 : 52
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(group.photos) { photo in
+                        DuplicateThumb(
+                            photo: photo,
+                            size: thumbSize,
+                            showLabel: expanded,
+                            onKeep: {
+                                if let gId = group.group.id, let pId = photo.id {
+                                    state.setKeptPhoto(groupId: gId, photoId: pId)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(NostosTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(isResolved ? NostosTheme.green.opacity(0.45) : NostosTheme.border, lineWidth: 1.5)
+        )
+        .shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
+    }
+}
+
+// MARK: - DuplicateThumb
+
+private struct DuplicateThumb: View {
     let photo: Photo
-    let isKept: Bool
+    let size: CGFloat
+    let showLabel: Bool
     let onKeep: () -> Void
 
     @State private var image: NSImage?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(spacing: 3) {
             ZStack(alignment: .topTrailing) {
                 Group {
                     if let img = image {
-                        Image(nsImage: img)
-                            .resizable()
-                            .scaledToFill()
+                        Image(nsImage: img).resizable().scaledToFill()
                     } else {
                         Rectangle()
-                            .fill(Color(nsColor: .windowBackgroundColor))
+                            .fill(NostosTheme.surface2)
                             .overlay(ProgressView().scaleEffect(0.6))
                     }
                 }
-                .frame(width: 140, height: 140)
-                .clipped()
-                .cornerRadius(6)
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(isKept ? Color.green : Color.clear, lineWidth: 3)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(photo.isKept ? NostosTheme.green : NostosTheme.borderFaint,
+                                lineWidth: photo.isKept ? 2.5 : 2)
+                        .padding(photo.isKept ? -1 : -1)
                 )
-                .onTapGesture {
-                    if !isKept { onKeep() }
-                }
+                .shadow(color: photo.isKept ? NostosTheme.green.opacity(0.2) : .clear,
+                        radius: 4, x: 0, y: 0)
+                .onTapGesture { if !photo.isKept { onKeep() } }
                 .accessibilityIdentifier("duplicatePhotoTile")
 
-                if isKept {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .background(Color.white.clipShape(Circle()))
-                        .padding(4)
+                if photo.isKept {
+                    Circle()
+                        .fill(NostosTheme.green)
+                        .frame(width: 14, height: 14)
+                        .overlay(
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                        )
+                        .padding(3)
                 }
             }
 
-            Text(URL(fileURLWithPath: photo.path).lastPathComponent)
-                .font(.caption)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .frame(width: 140)
-
-            if let date = photo.takenAt {
-                Text(date.formatted(date: .abbreviated, time: .omitted))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+            if showLabel {
+                Text(URL(fileURLWithPath: photo.path).lastPathComponent)
+                    .font(.system(size: 8))
+                    .foregroundColor(NostosTheme.fg3)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(width: size)
             }
-
-            Text(ByteCountFormatter.string(fromByteCount: photo.fileSize, countStyle: .file))
-                .font(.caption2)
-                .foregroundColor(.secondary)
-
-            // Tapping the photo itself now marks it as kept — button removed.
         }
         .onAppear { loadThumbnail() }
     }
 
     private func loadThumbnail() {
         guard image == nil else { return }
+        let tp = photo.thumbnailPath; let lp = photo.path; let lid = photo.id
         Task.detached(priority: .userInitiated) {
-            let loaded: NSImage? = {
-                if let path = photo.thumbnailPath {
-                    return ThumbnailService.loadImage(path: path)
-                }
-                if let photoId = photo.id {
-                    let path = ThumbnailService.thumbnail(
-                        for: photoId,
-                        sourceURL: URL(fileURLWithPath: photo.path)
-                    )
-                    return path.flatMap { ThumbnailService.loadImage(path: $0) }
+            let p: String? = {
+                if let t = tp { return t }
+                if let id = lid {
+                    return ThumbnailService.thumbnail(for: id, sourceURL: URL(fileURLWithPath: lp))
                 }
                 return nil
             }()
-            await MainActor.run { image = loaded }
+            await MainActor.run { if let p { image = ThumbnailService.loadImage(path: p) } }
         }
     }
 }

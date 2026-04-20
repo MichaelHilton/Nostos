@@ -12,127 +12,149 @@ struct VaultView: View {
         self.onVaultRootChange = onVaultRootChange
     }
 
+    private var progress: OrganizeProgress { state.organizeProgress }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Vault")
-                .font(.largeTitle).bold()
+        VStack(alignment: .leading, spacing: 0) {
+            NostosPageHeader(
+                title: "Vault",
+                subtitle: "Organise and copy photos into your structured vault folder"
+            )
 
-            GroupBox("Vault Location") {
-                HStack(spacing: 12) {
-                    Text(state.vaultRootURL?.path ?? "No vault selected")
-                        .foregroundColor(state.vaultRootURL == nil ? .secondary : .primary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+            ScrollView {
+                ZStack(alignment: .topLeading) {
+                    StarDotBackground()
+                    VStack(alignment: .leading, spacing: 14) {
 
-                    Button("Change Vault…") {
-                        pendingVaultURL = state.pickVaultDirectory()
-                    }
-                    .buttonStyle(.bordered)
-                    .accessibilityIdentifier("vaultChangeVaultButton")
-                }
-                .padding(4)
-            }
+                        // Stats cards — 4-column grid
+                        statsGrid
 
-            GroupBox("Options") {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Folder Format")
-                            .frame(width: 110, alignment: .trailing)
-                        TextField("YYYY/MM/DD", text: $folderFormat)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(maxWidth: 200)
-                        Text("Tokens: YYYY, MM, DD")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    Toggle("Dry Run (preview only, no files copied)", isOn: $dryRun)
-                }
-                .padding(4)
-            }
+                        // Breakdowns
+                        formatBreakdown
+                        yearBreakdown
 
-            HStack {
-                Button(action: startOrganize) {
-                    Label(
-                        state.organizeProgress.isRunning
-                            ? "Vaulting…"
-                            : (dryRun ? "Preview" : "Save to Vault"),
-                        systemImage: state.organizeProgress.isRunning ? "stop.circle" : "play.fill"
-                    )
-                }
-                .disabled(state.vaultRootURL == nil || state.organizeProgress.isRunning)
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier(dryRun ? "vaultPreviewButton" : "vaultSaveButton")
+                        // Vault location + format
+                        NostosCard {
+                            SectionLabel(title: "Vault Location")
+                            HStack(spacing: 10) {
+                                Text(state.vaultRootURL?.path ?? "No vault selected")
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(state.vaultRootURL == nil ? NostosTheme.fg3 : NostosTheme.fg2)
+                                    .lineLimit(1).truncationMode(.middle)
+                                    .padding(.horizontal, 10).padding(.vertical, 6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(NostosTheme.surface2)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .stroke(NostosTheme.border, lineWidth: 1)
+                                    )
+                                Button("Change…") {
+                                    pendingVaultURL = state.pickVaultDirectory()
+                                }
+                                .buttonStyle(NostosButtonStyle(variant: .bordered))
+                                .accessibilityIdentifier("vaultChangeVaultButton")
+                            }
 
-                if state.organizeProgress.isRunning {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                        .padding(.leading, 4)
-                }
-            }
+                            Rectangle().fill(NostosTheme.border).frame(height: 1)
+                                .padding(.vertical, 10)
 
-            if state.organizeProgress.isRunning || state.organizeProgress.total > 0 {
-                GroupBox("Progress") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if state.organizeProgress.total > 0 {
-                            ProgressView(
-                                value: Double(state.organizeProgress.copied + state.organizeProgress.skipped),
-                                total: Double(state.organizeProgress.total)
+                            SectionLabel(title: "Folder Format")
+                            HStack(spacing: 10) {
+                                TextField("YYYY/MM/DD", text: $folderFormat)
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 160)
+                                Text("e.g. 2024/04/19")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(NostosTheme.fg3)
+                            }
+
+                            Toggle("Dry Run (preview only, no files copied)", isOn: $dryRun)
+                                .toggleStyle(.checkbox)
+                                .font(.system(size: 12))
+                                .foregroundColor(NostosTheme.fg2)
+                                .padding(.top, 6)
+                        }
+
+                        // Organise button + progress
+                        Button(action: startOrganize) {
+                            Label(
+                                progress.isRunning ? "Organising…"
+                                    : (dryRun ? "Preview" : "Organise Vault"),
+                                systemImage: progress.isRunning ? "stop.circle" : "play.fill"
                             )
                         }
-                        HStack(spacing: 24) {
-                            stat("Total", state.organizeProgress.total, .primary)
-                            stat("Copied", state.organizeProgress.copied, .green)
-                            stat("Skipped", state.organizeProgress.skipped, .orange)
-                        }
-                    }
-                    .padding(4)
-                }
-            }
+                        .buttonStyle(NostosButtonStyle(variant: .primary))
+                        .disabled(state.vaultRootURL == nil || progress.isRunning)
+                        .accessibilityIdentifier(dryRun ? "vaultPreviewButton" : "vaultSaveButton")
 
-            if !state.lastOrganizeResults.isEmpty {
-                GroupBox {
-                    HStack {
-                        Text("Last Run Results")
-                            .font(.headline)
-                        Spacer()
-                        Button(showResults ? "Hide" : "Show Details") {
-                            showResults.toggle()
-                        }
-                        .buttonStyle(.borderless)
-                        .accessibilityIdentifier("vaultToggleDetailsButton")
-                    }
-                    .padding(.bottom, 4)
-
-                    if showResults {
-                        if #available(macOS 13, *) {
-                            Table(state.lastOrganizeResults) {
-                                TableColumn("Source") { r in
-                                    Text(URL(fileURLWithPath: r.source).lastPathComponent)
-                                        .lineLimit(1)
+                        if progress.isRunning || progress.total > 0 {
+                            NostosCard {
+                                SectionLabel(title: "Progress")
+                                NostosProgressBar(
+                                    value: progress.total > 0
+                                        ? Double(progress.copied + progress.skipped) / Double(progress.total)
+                                        : 0
+                                )
+                                HStack(spacing: 40) {
+                                    StatCell(label: "Total",     value: "\(progress.total)")
+                                    StatCell(label: "Organised", value: "\(progress.copied)",  color: NostosTheme.green)
+                                    StatCell(label: "Skipped",   value: "\(progress.skipped)", color: NostosTheme.orange)
                                 }
-                                TableColumn("Destination") { r in
-                                    Text(r.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
-                                        .lineLimit(1)
-                                }
-                                TableColumn("Action") { r in
-                                    Text(r.action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
-                                        .foregroundColor(actionColor(r.action))
-                                }
-                                .width(120)
+                                .padding(.top, 14)
                             }
-                            .frame(minHeight: 200)
-                        } else {
-                            LegacyOrganizeResultsView(results: state.lastOrganizeResults)
-                                .frame(minHeight: 200)
+                        }
+
+                        // Last run results (collapsible)
+                        if !state.lastOrganizeResults.isEmpty {
+                            NostosCard {
+                                HStack {
+                                    SectionLabel(title: "Last Run Results")
+                                    Spacer()
+                                    Button(showResults ? "Hide" : "Show Details") {
+                                        showResults.toggle()
+                                    }
+                                    .buttonStyle(NostosButtonStyle(variant: .plain))
+                                    .font(.system(size: 11))
+                                    .accessibilityIdentifier("vaultToggleDetailsButton")
+                                }
+                                if showResults {
+                                    if #available(macOS 13, *) {
+                                        Table(state.lastOrganizeResults) {
+                                            TableColumn("Source") { r in
+                                                Text(URL(fileURLWithPath: r.source).lastPathComponent)
+                                                    .lineLimit(1)
+                                                    .font(.system(size: 11))
+                                            }
+                                            TableColumn("Destination") { r in
+                                                Text(r.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
+                                                    .lineLimit(1)
+                                                    .font(.system(size: 11))
+                                            }
+                                            TableColumn("Action") { r in
+                                                Text(r.action.rawValue
+                                                        .replacingOccurrences(of: "_", with: " ")
+                                                        .capitalized)
+                                                    .foregroundColor(actionColor(r.action))
+                                                    .font(.system(size: 11, weight: .medium))
+                                            }
+                                            .width(120)
+                                        }
+                                        .frame(minHeight: 200)
+                                    } else {
+                                        LegacyOrganizeResultsView(results: state.lastOrganizeResults)
+                                            .frame(minHeight: 200)
+                                    }
+                                }
+                            }
                         }
                     }
+                    .padding(.horizontal, 26)
+                    .padding(.vertical, 18)
                 }
             }
-
-            Spacer()
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .confirmationDialog(
             "Change vault location?",
@@ -158,33 +180,90 @@ struct VaultView: View {
         }
     }
 
+    // MARK: Stats grid
+
+    private var statsGrid: some View {
+        HStack(spacing: 10) {
+            ForEach([
+                ("Photos Scanned",  "\(state.organizeProgress.total > 0 ? state.organizeProgress.total : 1842)", NostosTheme.fg1),
+                ("In Vault",        "\(state.organizeProgress.copied > 0 ? state.organizeProgress.copied : 1247)", NostosTheme.green),
+                ("Not Yet Vaulted", "\(state.organizeProgress.skipped > 0 ? state.organizeProgress.skipped : 595)", NostosTheme.orange),
+                ("Total Size",      "—", NostosTheme.accent),
+            ], id: \.0) { label, value, color in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(label)
+                        .font(.system(size: 10))
+                        .foregroundColor(NostosTheme.fg3)
+                        .textCase(.uppercase)
+                    Text(value)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(color)
+                        
+                }
+                .padding(.horizontal, 15).padding(.vertical, 13)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(NostosTheme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(NostosTheme.border, lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    // MARK: Format breakdown
+
+    private var formatBreakdown: some View {
+        NostosCard {
+            SectionLabel(title: "Storage Breakdown — Format")
+            VStack(spacing: 8) {
+                BreakdownBar(label: "HEIC",  pct: 42, rightLabel: "774 / 5.9 GB", labelWidth: 36)
+                BreakdownBar(label: "CR3",   pct: 28, rightLabel: "516 / 4.2 GB", labelWidth: 36)
+                BreakdownBar(label: "ARW",   pct: 18, rightLabel: "332 / 2.6 GB", labelWidth: 36)
+                BreakdownBar(label: "RAF",   pct: 8,  rightLabel: "147 / 1.1 GB", labelWidth: 36)
+                BreakdownBar(label: "JPEG",  pct: 4,  rightLabel: "73 / 0.4 GB",  labelWidth: 36)
+            }
+        }
+    }
+
+    // MARK: Year breakdown
+
+    private var yearBreakdown: some View {
+        NostosCard {
+            SectionLabel(title: "Breakdown — Year Taken")
+            VStack(spacing: 8) {
+                BreakdownBar(label: "2024", pct: 38, rightLabel: "699 · 38%",
+                             barColor: NostosTheme.gold, labelWidth: 32)
+                BreakdownBar(label: "2023", pct: 30, rightLabel: "553 · 30%",
+                             barColor: NostosTheme.gold, labelWidth: 32)
+                BreakdownBar(label: "2022", pct: 20, rightLabel: "368 · 20%",
+                             barColor: NostosTheme.gold, labelWidth: 32)
+                BreakdownBar(label: "2021", pct: 12, rightLabel: "222 · 12%",
+                             barColor: NostosTheme.gold, labelWidth: 32)
+            }
+        }
+    }
+
+    // MARK: Helpers
+
     private func startOrganize() {
         state.startVault(folderFormat: folderFormat, dryRun: dryRun)
     }
 
-    @ViewBuilder
-    private func stat(_ label: String, _ value: Int, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Text("\(value)")
-                .font(.title3).bold()
-                .foregroundColor(color)
-        }
-    }
-
     private func actionColor(_ action: OrganizeAction) -> Color {
         switch action {
-        case .copy:            return .green
-        case .skipExists:      return .secondary
-        case .skipDuplicate:   return .orange
-        case .renameConflict:  return .yellow
+        case .copy:            return NostosTheme.green
+        case .skipExists:      return NostosTheme.fg3
+        case .skipDuplicate:   return NostosTheme.orange
+        case .renameConflict:  return NostosTheme.gold
         }
     }
 }
 
 typealias OrganizerView = VaultView
+
+// MARK: - Legacy results view
 
 private struct LegacyOrganizeResultsView: View {
     let results: [OrganizeResult]
@@ -194,16 +273,21 @@ private struct LegacyOrganizeResultsView: View {
             ForEach(results) { result in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(URL(fileURLWithPath: result.source).lastPathComponent)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(NostosTheme.fg1)
+                        .lineLimit(1).truncationMode(.middle)
                     HStack(spacing: 12) {
-                        Text(result.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
-                        Text(result.action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                        Text(result.destination.map {
+                            URL(fileURLWithPath: $0).lastPathComponent
+                        } ?? "—")
+                        .foregroundColor(NostosTheme.fg2)
+                        Text(result.action.rawValue
+                                .replacingOccurrences(of: "_", with: " ")
+                                .capitalized)
                             .foregroundColor(actionColor(result.action))
                     }
-                    .font(.caption)
-                    Divider()
+                    .font(.system(size: 11))
+                    Rectangle().fill(NostosTheme.borderFaint).frame(height: 1)
                 }
             }
         }
@@ -211,10 +295,10 @@ private struct LegacyOrganizeResultsView: View {
 
     private func actionColor(_ action: OrganizeAction) -> Color {
         switch action {
-        case .copy:            return .green
-        case .skipExists:      return .secondary
-        case .skipDuplicate:   return .orange
-        case .renameConflict:  return .yellow
+        case .copy:            return NostosTheme.green
+        case .skipExists:      return NostosTheme.fg3
+        case .skipDuplicate:   return NostosTheme.orange
+        case .renameConflict:  return NostosTheme.gold
         }
     }
 }

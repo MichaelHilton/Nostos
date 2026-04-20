@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nostos — macOS App UI Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:        #203238;
+    --indigo:      #200E96;
+    --teal-light:  #2BABB8;
+    --teal-mid:    #1B7A8A;
+    --teal-dark:   #1A5068;
+    --gold:        #C4932A;
+    --rose:        #BA8A88;
+    --green:       #22C55E;
+    --orange:      #F59E0B;
+    --red:         #EF4444;
+    --blue:        #3B82F6;
+    --n50:  #F6F7F8;
+    --n100: #ECEEF1;
+    --n200: #D8DCE1;
+    --n300: #B8BFC9;
+    --n400: #8B95A3;
+    --n500: #5C6878;
+    --n600: #3E4A57;
+    --n700: #2B3540;
+    --n800: #1C252C;
+    --n900: #111820;
+    --font: 'Inter', system-ui, sans-serif;
+    --font-display: 'Inter Tight', 'Inter', sans-serif;
+  }
+  html, body, #root { height: 100%; }
+  body { font-family: var(--font); background: #1C252C; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+/* ── Palette shortcuts ───────────────────────── */
+const C = {
+  navy: '#203238', tealMid: '#1B7A8A', tealLight: '#2BABB8', tealDark: '#1A5068',
+  gold: '#C4932A', green: '#22C55E', orange: '#F59E0B', red: '#EF4444', blue: '#3B82F6',
+  n50:'#F6F7F8', n100:'#ECEEF1', n200:'#D8DCE1', n300:'#B8BFC9', n400:'#8B95A3',
+  n500:'#5C6878', n600:'#3E4A57', n700:'#2B3540', n800:'#1C252C', n900:'#111820',
+};
+
+/* ── Fake data ───────────────────────────────── */
+const PHOTOS = Array.from({length: 24}, (_, i) => ({
+  id: i,
+  color: [`linear-gradient(135deg,#1B7A8A,#203238)`,`linear-gradient(135deg,#203238,#2BABB8)`,
+          `linear-gradient(135deg,#1A5068,#1B7A8A)`,`linear-gradient(135deg,#2B3540,#2BABB8)`][i%4],
+  name: `IMG_${2000+i}.HEIC`,
+  camera: ['Canon EOS R5','Sony A7 IV','Nikon Z6 II','iPhone 15 Pro'][i%4],
+  date: `${['Jan','Feb','Mar','Apr','May','Jun'][i%6]} ${10+i%20}, 2023`,
+  size: `${(2.1+i*0.3).toFixed(1)} MB`,
+  dup: i%5===0,
+  copied: i%7===0,
+}));
+
+const DUP_GROUPS = [
+  { id: 1, reason: 'hashMatch', photos: PHOTOS.slice(0,3) },
+  { id: 2, reason: 'exifMatch', photos: PHOTOS.slice(4,6) },
+];
+
+const SCAN_RUNS = [
+  { path:'/Users/andrew/Pictures/Vacation', status:'completed', photos:1842, dups:47, date:'Apr 17, 2026' },
+  { path:'/Users/andrew/Desktop/RAW Exports', status:'completed', photos:238, dups:12, date:'Apr 10, 2026' },
+  { path:'/Volumes/SSD/Backup', status:'failed', photos:0, dups:0, date:'Apr 5, 2026' },
+];
+
+/* ── Shared primitives ──────────────────────── */
+const Badge = ({label, color='#1B7A8A'}) => (
+  <span style={{fontSize:9,fontWeight:700,padding:'2px 5px',borderRadius:3,
+    background:color,color:'white',textTransform:'uppercase',letterSpacing:'0.04em'}}>{label}</span>
+);
+
+const Btn = ({children, variant='primary', disabled, onClick, style={}}) => {
+  const base = {fontFamily:'var(--font)',fontSize:12,fontWeight:500,cursor:disabled?'not-allowed':'pointer',
+    border:'none',borderRadius:5,padding:'5px 12px',display:'inline-flex',alignItems:'center',gap:5,
+    opacity:disabled?0.45:1,transition:'background 0.12s',...style};
+  const variants = {
+    primary: {background:C.tealMid,color:'white'},
+    bordered: {background:'transparent',color:C.navy,border:`1px solid ${C.n200}`},
+    plain: {background:'none',color:C.tealMid,padding:'4px 0'},
+    danger: {background:'transparent',color:C.red,border:`1px solid ${C.red}`},
+  };
+  return <button style={{...base,...variants[variant]}} disabled={disabled} onClick={onClick}>{children}</button>;
+};
+
+const GroupBox = ({label, children, style={}}) => (
+  <div style={{background:'white',border:`1px solid ${C.n200}`,borderRadius:8,padding:'12px 14px',
+    marginBottom:12,...style}}>
+    {label && <div style={{fontSize:10,fontWeight:600,color:C.n500,textTransform:'uppercase',
+      letterSpacing:'0.07em',marginBottom:8}}>{label}</div>}
+    {children}
+  </div>
+);
+
+const ProgressBar = ({value=0, total=100, color=C.tealMid}) => {
+  const pct = Math.min(100, (value/Math.max(1,total))*100);
+  return (
+    <div style={{height:5,background:C.n200,borderRadius:3,overflow:'hidden'}}>
+      <div style={{height:'100%',width:`${pct}%`,background:color,borderRadius:3,
+        transition:'width 0.3s ease'}}/>
+    </div>
+  );
+};
+
+const Stat = ({label, value, color=C.navy}) => (
+  <div>
+    <div style={{fontSize:10,color:C.n500,marginBottom:2}}>{label}</div>
+    <div style={{fontSize:17,fontWeight:700,color}}>{value}</div>
+  </div>
+);
+
+/* ── Sidebar ────────────────────────────────── */
+const TABS = [
+  {id:'scanner',  icon:'⌕',  label:'Scanner'},
+  {id:'gallery',  icon:'⊞',  label:'Gallery'},
+  {id:'dupes',    icon:'⊡',  label:'Duplicates'},
+  {id:'vault',    icon:'⬡',  label:'Vault'},
+  {id:'backup',   icon:'⬇',  label:'Backup'},
+];
+
+const Sidebar = ({active, onSelect}) => (
+  <div style={{width:180,background:C.n100,borderRight:`1px solid ${C.n200}`,
+    display:'flex',flexDirection:'column',flexShrink:0}}>
+    {/* Toolbar area */}
+    <div style={{height:38,background:C.n100,borderBottom:`1px solid ${C.n200}`,
+      display:'flex',alignItems:'center',gap:8,padding:'0 14px'}}>
+      <img src="../assets/logo_square.png" width={20} height={20} style={{borderRadius:4}}
+        onError={e=>{e.target.style.display='none'}}/>
+      <span style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:13,color:C.navy}}>Nostos</span>
+    </div>
+    <div style={{padding:'8px 0',flex:1}}>
+      {TABS.map(t => {
+        const isActive = t.id === active;
+        return (
+          <div key={t.id} onClick={()=>onSelect(t.id)}
+            style={{display:'flex',alignItems:'center',gap:8,padding:'7px 14px',
+              fontSize:13,fontWeight:isActive?600:400,cursor:'pointer',
+              color: isActive?'white':C.navy,
+              background: isActive?C.tealMid:'transparent',
+              transition:'background 0.1s'}}>
+            <span style={{fontSize:14,width:16,textAlign:'center',opacity:0.8}}>{t.icon}</span>
+            {t.label}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+/* ── Scanner View ───────────────────────────── */
+const ScannerView = () => {
+  const [scanning, setScanning] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [done, setDone] = React.useState(false);
+
+  const startScan = () => {
+    setScanning(true); setDone(false); setProgress(0);
+    let p = 0;
+    const t = setInterval(()=>{ p+=7; setProgress(p); if(p>=100){clearInterval(t);setScanning(false);setDone(true);}},150);
+  };
+
+  return (
+    <div style={{padding:24,flex:1,overflowY:'auto'}}>
+      <div style={{fontSize:28,fontWeight:700,color:C.navy,marginBottom:20}}>Scanner</div>
+
+      <GroupBox label="Source Folder">
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{flex:1,fontSize:12,color:C.n500,fontFamily:'monospace'}}>/Users/andrew/Pictures/Family</span>
+          <Btn variant="bordered">Choose…</Btn>
+        </div>
+      </GroupBox>
+
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+        <Btn onClick={startScan} disabled={scanning}>
+          {scanning ? '⏳ Scanning…' : '▶ Start Scan'}
+        </Btn>
+        {scanning && <div style={{fontSize:11,color:C.tealMid}}>Indexing files…</div>}
+      </div>
+
+      {(scanning||done) && (
+        <GroupBox label="Progress">
+          <ProgressBar value={progress} total={100} />
+          <div style={{display:'flex',gap:28,marginTop:10}}>
+            <Stat label="Files Found" value="1,842"/>
+            <Stat label="Processed" value={Math.round(18.42*progress)} color={C.tealMid}/>
+            <Stat label="Duplicates" value={Math.round(0.47*progress)} color={C.orange}/>
+          </div>
+        </GroupBox>
+      )}
+
+      <GroupBox label="Recent Scans">
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+          <thead>
+            <tr style={{borderBottom:`1px solid ${C.n200}`}}>
+              {['Path','Status','Photos','Duplicates','Date'].map(h=>(
+                <th key={h} style={{textAlign:'left',padding:'4px 8px',fontSize:10,
+                  fontWeight:600,color:C.n500,textTransform:'uppercase',letterSpacing:'0.05em'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {SCAN_RUNS.map((r,i)=>(
+              <tr key={i} style={{borderBottom:`1px solid ${C.n100}`}}>
+                <td style={{padding:'6px 8px',color:C.navy,fontFamily:'monospace',fontSize:11,maxWidth:220,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.path}</td>
+                <td style={{padding:'6px 8px'}}>
+                  <span style={{color:{completed:C.green,failed:C.red,running:C.orange}[r.status],fontWeight:600,fontSize:11}}>
+                    {r.status.charAt(0).toUpperCase()+r.status.slice(1)}
+                  </span>
+                </td>
+                <td style={{padding:'6px 8px',color:C.navy,fontSize:12}}>{r.photos.toLocaleString()}</td>
+                <td style={{padding:'6px 8px',color:C.orange,fontSize:12}}>{r.dups}</td>
+                <td style={{padding:'6px 8px',color:C.n500,fontSize:11}}>{r.date}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </GroupBox>
+    </div>
+  );
+};
+
+/* ── Gallery View ───────────────────────────── */
+const GalleryView = () => {
+  const [selected, setSelected] = React.useState(null);
+  const [filter, setFilter] = React.useState({dup:false,copied:false});
+
+  const photos = PHOTOS.filter(p => {
+    if(filter.dup && !p.dup) return false;
+    if(filter.copied && !p.copied) return false;
+    return true;
+  });
+
+  return (
+    <div style={{display:'flex',flex:1,overflow:'hidden'}}>
+      {/* Main area */}
+      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{padding:'8px 12px',borderBottom:`1px solid ${C.n200}`,
+          display:'flex',alignItems:'center',gap:12,background:'white'}}>
+          <span style={{fontSize:11,color:C.n500}}>{photos.length} of {PHOTOS.length} photos</span>
+          <div style={{display:'flex',gap:8,marginLeft:'auto'}}>
+            <Btn variant={filter.dup?'primary':'bordered'} style={{fontSize:11,padding:'3px 9px'}}
+              onClick={()=>setFilter(f=>({...f,dup:!f.dup}))}>Duplicates</Btn>
+            <Btn variant={filter.copied?'primary':'bordered'} style={{fontSize:11,padding:'3px 9px'}}
+              onClick={()=>setFilter(f=>({...f,copied:!f.copied}))}>Copied</Btn>
+          </div>
+        </div>
+
+        <div style={{flex:1,overflowY:'auto',padding:12,background:C.n50}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:8}}>
+            {photos.map(p=>(
+              <div key={p.id} onClick={()=>setSelected(selected?.id===p.id?null:p)}
+                style={{position:'relative',width:'100%',paddingBottom:'100%',borderRadius:6,
+                  overflow:'hidden',cursor:'pointer',
+                  outline: selected?.id===p.id ? `2px solid ${C.tealLight}` : 'none',
+                  outlineOffset:-2}}>
+                <div style={{position:'absolute',inset:0,background:p.color}}/>
+                <div style={{position:'absolute',inset:0,
+                  background:'linear-gradient(to bottom,transparent 40%,rgba(0,0,0,0.55) 100%)'}}/>
+                <div style={{position:'absolute',bottom:5,left:5,display:'flex',gap:3}}>
+                  {p.dup && <Badge label="DUP" color={C.orange}/>}
+                  {p.copied && <Badge label="✓" color={C.green}/>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {selected && (
+          <div style={{borderTop:`1px solid ${C.n200}`,padding:'10px 12px',background:'white'}}>
+            <div style={{display:'flex',gap:14,alignItems:'flex-start'}}>
+              <div style={{width:72,height:72,borderRadius:6,background:selected.color,flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  <span style={{fontSize:13,fontWeight:600,color:C.navy}}>Selected Photo</span>
+                  <Btn variant="plain" style={{marginLeft:'auto',fontSize:11}} onClick={()=>setSelected(null)}>Clear</Btn>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'70px 1fr',gap:'3px 10px',fontSize:11}}>
+                  {[['Name',selected.name],['Camera',selected.camera],['Date',selected.date],['Size',selected.size]].map(([l,v])=>(
+                    <React.Fragment key={l}>
+                      <span style={{color:C.n500}}>{l}</span>
+                      <span style={{color:C.navy}}>{v}</span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filter panel */}
+      <div style={{width:220,borderLeft:`1px solid ${C.n200}`,background:'white',padding:14,overflowY:'auto'}}>
+        <div style={{fontSize:10,fontWeight:600,color:C.n500,textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:12}}>Filters</div>
+
+        {[['Status',['New','Copied','Kept']],['Duplicates',['With duplicates','No duplicates']]].map(([section,opts])=>(
+          <div key={section} style={{marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:600,color:C.navy,marginBottom:6}}>{section}</div>
+            {opts.map(o=>(
+              <label key={o} style={{display:'flex',alignItems:'center',gap:6,fontSize:12,
+                color:C.n700,marginBottom:4,cursor:'pointer'}}>
+                <input type="checkbox" style={{accentColor:C.tealMid}}/>
+                {o}
+              </label>
+            ))}
+          </div>
+        ))}
+
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.navy,marginBottom:6}}>Years</div>
+          {[2021,2022,2023,2024].map(y=>(
+            <label key={y} style={{display:'flex',alignItems:'center',gap:6,fontSize:12,
+              color:C.n700,marginBottom:4,cursor:'pointer'}}>
+              <input type="checkbox" style={{accentColor:C.tealMid}}/> {y}
+            </label>
+          ))}
+        </div>
+
+        <Btn variant="danger" style={{fontSize:11,padding:'4px 10px',width:'100%',justifyContent:'center'}}>Remove All</Btn>
+      </div>
+    </div>
+  );
+};
+
+/* ── Duplicates View ────────────────────────── */
+const DuplicatesView = () => {
+  const [kept, setKept] = React.useState({0:0, 1:0});
+
+  return (
+    <div style={{flex:1,overflowY:'auto'}}>
+      <div style={{padding:'18px 24px 0',display:'flex',alignItems:'center',gap:12}}>
+        <span style={{fontSize:26,fontWeight:700,color:C.navy}}>Duplicates</span>
+        <span style={{fontSize:12,color:C.n500,marginLeft:'auto'}}>{DUP_GROUPS.length} groups</span>
+      </div>
+      <div style={{borderBottom:`1px solid ${C.n200}`,margin:'14px 0 0'}}/>
+
+      <div style={{padding:'16px 24px'}}>
+        {DUP_GROUPS.map((group,gi)=>(
+          <GroupBox key={group.id} style={{marginBottom:14}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <span style={{fontSize:13,fontWeight:600,color:C.navy}}>
+                {group.reason==='hashMatch' ? '⊜ Exact Match' : '⟳ Near Duplicate'}
+              </span>
+              <span style={{fontSize:11,color:C.n500,marginLeft:'auto'}}>{group.photos.length} photos</span>
+            </div>
+            <div style={{display:'flex',gap:12,overflowX:'auto',paddingBottom:4}}>
+              {group.photos.map((p,pi)=>{
+                const isKept = kept[gi]===pi;
+                return (
+                  <div key={p.id} onClick={()=>setKept(k=>({...k,[gi]:pi}))}
+                    style={{flexShrink:0,cursor:'pointer'}}>
+                    <div style={{width:120,height:120,borderRadius:6,background:p.color,position:'relative',
+                      outline: isKept?`3px solid ${C.green}`:'3px solid transparent',outlineOffset:-3}}>
+                      {isKept && (
+                        <div style={{position:'absolute',top:4,right:4,background:C.green,
+                          borderRadius:'50%',width:18,height:18,display:'flex',alignItems:'center',
+                          justifyContent:'center',fontSize:10,color:'white',fontWeight:700}}>✓</div>
+                      )}
+                    </div>
+                    <div style={{fontSize:10,color:C.n600,marginTop:4,width:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
+                    <div style={{fontSize:10,color:C.n500}}>{p.size}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </GroupBox>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ── Vault View ─────────────────────────────── */
+const VaultView = () => {
+  const [dryRun, setDryRun] = React.useState(true);
+  const [running, setRunning] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [format, setFormat] = React.useState('YYYY/MM/DD');
+
+  const start = () => {
+    setRunning(true); setProgress(0);
+    let p = 0;
+    const t = setInterval(()=>{ p+=6; setProgress(p); if(p>=100){clearInterval(t);setRunning(false);}},120);
+  };
+
+  return (
+    <div style={{padding:24,flex:1,overflowY:'auto'}}>
+      <div style={{fontSize:28,fontWeight:700,color:C.navy,marginBottom:20}}>Vault</div>
+
+      <GroupBox label="Vault Location">
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{flex:1,fontSize:12,color:C.n500,fontFamily:'monospace'}}>/Users/andrew/Pictures/Vault</span>
+          <Btn variant="bordered">Change Vault…</Btn>
+        </div>
+      </GroupBox>
+
+      <GroupBox label="Options">
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+          <span style={{fontSize:12,color:C.n600,width:110,textAlign:'right'}}>Folder Format</span>
+          <input value={format} onChange={e=>setFormat(e.target.value)}
+            style={{fontFamily:'monospace',fontSize:12,padding:'4px 8px',borderRadius:5,
+              border:`1px solid ${C.n200}`,width:160,outline:'none',color:C.navy}}/>
+          <span style={{fontSize:11,color:C.n500}}>Tokens: YYYY, MM, DD</span>
+        </div>
+        <label style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:C.n700,cursor:'pointer'}}>
+          <input type="checkbox" checked={dryRun} onChange={e=>setDryRun(e.target.checked)} style={{accentColor:C.tealMid}}/>
+          Dry Run (preview only, no files copied)
+        </label>
+      </GroupBox>
+
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+        <Btn onClick={start} disabled={running}>
+          {running ? '⏳ Vaulting…' : dryRun ? '👁 Preview' : '▶ Save to Vault'}
+        </Btn>
+      </div>
+
+      {(running || progress > 0) && (
+        <GroupBox label="Progress">
+          <ProgressBar value={progress} total={100}/>
+          <div style={{display:'flex',gap:28,marginTop:10}}>
+            <Stat label="Total" value="1,842"/>
+            <Stat label="Copied" value={Math.round(18.42*progress)} color={C.green}/>
+            <Stat label="Skipped" value={Math.round(0.47*progress)} color={C.orange}/>
+          </div>
+        </GroupBox>
+      )}
+    </div>
+  );
+};
+
+/* ── Backup View ────────────────────────────── */
+const BackupView = () => {
+  const [dryRun, setDryRun] = React.useState(true);
+  const [running, setRunning] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+
+  const start = () => {
+    setRunning(true); setProgress(0);
+    let p = 0;
+    const t = setInterval(()=>{ p+=5; setProgress(p); if(p>=100){clearInterval(t);setRunning(false);}},120);
+  };
+
+  return (
+    <div style={{padding:24,flex:1,overflowY:'auto'}}>
+      <div style={{fontSize:28,fontWeight:700,color:C.navy,marginBottom:6}}>Backup</div>
+      <div style={{fontSize:12,color:C.n500,marginBottom:20}}>
+        Copy selected photos to the vault. Photos already in the vault are automatically skipped.
+      </div>
+
+      <GroupBox label="Filter — Which photos to back up">
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.n600,marginBottom:6}}>Camera</div>
+          {['Canon EOS R5','Sony A7 IV','No camera metadata'].map(c=>(
+            <label key={c} style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:C.n700,marginBottom:4,cursor:'pointer'}}>
+              <input type="checkbox" style={{accentColor:C.tealMid}}/> {c}
+            </label>
+          ))}
+        </div>
+        <div style={{borderTop:`1px solid ${C.n100}`,paddingTop:10,marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.n600,marginBottom:6}}>Year range</div>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <select style={{fontSize:12,padding:'4px 8px',borderRadius:5,border:`1px solid ${C.n200}`,color:C.navy}}>
+              <option>Any</option><option>2022</option><option>2023</option><option>2024</option>
+            </select>
+            <span style={{color:C.n500}}>–</span>
+            <select style={{fontSize:12,padding:'4px 8px',borderRadius:5,border:`1px solid ${C.n200}`,color:C.navy}}>
+              <option>Any</option><option>2022</option><option>2023</option><option>2024</option>
+            </select>
+          </div>
+        </div>
+        <div style={{borderTop:`1px solid ${C.n100}`,paddingTop:8,display:'flex',alignItems:'center',gap:6}}>
+          <span style={{fontSize:14,color:C.n500}}>⊞</span>
+          <span style={{fontSize:12,color:C.n500}}><strong style={{color:C.navy}}>342</strong> photos match current filter</span>
+        </div>
+      </GroupBox>
+
+      <GroupBox label="Options">
+        <label style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:C.n700,cursor:'pointer'}}>
+          <input type="checkbox" checked={dryRun} onChange={e=>setDryRun(e.target.checked)} style={{accentColor:C.tealMid}}/>
+          Dry Run (preview only, no files copied)
+        </label>
+      </GroupBox>
+
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+        <Btn onClick={start} disabled={running}>
+          {running ? '⏳ Backing up…' : dryRun ? '👁 Preview' : '⬇ Back Up Now'}
+        </Btn>
+      </div>
+
+      {(running || progress > 0) && (
+        <GroupBox label="Progress">
+          <ProgressBar value={progress} total={100}/>
+          <div style={{display:'flex',gap:28,marginTop:10}}>
+            <Stat label="Total" value="342"/>
+            <Stat label="Copied" value={Math.round(3.42*progress)} color={C.green}/>
+            <Stat label="Skipped" value={Math.round(0.5*progress)} color={C.orange}/>
+          </div>
+        </GroupBox>
+      )}
+    </div>
+  );
+};
+
+/* ── Window chrome ──────────────────────────── */
+const WindowChrome = ({children}) => (
+  <div style={{
+    width: '100%', maxWidth: 1100, height: 680,
+    background: '#F6F7F8', borderRadius: 10,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+    display: 'flex', flexDirection: 'column',
+    overflow: 'hidden', fontFamily: 'var(--font)',
+  }}>
+    {/* Traffic lights */}
+    <div style={{height:0, background:'transparent', position:'relative'}}>
+      <div style={{position:'absolute',top:11,left:14,display:'flex',gap:6,zIndex:10}}>
+        {['#FF5F57','#FFBD2E','#28CA41'].map((c,i)=>(
+          <div key={i} style={{width:12,height:12,borderRadius:'50%',background:c}}/>
+        ))}
+      </div>
+    </div>
+    {children}
+  </div>
+);
+
+/* ── App root ────────────────────────────────── */
+const App = () => {
+  const [tab, setTab] = React.useState(
+    ()=>localStorage.getItem('nostos-kit-tab')||'scanner'
+  );
+  const select = (t) => { setTab(t); localStorage.setItem('nostos-kit-tab',t); };
+
+  const views = {
+    scanner: <ScannerView/>,
+    gallery: <GalleryView/>,
+    dupes:   <DuplicatesView/>,
+    vault:   <VaultView/>,
+    backup:  <BackupView/>,
+  };
+
+  return (
+    <div style={{width:'100vw',height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',
+      background:'linear-gradient(135deg,#1C252C 0%,#1A5068 100%)',padding:20}}>
+      <WindowChrome>
+        <div style={{display:'flex',flex:1,overflow:'hidden'}}>
+          <Sidebar active={tab} onSelect={select}/>
+          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:'#F6F7F8'}}>
+            {views[tab]}
+          </div>
+        </div>
+      </WindowChrome>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

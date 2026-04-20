@@ -29,6 +29,8 @@
 	800000000000000000000014 /* BackupJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* BackupJob.swift */; };
 	800000000000000000000015 /* BackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* BackupService.swift */; };
 	800000000000000000000016 /* BackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* BackupView.swift */; };
+	800000000000000000000017 /* NostosTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* NostosTheme.swift */; };
+	800000000000000000000018 /* NostosComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000018 /* NostosComponents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +66,8 @@
 	200000000000000000000014 /* BackupJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Models/BackupJob.swift; sourceTree = SOURCE_ROOT; };
 	200000000000000000000015 /* BackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/BackupService.swift; sourceTree = SOURCE_ROOT; };
 	200000000000000000000016 /* BackupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/BackupView.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000017 /* NostosTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/NostosTheme.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000018 /* NostosComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Views/NostosComponents.swift; sourceTree = SOURCE_ROOT; };
 	200000000000000000000020 /* Nostos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nostos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 	200000000000000000000021 /* NostosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NostosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -102,6 +106,7 @@
 			300000000000000000000003 /* Database */,
 			300000000000000000000004 /* Models */,
 			200000000000000000000007 /* NostosApp.swift */,
+			200000000000000000000017 /* NostosTheme.swift */,
 			300000000000000000000005 /* Services */,
 			300000000000000000000006 /* Views */,
 		);
@@ -139,7 +144,9 @@
 	};
 	300000000000000000000006 /* Views */ = {
 		isa = PBXGroup;
-		children = (				200000000000000000000016 /* BackupView.swift */,			20000000000000000000000D /* ContentView.swift */,
+		children = (				200000000000000000000016 /* BackupView.swift */,
+			20000000000000000000000D /* ContentView.swift */,
+			200000000000000000000018 /* NostosComponents.swift */,
 			20000000000000000000000E /* DuplicatesView.swift */,
 			20000000000000000000000F /* EmptyStateView.swift */,
 			200000000000000000000010 /* GalleryView.swift */,
@@ -294,7 +301,10 @@
 			800000000000000000000011 /* OrganizerView.swift in Sources */,
 			800000000000000000000012 /* ScannerView.swift in Sources */,					800000000000000000000014 /* BackupJob.swift in Sources */,
 					800000000000000000000015 /* BackupService.swift in Sources */,
-					800000000000000000000016 /* BackupView.swift in Sources */,		);
+					800000000000000000000016 /* BackupView.swift in Sources */,
+			800000000000000000000017 /* NostosTheme.swift in Sources */,
+			800000000000000000000018 /* NostosComponents.swift in Sources */,
+		);
 		runOnlyForDeploymentPostprocessing = 0;
 	};
 	400000000000000000000004 /* Sources */ = {

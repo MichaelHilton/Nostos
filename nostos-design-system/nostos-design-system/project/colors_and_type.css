@@ -1,0 +1,197 @@
+/* ============================================================
+   NOSTOS DESIGN SYSTEM — Colors & Typography
+   Source: logo brand sheet, SwiftUI codebase
+   ============================================================ */
+
+/* ── Base Palette ─────────────────────────────────────────── */
+:root {
+  /* Brand primaries (from logo brand sheet swatches) */
+  --nostos-navy:       #203238;   /* dark slate teal — wordmark, sidebar text */
+  --nostos-indigo:     #200E96;   /* deep indigo — accent/dark bg variant     */
+  --nostos-rose:       #BA8A88;   /* muted rose/mauve — warm accent            */
+  --nostos-lavender:   #FAcEFF;   /* pale lavender — light surface/highlight   */
+
+  /* Logo gradient stops (compass shutter, teal range) */
+  --nostos-teal-light: #2BABB8;   /* outer rings of shutter */
+  --nostos-teal-mid:   #1B7A8A;   /* mid shutter            */
+  --nostos-teal-dark:  #1A5068;   /* inner shutter          */
+
+  /* Gold accent (compass north needle) */
+  --nostos-gold:       #C4932A;
+
+  /* Neutral scale */
+  --nostos-neutral-50:  #F6F7F8;
+  --nostos-neutral-100: #ECEEF1;
+  --nostos-neutral-200: #D8DCE1;
+  --nostos-neutral-300: #B8BFC9;
+  --nostos-neutral-400: #8B95A3;
+  --nostos-neutral-500: #5C6878;
+  --nostos-neutral-600: #3E4A57;
+  --nostos-neutral-700: #2B3540;
+  --nostos-neutral-800: #1C252C;
+  --nostos-neutral-900: #111820;
+
+  /* Status / semantic */
+  --nostos-green:     #22C55E;    /* copied / success */
+  --nostos-orange:    #F59E0B;    /* duplicate / warning */
+  --nostos-red:       #EF4444;    /* error / destructive */
+  --nostos-blue:      #3B82F6;    /* selected / info */
+
+  /* ── Semantic tokens (light mode) ─────────────────────── */
+  --bg-base:          #F6F7F8;    /* window background */
+  --bg-surface:       #FFFFFF;    /* panel / card surface */
+  --bg-sidebar:       #ECEEF1;    /* sidebar background */
+  --bg-groupbox:      rgba(0,0,0,0.03); /* GroupBox fill */
+
+  --fg-primary:       var(--nostos-navy);
+  --fg-secondary:     var(--nostos-neutral-500);
+  --fg-muted:         var(--nostos-neutral-400);
+
+  --accent:           var(--nostos-teal-mid);
+  --accent-hover:     var(--nostos-teal-light);
+  --accent-pressed:   var(--nostos-teal-dark);
+
+  --border:           var(--nostos-neutral-200);
+  --border-subtle:    rgba(0,0,0,0.06);
+
+  --shadow-sm:        0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md:        0 2px 8px rgba(0,0,0,0.10);
+  --shadow-lg:        0 4px 20px rgba(0,0,0,0.12);
+
+  --radius-sm:        4px;
+  --radius-md:        6px;    /* photo tiles */
+  --radius-lg:        10px;   /* cards, GroupBox */
+  --radius-xl:        14px;   /* year slider panel */
+  --radius-full:      9999px; /* pills / badges */
+
+  /* ── Dark mode ─────────────────────────────────────────── */
+  @media (prefers-color-scheme: dark) {
+    --bg-base:        #1C252C;
+    --bg-surface:     #232E37;
+    --bg-sidebar:     #1A2028;
+    --bg-groupbox:    rgba(255,255,255,0.04);
+
+    --fg-primary:     #E8EDF2;
+    --fg-secondary:   var(--nostos-neutral-400);
+    --fg-muted:       var(--nostos-neutral-500);
+
+    --border:         var(--nostos-neutral-700);
+    --border-subtle:  rgba(255,255,255,0.06);
+  }
+}
+
+/* ── Typography ───────────────────────────────────────────── */
+/*
+  Nostos is a macOS app using SF Pro (system font).
+  For web use we fall back to Inter → system-ui.
+  Flag: We are using Inter as a Google Fonts substitute
+  for SF Pro. If this design system is used for
+  marketing materials, consider licensing SF Pro usage
+  or replacing with the actual system font stack.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap');
+
+:root {
+  /* Font families */
+  --font-sans:     'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display:  'Inter Tight', 'Inter', system-ui, sans-serif; /* wordmark / headlines */
+  --font-mono:     'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+
+  /* Type scale */
+  --text-xs:       11px;
+  --text-sm:       12px;
+  --text-base:     13px;   /* macOS default */
+  --text-md:       15px;
+  --text-lg:       17px;
+  --text-xl:       20px;
+  --text-2xl:      24px;
+  --text-3xl:      28px;
+  --text-4xl:      34px;   /* largeTitle in SwiftUI */
+
+  /* Line heights */
+  --leading-tight:  1.2;
+  --leading-snug:   1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal:  0em;
+  --tracking-wide:    0.04em;
+  --tracking-wider:   0.08em;  /* used on uppercase labels */
+}
+
+/* ── Semantic type styles ─────────────────────────────────── */
+.ns-h1 {            /* .largeTitle .bold in SwiftUI */
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-primary);
+}
+
+.ns-h2 {            /* .title in SwiftUI */
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-primary);
+}
+
+.ns-h3 {            /* .headline in SwiftUI */
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  color: var(--fg-primary);
+}
+
+.ns-subheading {    /* .subheadline .semibold */
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--fg-secondary);
+}
+
+.ns-body {          /* .body default */
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 400;
+  line-height: var(--leading-normal);
+  color: var(--fg-primary);
+}
+
+.ns-caption {       /* .caption */
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: var(--leading-normal);
+  color: var(--fg-secondary);
+}
+
+.ns-caption2 {      /* .caption2 */
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: var(--leading-normal);
+  color: var(--fg-muted);
+}
+
+.ns-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--fg-primary);
+}
+
+.ns-wordmark {      /* "nostos" logo text */
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  color: var(--nostos-navy);
+}

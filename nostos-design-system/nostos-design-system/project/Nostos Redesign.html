@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nostos — UI Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Playfair+Display:wght@400;600;700&family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body { background: #0a0f14; display: flex; align-items: center; justify-content: center; }
+  :root { color-scheme: light dark; }
+
+  /* Tweaks panel */
+  .tweaks-panel {
+    position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+    background: rgba(10,15,20,0.92); backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+    padding: 16px; min-width: 220px; display: none;
+    font-family: Inter, sans-serif; color: #e8edf2; font-size: 12px;
+  }
+  .tweaks-panel.visible { display: block; }
+  .tweaks-title { font-weight: 700; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #7A9BB0; margin-bottom: 12px; }
+  .theme-btn { width: 100%; text-align: left; background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; color: #e8edf2;
+    font-family: Inter, sans-serif; font-size: 12px; font-weight: 500;
+    padding: 8px 12px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s; }
+  .theme-btn:hover { background: rgba(255,255,255,0.13); }
+  .theme-btn.active { background: var(--accent, #1B7A8A); border-color: transparent; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+/* ═══ THEMES ══════════════════════════════════════════════ */
+const THEMES = {
+  aegean: {
+    name: 'Aegean', emoji: '🌊',
+    bg: '#FAF8F4', bgSidebar: '#EEE9E1', surface: '#FFFFFF', surface2: '#F5F1EA',
+    border: '#DDD8CF', borderSubtle: 'rgba(0,0,0,0.07)',
+    accent: '#1B7A8A', accentHover: '#2BABB8', accentText: '#FFFFFF',
+    navActiveBg: '#1B7A8A', navActiveFg: '#FFFFFF',
+    fg1: '#1C3040', fg2: '#5C6E7A', fg3: '#9AACB8',
+    sidebarFg: '#1C3040', sidebarFg2: '#6A7E8A',
+    green: '#1A8A5A', orange: '#C4832A', red: '#C44040', blue: '#2A6A9A',
+    fontDisplay: '"Cormorant Garamond", Georgia, serif',
+    fontBody: 'Inter, system-ui, sans-serif',
+    sidebarDark: false,
+    progressBg: '#DCF0F4',
+  },
+  deepsea: {
+    name: 'Deep Sea', emoji: '🌑',
+    bg: '#07111C', bgSidebar: '#050D16', surface: '#0D1E2E', surface2: '#112436',
+    border: '#1A3048', borderSubtle: 'rgba(255,255,255,0.06)',
+    accent: '#2BABB8', accentHover: '#3BCAD8', accentText: '#FFFFFF',
+    navActiveBg: '#1B7A8A', navActiveFg: '#FFFFFF',
+    fg1: '#D8E8F2', fg2: '#6A90A8', fg3: '#3A5870',
+    sidebarFg: '#C8DCE8', sidebarFg2: '#4A6880',
+    green: '#1EAA6A', orange: '#D49020', red: '#D44848', blue: '#3A7AC8',
+    fontDisplay: '"Syne", "Inter", sans-serif',
+    fontBody: 'Inter, system-ui, sans-serif',
+    sidebarDark: true,
+    progressBg: '#0A2030',
+  },
+  odyssey: {
+    name: 'Odyssey', emoji: '⚓',
+    bg: '#F3E8D0', bgSidebar: '#22160A', surface: '#FEF6E8', surface2: '#EDE0C8',
+    border: '#D8C8A8', borderSubtle: 'rgba(0,0,0,0.07)',
+    accent: '#C4932A', accentHover: '#D4A840', accentText: '#FFFFFF',
+    navActiveBg: '#C4932A', navActiveFg: '#FFFFFF',
+    fg1: '#1E1208', fg2: '#6E5438', fg3: '#A08860',
+    sidebarFg: '#E8D8B8', sidebarFg2: '#907858',
+    green: '#3A8A48', orange: '#C4832A', red: '#C84030', blue: '#1A5E7A',
+    fontDisplay: '"Playfair Display", Georgia, serif',
+    fontBody: 'Inter, system-ui, sans-serif',
+    sidebarDark: true,
+    progressBg: '#E8D8B0',
+  },
+};
+
+/* ═══ FAKE DATA ═══════════════════════════════════════════ */
+const GRADS = [
+  'linear-gradient(140deg,#667eea,#764ba2)','linear-gradient(140deg,#f093fb,#f5576c)',
+  'linear-gradient(140deg,#4facfe,#00c9ff)','linear-gradient(140deg,#43e97b,#38f9d7)',
+  'linear-gradient(140deg,#fa709a,#fee140)','linear-gradient(140deg,#30cfd0,#330867)',
+  'linear-gradient(140deg,#a18cd1,#fbc2eb)','linear-gradient(140deg,#ffecd2,#fcb69f)',
+  'linear-gradient(140deg,#ff9a9e,#fad0c4)','linear-gradient(140deg,#a1c4fd,#c2e9fb)',
+  'linear-gradient(140deg,#d4fc79,#96e6a1)','linear-gradient(140deg,#84fab0,#8fd3f4)',
+  'linear-gradient(140deg,#fda085,#f6d365)','linear-gradient(140deg,#c3cfe2,#f5f7fa)',
+  'linear-gradient(140deg,#e0c3fc,#8ec5fc)','linear-gradient(140deg,#0ba360,#3cba92)',
+  'linear-gradient(140deg,#00c9ff,#92fe9d)','linear-gradient(140deg,#fc5c7d,#6a3093)',
+  'linear-gradient(140deg,#c79081,#dfa579)','linear-gradient(140deg,#e96443,#904e95)',
+  'linear-gradient(140deg,#89f7fe,#66a6ff)','linear-gradient(140deg,#fddb92,#d1fdff)',
+  'linear-gradient(140deg,#13547a,#80d0c7)','linear-gradient(140deg,#505285,#7e7ebb)',
+  'linear-gradient(140deg,#ff758c,#ff7eb3)','linear-gradient(140deg,#2af598,#009efd)',
+  'linear-gradient(140deg,#f77062,#fe5196)','linear-gradient(140deg,#c471f5,#fa71cd)',
+  'linear-gradient(140deg,#48c774,#09c27e)','linear-gradient(140deg,#b794f4,#805ad5)',
+];
+
+const CAMERAS = ['Canon EOS R5','Sony A7 IV','Nikon Z6 II','iPhone 15 Pro','Fujifilm X-T5'];
+const YEARS   = [2021,2022,2023,2024];
+const MONTHS  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const PHOTOS = Array.from({length: 30}, (_, i) => ({
+  id: i,
+  grad: GRADS[i % GRADS.length],
+  name: `IMG_${2000+i}.${['HEIC','CR3','ARW','RAF','JPEG'][i%5]}`,
+  camera: CAMERAS[i%CAMERAS.length],
+  date: `${MONTHS[i%12]} ${(i%28)+1}, ${YEARS[i%4]}`,
+  size: `${(2.1+i*0.27).toFixed(1)} MB`,
+  dup: i%5===0,
+  copied: i%7===0,
+  w: 4032 + (i%3)*200, h: 3024 + (i%2)*100,
+}));
+
+const DUP_GROUPS = [
+  { id:1, reason:'hashMatch', photos: PHOTOS.slice(0,3) },
+  { id:2, reason:'exifMatch', photos: PHOTOS.slice(5,7) },
+  { id:3, reason:'hashMatch', photos: PHOTOS.slice(10,12) },
+];
+
+const SCAN_RUNS = [
+  { path:'/Users/odysseus/Pictures/Mediterranean', status:'completed', photos:1842, dups:47, date:'Apr 17, 2026' },
+  { path:'/Users/odysseus/Desktop/RAW', status:'completed', photos:238, dups:12, date:'Apr 10, 2026' },
+  { path:'/Volumes/Ithaca/Archive', status:'failed', photos:0, dups:0, date:'Apr 5, 2026' },
+];
+
+/* ═══ CONTEXT ═════════════════════════════════════════════ */
+const ThemeCtx = React.createContext(THEMES.aegean);
+const useTheme = () => React.useContext(ThemeCtx);
+
+/* ═══ PRIMITIVES ══════════════════════════════════════════ */
+const Btn = ({children, variant='primary', disabled, onClick, full, style={}}) => {
+  const t = useTheme();
+  const [hover, setHover] = React.useState(false);
+  const base = {
+    fontFamily: t.fontBody, fontSize: 12, fontWeight: 500,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    border: 'none', borderRadius: 6, padding: '5px 13px',
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    opacity: disabled ? 0.4 : 1,
+    transition: 'all 0.12s',
+    width: full ? '100%' : undefined, justifyContent: full ? 'center' : undefined,
+    ...style,
+  };
+  const vs = {
+    primary: { background: hover?t.accentHover:t.accent, color: t.accentText },
+    bordered: { background: 'transparent', color: t.fg1, border: `1px solid ${t.border}`,
+      ...(hover ? {background: t.surface2} : {}) },
+    plain: { background: 'none', color: t.accent, padding: '4px 0' },
+    danger: { background: 'transparent', color: t.red, border: `1px solid ${t.red}`,
+      ...(hover ? {background: `${t.red}15`} : {}) },
+  };
+  return (
+    <button style={{...base,...vs[variant]}} disabled={disabled} onClick={onClick}
+      onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}>
+      {children}
+    </button>
+  );
+};
+
+const Surface = ({children, style={}}) => {
+  const t = useTheme();
+  return (
+    <div style={{background: t.surface, border: `1px solid ${t.border}`,
+      borderRadius: 8, padding: '12px 14px', ...style}}>
+      {children}
+    </div>
+  );
+};
+
+const SectionLabel = ({children}) => {
+  const t = useTheme();
+  return (
+    <div style={{fontFamily: t.fontBody, fontSize: 10, fontWeight: 600, color: t.fg3,
+      textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8}}>
+      {children}
+    </div>
+  );
+};
+
+const ProgressBar = ({pct=0, color}) => {
+  const t = useTheme();
+  return (
+    <div style={{height: 4, background: t.progressBg, borderRadius: 2, overflow: 'hidden'}}>
+      <div style={{height: '100%', width: `${Math.min(100,pct)}%`,
+        background: color||t.accent, borderRadius: 2, transition: 'width 0.2s linear'}}/>
+    </div>
+  );
+};
+
+const Stat = ({label, value, color}) => {
+  const t = useTheme();
+  return (
+    <div>
+      <div style={{fontSize: 10, color: t.fg3, marginBottom: 2, fontFamily: t.fontBody}}>{label}</div>
+      <div style={{fontSize: 18, fontWeight: 700, color: color||t.fg1, fontFamily: t.fontBody, letterSpacing: '-0.01em'}}>{value}</div>
+    </div>
+  );
+};
+
+const Badge = ({label, bg}) => (
+  <span style={{fontSize: 8, fontWeight: 800, padding: '2px 5px', borderRadius: 3,
+    background: bg, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em',
+    lineHeight: 1.2}}>
+    {label}
+  </span>
+);
+
+/* ═══ EMPTY STATE ═════════════════════════════════════════ */
+const EmptyState = ({icon, title, desc}) => {
+  const t = useTheme();
+  return (
+    <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center',
+      justifyContent:'center', gap:12, padding:40, opacity:0.7}}>
+      <div style={{fontSize:42, lineHeight:1}}>{icon}</div>
+      <div style={{fontFamily:t.fontDisplay, fontSize:20, fontWeight:600, color:t.fg1}}>{title}</div>
+      <div style={{fontFamily:t.fontBody, fontSize:12, color:t.fg2, textAlign:'center', maxWidth:260}}>{desc}</div>
+    </div>
+  );
+};
+
+/* ═══ SIDEBAR ═════════════════════════════════════════════ */
+const TABS = [
+  {id:'scanner', icon:'⌕', label:'Scanner'},
+  {id:'gallery', icon:'⊞', label:'Gallery'},
+  {id:'dupes',   icon:'⊡', label:'Duplicates'},
+  {id:'vault',   icon:'⬡', label:'Vault'},
+  {id:'backup',  icon:'↓', label:'Backup'},
+];
+
+const Sidebar = ({active, onSelect}) => {
+  const t = useTheme();
+  return (
+    <div style={{width:188, background:t.bgSidebar, borderRight:`1px solid ${t.border}`,
+      display:'flex', flexDirection:'column', flexShrink:0, userSelect:'none'}}>
+      {/* Logo area */}
+      <div style={{height:48, display:'flex', alignItems:'center', gap:9, padding:'0 14px',
+        borderBottom:`1px solid ${t.sidebarDark ? 'rgba(255,255,255,0.07)' : t.border}`}}>
+        <img src="../assets/logo_square.png" width={26} height={26}
+          style={{borderRadius:6, flexShrink:0}}
+          onError={e=>{e.target.style.display='none'}}/>
+        <div>
+          <div style={{fontFamily:t.fontDisplay, fontWeight:700, fontSize:15,
+            color:t.sidebarFg, lineHeight:1, letterSpacing:'-0.02em'}}>nostos</div>
+          <div style={{fontFamily:t.fontBody, fontSize:9, color:t.sidebarFg2, marginTop:1,
+            letterSpacing:'0.02em'}}>Self-Hosted Photo Mgmt</div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <div style={{padding:'10px 8px', flex:1}}>
+        {TABS.map(tab => {
+          const isActive = tab.id === active;
+          return (
+            <div key={tab.id} onClick={()=>onSelect(tab.id)}
+              style={{display:'flex', alignItems:'center', gap:9, padding:'8px 10px',
+                borderRadius:7, marginBottom:2, cursor:'pointer',
+                fontFamily:t.fontBody, fontSize:13, fontWeight: isActive?600:400,
+                color: isActive ? t.navActiveFg : t.sidebarFg,
+                background: isActive ? t.navActiveBg : 'transparent',
+                transition:'background 0.1s, color 0.1s'}}>
+              <span style={{fontSize:14, width:18, textAlign:'center',
+                opacity: isActive ? 1 : 0.55}}>{tab.icon}</span>
+              {tab.label}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{padding:'10px 14px', borderTop:`1px solid ${t.sidebarDark?'rgba(255,255,255,0.07)':t.border}`}}>
+        <div style={{fontFamily:t.fontBody, fontSize:10, color:t.sidebarFg2, letterSpacing:'0.01em'}}>
+          vault: /Users/odysseus/Pictures
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══ SCANNER ═════════════════════════════════════════════ */
+const ScannerView = () => {
+  const t = useTheme();
+  const [scanning, setScanning] = React.useState(false);
+  const [pct, setPct] = React.useState(0);
+  const [done, setDone] = React.useState(false);
+  const [path, setPath] = React.useState('/Users/odysseus/Pictures/Mediterranean');
+
+  const startScan = () => {
+    setScanning(true); setDone(false); setPct(0);
+    let p = 0;
+    const id = setInterval(()=>{
+      p += 4 + Math.random()*4; setPct(p);
+      if(p >= 100){clearInterval(id); setPct(100); setScanning(false); setDone(true);}
+    }, 140);
+  };
+
+  const processed = Math.round(18.42 * pct);
+  const dups = Math.round(0.47 * pct);
+
+  return (
+    <div style={{padding:28, flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:18}}>
+      <div style={{fontFamily:t.fontDisplay, fontSize:30, fontWeight:700, color:t.fg1, letterSpacing:'-0.02em'}}>
+        Scanner
+      </div>
+
+      <Surface>
+        <SectionLabel>Source Folder</SectionLabel>
+        <div style={{display:'flex', alignItems:'center', gap:10}}>
+          <div style={{flex:1, fontFamily:'monospace', fontSize:11, color:t.fg2,
+            background:t.surface2, border:`1px solid ${t.border}`, borderRadius:6,
+            padding:'6px 10px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+            {path}
+          </div>
+          <Btn variant="bordered">Choose…</Btn>
+        </div>
+      </Surface>
+
+      <div style={{display:'flex', alignItems:'center', gap:12}}>
+        <Btn onClick={startScan} disabled={scanning}>
+          {scanning ? '⏳ Scanning…' : '▶  Start Scan'}
+        </Btn>
+        {done && <span style={{fontFamily:t.fontBody, fontSize:12, color:t.green, fontWeight:500}}>
+          ✓ Scan complete
+        </span>}
+      </div>
+
+      {(scanning || done) && (
+        <Surface>
+          <SectionLabel>Progress</SectionLabel>
+          <ProgressBar pct={pct}/>
+          <div style={{display:'flex', gap:32, marginTop:12}}>
+            <Stat label="Files Found" value={(1842).toLocaleString()}/>
+            <Stat label="Processed" value={processed.toLocaleString()} color={t.accent}/>
+            <Stat label="Duplicates" value={dups} color={t.orange}/>
+          </div>
+        </Surface>
+      )}
+
+      <Surface>
+        <SectionLabel>Recent Scans</SectionLabel>
+        <table style={{width:'100%', borderCollapse:'collapse'}}>
+          <thead>
+            <tr>
+              {['Path','Status','Photos','Dups','Date'].map(h=>(
+                <th key={h} style={{textAlign:'left', padding:'4px 8px', fontFamily:t.fontBody,
+                  fontSize:9, fontWeight:600, color:t.fg3, textTransform:'uppercase',
+                  letterSpacing:'0.07em', borderBottom:`1px solid ${t.border}`}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {SCAN_RUNS.map((r,i)=>(
+              <tr key={i}>
+                <td style={{padding:'7px 8px', fontFamily:'monospace', fontSize:11, color:t.fg1,
+                  maxWidth:220, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{r.path}</td>
+                <td style={{padding:'7px 8px'}}>
+                  <span style={{fontFamily:t.fontBody, fontSize:11, fontWeight:600,
+                    color:{completed:t.green,failed:t.red,running:t.orange}[r.status]}}>
+                    {r.status.charAt(0).toUpperCase()+r.status.slice(1)}
+                  </span>
+                </td>
+                <td style={{padding:'7px 8px', fontFamily:t.fontBody, fontSize:12, color:t.fg1}}>{r.photos.toLocaleString()}</td>
+                <td style={{padding:'7px 8px', fontFamily:t.fontBody, fontSize:12, color:t.orange}}>{r.dups}</td>
+                <td style={{padding:'7px 8px', fontFamily:t.fontBody, fontSize:11, color:t.fg3}}>{r.date}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Surface>
+    </div>
+  );
+};
+
+/* ═══ GALLERY ═════════════════════════════════════════════ */
+const GalleryView = () => {
+  const t = useTheme();
+  const [selected, setSelected] = React.useState(null);
+  const [hovered, setHovered] = React.useState(null);
+  const [filterDup, setFilterDup] = React.useState(false);
+  const [filterCopied, setFilterCopied] = React.useState(false);
+
+  const photos = PHOTOS.filter(p=>{
+    if(filterDup && !p.dup) return false;
+    if(filterCopied && !p.copied) return false;
+    return true;
+  });
+
+  return (
+    <div style={{display:'flex', flex:1, overflow:'hidden'}}>
+      {/* Grid area */}
+      <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden'}}>
+        {/* Toolbar */}
+        <div style={{padding:'8px 14px', borderBottom:`1px solid ${t.border}`,
+          display:'flex', alignItems:'center', gap:10, background:t.surface,
+          flexShrink:0}}>
+          <span style={{fontFamily:t.fontBody, fontSize:11, color:t.fg3}}>
+            {photos.length} of {PHOTOS.length} photos
+          </span>
+          <div style={{marginLeft:'auto', display:'flex', gap:6}}>
+            {[['Duplicates', filterDup, ()=>setFilterDup(v=>!v)],
+              ['Copied', filterCopied, ()=>setFilterCopied(v=>!v)]].map(([l,on,fn])=>(
+              <button key={l} onClick={fn} style={{
+                fontFamily:t.fontBody, fontSize:11, fontWeight:500, cursor:'pointer',
+                padding:'3px 10px', borderRadius:5, transition:'all 0.1s',
+                background: on?t.accent:'transparent',
+                color: on?t.accentText:t.fg2,
+                border: `1px solid ${on?t.accent:t.border}`}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Photo grid */}
+        <div style={{flex:1, overflowY:'auto', padding:12, background:t.bg}}>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))', gap:6}}>
+            {photos.map(p=>{
+              const isSel = selected?.id===p.id;
+              const isHov = hovered===p.id;
+              return (
+                <div key={p.id}
+                  onClick={()=>setSelected(isSel?null:p)}
+                  onMouseEnter={()=>setHovered(p.id)}
+                  onMouseLeave={()=>setHovered(null)}
+                  style={{position:'relative', paddingBottom:'100%', borderRadius:7,
+                    overflow:'hidden', cursor:'pointer',
+                    outline: isSel?`2px solid ${t.accent}`:'2px solid transparent',
+                    outlineOffset:-2,
+                    boxShadow: isHov||isSel ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
+                    transform: isHov&&!isSel ? 'scale(1.03)' : 'scale(1)',
+                    transition:'transform 0.15s ease, box-shadow 0.15s ease, outline 0.1s'}}>
+                  <div style={{position:'absolute', inset:0, background:p.grad}}/>
+                  {/* Hover overlay */}
+                  <div style={{position:'absolute', inset:0, transition:'opacity 0.15s',
+                    opacity: isHov||isSel ? 1 : 0,
+                    background:'linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.72) 100%)'}}>
+                    <div style={{position:'absolute', bottom:5, left:5, right:5}}>
+                      <div style={{fontFamily:t.fontBody, fontSize:9, fontWeight:500, color:'rgba(255,255,255,0.9)',
+                        whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{p.name}</div>
+                    </div>
+                  </div>
+                  {/* Badges */}
+                  <div style={{position:'absolute', top:4, left:4, display:'flex', gap:3}}>
+                    {p.dup && <Badge label="DUP" bg={t.orange}/>}
+                    {p.copied && <Badge label="✓" bg={t.green}/>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected panel */}
+        {selected && (
+          <div style={{borderTop:`1px solid ${t.border}`, padding:'10px 14px',
+            background:t.surface, flexShrink:0}}>
+            <div style={{display:'flex', gap:12, alignItems:'flex-start'}}>
+              <div style={{width:64, height:64, borderRadius:6, background:selected.grad, flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{display:'flex', alignItems:'center', marginBottom:5}}>
+                  <span style={{fontFamily:t.fontBody, fontSize:13, fontWeight:600, color:t.fg1}}>
+                    {selected.name}
+                  </span>
+                  <Btn variant="plain" style={{marginLeft:'auto', fontSize:11}} onClick={()=>setSelected(null)}>
+                    Clear
+                  </Btn>
+                </div>
+                <div style={{display:'grid', gridTemplateColumns:'64px 1fr', gap:'3px 10px', fontSize:11}}>
+                  {[['Camera',selected.camera],['Date',selected.date],
+                    ['Size',selected.size],['Dims',`${selected.w} × ${selected.h}`]].map(([l,v])=>(
+                    <React.Fragment key={l}>
+                      <span style={{color:t.fg3, fontFamily:t.fontBody}}>{l}</span>
+                      <span style={{color:t.fg1, fontFamily:t.fontBody}}>{v}</span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filter sidebar */}
+      <div style={{width:200, borderLeft:`1px solid ${t.border}`, background:t.surface,
+        padding:14, overflowY:'auto', flexShrink:0}}>
+        <SectionLabel>Filters</SectionLabel>
+
+        {[['Status',['New','Copied','Kept']],['Duplicates',['With duplicates','No duplicates']],
+          ['Camera',['Canon EOS R5','Sony A7 IV','Nikon Z6 II']]].map(([section,opts])=>(
+          <div key={section} style={{marginBottom:14}}>
+            <div style={{fontFamily:t.fontBody, fontSize:11, fontWeight:600,
+              color:t.fg2, marginBottom:6}}>{section}</div>
+            {opts.map(o=>(
+              <label key={o} style={{display:'flex', alignItems:'center', gap:7,
+                fontFamily:t.fontBody, fontSize:11, color:t.fg2, marginBottom:4, cursor:'pointer'}}>
+                <input type="checkbox" style={{accentColor:t.accent, width:12, height:12}}/>
+                {o}
+              </label>
+            ))}
+          </div>
+        ))}
+
+        <div style={{marginBottom:14}}>
+          <div style={{fontFamily:t.fontBody, fontSize:11, fontWeight:600, color:t.fg2, marginBottom:6}}>Years</div>
+          {YEARS.map(y=>(
+            <label key={y} style={{display:'flex', alignItems:'center', gap:7,
+              fontFamily:t.fontBody, fontSize:11, color:t.fg2, marginBottom:4, cursor:'pointer'}}>
+              <input type="checkbox" style={{accentColor:t.accent, width:12, height:12}}/> {y}
+            </label>
+          ))}
+        </div>
+
+        <Btn variant="danger" full style={{fontSize:11, padding:'5px 10px'}}>Remove All</Btn>
+      </div>
+    </div>
+  );
+};
+
+/* ═══ DUPLICATES ══════════════════════════════════════════ */
+const DuplicatesView = () => {
+  const t = useTheme();
+  const [kept, setKept] = React.useState({0:0,1:0,2:0});
+
+  return (
+    <div style={{flex:1, overflowY:'auto'}}>
+      <div style={{padding:'22px 26px 0', display:'flex', alignItems:'baseline', gap:12}}>
+        <span style={{fontFamily:t.fontDisplay, fontSize:30, fontWeight:700,
+          color:t.fg1, letterSpacing:'-0.02em'}}>Duplicates</span>
+        <span style={{fontFamily:t.fontBody, fontSize:12, color:t.fg3, marginLeft:'auto'}}>
+          {DUP_GROUPS.length} groups · {DUP_GROUPS.reduce((a,g)=>a+g.photos.length,0)} photos
+        </span>
+      </div>
+      <div style={{borderBottom:`1px solid ${t.border}`, margin:'14px 0 0'}}/>
+
+      <div style={{padding:'16px 26px', display:'flex', flexDirection:'column', gap:14}}>
+        {DUP_GROUPS.map((group, gi)=>(
+          <Surface key={group.id}>
+            <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
+              <span style={{fontFamily:t.fontBody, fontSize:13, fontWeight:600, color:t.fg1}}>
+                {group.reason==='hashMatch' ? '⊜ Exact Match' : '⟳ Near Duplicate'}
+              </span>
+              <span style={{fontSize:11, color:t.fg3, fontFamily:t.fontBody, marginLeft:'auto'}}>
+                {group.photos.length} photos
+              </span>
+            </div>
+            <div style={{display:'flex', gap:10, overflowX:'auto', paddingBottom:4}}>
+              {group.photos.map((p, pi)=>{
+                const isKept = kept[gi]===pi;
+                return (
+                  <div key={p.id} onClick={()=>setKept(k=>({...k,[gi]:pi}))}
+                    style={{flexShrink:0, cursor:'pointer'}}>
+                    <div style={{width:110, height:110, borderRadius:7, background:p.grad,
+                      position:'relative',
+                      outline: isKept?`3px solid ${t.green}`:'3px solid transparent',
+                      outlineOffset:-3, transition:'outline 0.15s'}}>
+                      {isKept && (
+                        <div style={{position:'absolute', top:5, right:5, width:20, height:20,
+                          background:t.green, borderRadius:'50%',
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                          fontSize:10, color:'#fff', fontWeight:700}}>✓</div>
+                      )}
+                    </div>
+                    <div style={{fontFamily:t.fontBody, fontSize:10, color:t.fg2, marginTop:4,
+                      width:110, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{p.name}</div>
+                    <div style={{fontFamily:t.fontBody, fontSize:10, color:t.fg3}}>{p.size}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </Surface>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ═══ VAULT ═══════════════════════════════════════════════ */
+const VaultView = () => {
+  const t = useTheme();
+  const [dryRun, setDryRun] = React.useState(true);
+  const [running, setRunning] = React.useState(false);
+  const [pct, setPct] = React.useState(0);
+  const [format, setFormat] = React.useState('YYYY/MM/DD');
+  const copied = Math.round(18.42*pct), skipped = Math.round(0.47*pct);
+
+  const start = () => {
+    setRunning(true); setPct(0);
+    let p=0; const id=setInterval(()=>{p+=5;setPct(p);if(p>=100){clearInterval(id);setPct(100);setRunning(false);}},120);
+  };
+
+  return (
+    <div style={{padding:28, flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:18}}>
+      <div style={{fontFamily:t.fontDisplay, fontSize:30, fontWeight:700, color:t.fg1, letterSpacing:'-0.02em'}}>Vault</div>
+
+      <Surface>
+        <SectionLabel>Vault Location</SectionLabel>
+        <div style={{display:'flex', alignItems:'center', gap:10}}>
+          <div style={{flex:1, fontFamily:'monospace', fontSize:11, color:t.fg2,
+            background:t.surface2, border:`1px solid ${t.border}`, borderRadius:6, padding:'6px 10px',
+            overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+            /Users/odysseus/Pictures/Vault
+          </div>
+          <Btn variant="bordered">Change Vault…</Btn>
+        </div>
+      </Surface>
+
+      <Surface>
+        <SectionLabel>Options</SectionLabel>
+        <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:10}}>
+          <span style={{fontFamily:t.fontBody, fontSize:12, color:t.fg2, width:110, textAlign:'right'}}>
+            Folder Format
+          </span>
+          <input value={format} onChange={e=>setFormat(e.target.value)}
+            style={{fontFamily:'monospace', fontSize:12, padding:'5px 8px', borderRadius:5,
+              border:`1px solid ${t.border}`, background:t.surface2, color:t.fg1,
+              width:160, outline:'none'}}/>
+          <span style={{fontFamily:t.fontBody, fontSize:11, color:t.fg3}}>YYYY · MM · DD</span>
+        </div>
+        <label style={{display:'flex', alignItems:'center', gap:8, fontFamily:t.fontBody,
+          fontSize:12, color:t.fg2, cursor:'pointer'}}>
+          <input type="checkbox" checked={dryRun} onChange={e=>setDryRun(e.target.checked)}
+            style={{accentColor:t.accent}}/>
+          Dry run — preview only, no files copied
+        </label>
+      </Surface>
+
+      <div style={{display:'flex', alignItems:'center', gap:12}}>
+        <Btn onClick={start} disabled={running}>
+          {running ? '⏳ Vaulting…' : dryRun ? '👁  Preview' : '▶  Save to Vault'}
+        </Btn>
+      </div>
+
+      {(running || pct > 0) && (
+        <Surface>
+          <SectionLabel>Progress</SectionLabel>
+          <ProgressBar pct={pct}/>
+          <div style={{display:'flex', gap:32, marginTop:12}}>
+            <Stat label="Total" value={(1842).toLocaleString()}/>
+            <Stat label="Copied" value={copied.toLocaleString()} color={t.green}/>
+            <Stat label="Skipped" value={skipped} color={t.orange}/>
+          </div>
+        </Surface>
+      )}
+    </div>
+  );
+};
+
+/* ═══ BACKUP ══════════════════════════════════════════════ */
+const BackupView = () => {
+  const t = useTheme();
+  const [dryRun, setDryRun] = React.useState(true);
+  const [running, setRunning] = React.useState(false);
+  const [pct, setPct] = React.useState(0);
+  const copied = Math.round(3.42*pct), skipped = Math.round(0.3*pct);
+
+  const start = () => {
+    setRunning(true); setPct(0);
+    let p=0; const id=setInterval(()=>{p+=4+Math.random()*3;setPct(p);if(p>=100){clearInterval(id);setPct(100);setRunning(false);}},130);
+  };
+
+  return (
+    <div style={{padding:28, flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:18}}>
+      <div>
+        <div style={{fontFamily:t.fontDisplay, fontSize:30, fontWeight:700, color:t.fg1, letterSpacing:'-0.02em'}}>Backup</div>
+        <div style={{fontFamily:t.fontBody, fontSize:12, color:t.fg3, marginTop:4}}>
+          Copy selected photos to the vault. Already-vaulted photos are skipped automatically.
+        </div>
+      </div>
+
+      <Surface>
+        <SectionLabel>Filter — which photos to back up</SectionLabel>
+        <div style={{marginBottom:12}}>
+          <div style={{fontFamily:t.fontBody, fontSize:11, fontWeight:600, color:t.fg2, marginBottom:6}}>Camera</div>
+          {CAMERAS.slice(0,3).map(c=>(
+            <label key={c} style={{display:'flex', alignItems:'center', gap:7,
+              fontFamily:t.fontBody, fontSize:11, color:t.fg2, marginBottom:4, cursor:'pointer'}}>
+              <input type="checkbox" style={{accentColor:t.accent, width:12, height:12}}/> {c}
+            </label>
+          ))}
+        </div>
+        <div style={{borderTop:`1px solid ${t.border}`, paddingTop:10, marginBottom:10}}>
+          <div style={{fontFamily:t.fontBody, fontSize:11, fontWeight:600, color:t.fg2, marginBottom:6}}>Year range</div>
+          <div style={{display:'flex', alignItems:'center', gap:8}}>
+            {['From','To'].map(lbl=>(
+              <React.Fragment key={lbl}>
+                <select style={{fontFamily:t.fontBody, fontSize:11, padding:'4px 8px', borderRadius:5,
+                  border:`1px solid ${t.border}`, background:t.surface2, color:t.fg1, outline:'none'}}>
+                  <option>Any</option>{YEARS.map(y=><option key={y}>{y}</option>)}
+                </select>
+                {lbl==='From'&&<span style={{color:t.fg3}}>–</span>}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+        <div style={{borderTop:`1px solid ${t.border}`, paddingTop:8,
+          display:'flex', alignItems:'center', gap:6}}>
+          <span style={{fontFamily:t.fontBody, fontSize:12, color:t.fg3}}>
+            <strong style={{color:t.fg1, fontWeight:600}}>342</strong> photos match
+          </span>
+        </div>
+      </Surface>
+
+      <Surface>
+        <SectionLabel>Options</SectionLabel>
+        <label style={{display:'flex', alignItems:'center', gap:8, fontFamily:t.fontBody,
+          fontSize:12, color:t.fg2, cursor:'pointer'}}>
+          <input type="checkbox" checked={dryRun} onChange={e=>setDryRun(e.target.checked)}
+            style={{accentColor:t.accent}}/>
+          Dry run — preview only
+        </label>
+      </Surface>
+
+      <div style={{display:'flex', alignItems:'center', gap:12}}>
+        <Btn onClick={start} disabled={running}>
+          {running ? '⏳ Backing up…' : dryRun ? '👁  Preview' : '↓  Back Up Now'}
+        </Btn>
+      </div>
+
+      {(running || pct > 0) && (
+        <Surface>
+          <SectionLabel>Progress</SectionLabel>
+          <ProgressBar pct={pct}/>
+          <div style={{display:'flex', gap:32, marginTop:12}}>
+            <Stat label="Total" value="342"/>
+            <Stat label="Copied" value={copied.toLocaleString()} color={t.green}/>
+            <Stat label="Skipped" value={skipped} color={t.orange}/>
+          </div>
+        </Surface>
+      )}
+    </div>
+  );
+};
+
+/* ═══ WINDOW CHROME ═══════════════════════════════════════ */
+const Window = ({children, theme}) => (
+  <div style={{
+    width: '100%', maxWidth: 1140, height: 700,
+    background: theme.bg, borderRadius: 12,
+    boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+    display: 'flex', flexDirection: 'column', overflow: 'hidden',
+  }}>
+    {/* Traffic lights */}
+    <div style={{position:'relative', height:0}}>
+      <div style={{position:'absolute', top:13, left:14, display:'flex', gap:7, zIndex:10}}>
+        {['#FF5F57','#FFBD2E','#28CA41'].map((c,i)=>(
+          <div key={i} style={{width:12, height:12, borderRadius:'50%', background:c,
+            boxShadow:`0 0 0 0.5px rgba(0,0,0,0.15)`}}/>
+        ))}
+      </div>
+    </div>
+    {children}
+  </div>
+);
+
+/* ═══ TWEAKS ══════════════════════════════════════════════ */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "aegean"
+}/*EDITMODE-END*/;
+
+/* ═══ APP ROOT ════════════════════════════════════════════ */
+const App = () => {
+  const saved = JSON.parse(localStorage.getItem('nostos-redesign')||'{}');
+  const [themeKey, setThemeKey] = React.useState(saved.themeKey || TWEAK_DEFAULTS.theme || 'aegean');
+  const [tab, setTab] = React.useState(saved.tab || 'gallery');
+  const [tweaksVisible, setTweaksVisible] = React.useState(false);
+  const theme = THEMES[themeKey] || THEMES.aegean;
+
+  React.useEffect(()=>{
+    localStorage.setItem('nostos-redesign', JSON.stringify({themeKey, tab}));
+  }, [themeKey, tab]);
+
+  // Listen for tweaks toggle
+  React.useEffect(()=>{
+    const handler = (e) => {
+      if(e.data?.type === '__activate_edit_mode') setTweaksVisible(true);
+      if(e.data?.type === '__deactivate_edit_mode') setTweaksVisible(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+    return ()=>window.removeEventListener('message', handler);
+  },[]);
+
+  const selectTheme = (k) => {
+    setThemeKey(k);
+    window.parent.postMessage({type:'__edit_mode_set_keys', edits:{theme:k}},'*');
+  };
+
+  const views = {
+    scanner: <ScannerView/>,
+    gallery: <GalleryView/>,
+    dupes:   <DuplicatesView/>,
+    vault:   <VaultView/>,
+    backup:  <BackupView/>,
+  };
+
+  return (
+    <ThemeCtx.Provider value={theme}>
+      <div style={{width:'100vw', height:'100vh', display:'flex', alignItems:'center',
+        justifyContent:'center', padding:24, background:'#0a0f14',
+        fontFamily: theme.fontBody}}>
+        <Window theme={theme}>
+          <div style={{display:'flex', flex:1, overflow:'hidden', marginTop:0}}>
+            <Sidebar active={tab} onSelect={setTab}/>
+            <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden',
+              background:theme.bg}}>
+              {views[tab]}
+            </div>
+          </div>
+        </Window>
+      </div>
+
+      {/* Tweaks */}
+      <div className={`tweaks-panel${tweaksVisible?' visible':''}`}
+        style={{'--accent': theme.accent}}>
+        <div className="tweaks-title">Theme</div>
+        {Object.entries(THEMES).map(([k,th])=>(
+          <button key={k} className={`theme-btn${themeKey===k?' active':''}`}
+            onClick={()=>selectTheme(k)}>
+            {th.emoji} {th.name}
+          </button>
+        ))}
+        <div className="tweaks-title" style={{marginTop:12}}>Screen</div>
+        {TABS.map(t=>(
+          <button key={t.id} className={`theme-btn${tab===t.id?' active':''}`}
+            onClick={()=>setTab(t.id)}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+    </ThemeCtx.Provider>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

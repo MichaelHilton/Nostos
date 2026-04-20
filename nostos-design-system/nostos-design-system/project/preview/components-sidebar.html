@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); font-family: var(--font-sans); padding: 20px 24px; }
+  .sidebar {
+    width: 180px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px 0;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 14px 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .sidebar-logo { width: 22px; height: 22px; border-radius: 5px; }
+  .sidebar-name { font-weight: 700; font-size: 13px; color: var(--fg-primary); }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    font-size: 13px; font-weight: 500;
+    color: var(--fg-primary);
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .nav-item:hover { background: var(--nostos-neutral-200); }
+  .nav-item.active {
+    background: var(--nostos-teal-mid);
+    color: white;
+  }
+  .nav-icon { font-size: 13px; width: 16px; text-align: center; opacity: 0.75; }
+  .nav-item.active .nav-icon { opacity: 1; }
+</style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <img class="sidebar-logo" src="../assets/logo_square.png">
+      <span class="sidebar-name">Nostos</span>
+    </div>
+    <div class="nav-item active"><span class="nav-icon">🔍</span> Scanner</div>
+    <div class="nav-item"><span class="nav-icon">🖼</span> Gallery</div>
+    <div class="nav-item"><span class="nav-icon">📋</span> Duplicates</div>
+    <div class="nav-item"><span class="nav-icon">📦</span> Vault</div>
+    <div class="nav-item"><span class="nav-icon">💾</span> Backup</div>
+  </div>
+</body>
+</html>

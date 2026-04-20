@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); font-family: var(--font-sans); padding: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .token { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; }
+  .dot { width: 28px; height: 28px; border-radius: 50%; margin-bottom: 8px; }
+  .name { font-size: 11px; font-weight: 600; color: var(--fg-primary); }
+  .desc { font-size: 10px; color: var(--fg-secondary); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="token"><div class="dot" style="background:var(--accent)"></div><div class="name">--accent</div><div class="desc">Primary interactive</div></div>
+  <div class="token"><div class="dot" style="background:var(--nostos-green)"></div><div class="name">Green</div><div class="desc">Success / Copied</div></div>
+  <div class="token"><div class="dot" style="background:var(--nostos-orange)"></div><div class="name">Orange</div><div class="desc">Warning / Duplicate</div></div>
+  <div class="token"><div class="dot" style="background:var(--nostos-red)"></div><div class="name">Red</div><div class="desc">Error / Destructive</div></div>
+  <div class="token"><div class="dot" style="background:var(--nostos-blue)"></div><div class="name">Blue</div><div class="desc">Selected / Info</div></div>
+  <div class="token"><div class="dot" style="background:var(--fg-primary)"></div><div class="name">fg-primary</div><div class="desc">Primary text</div></div>
+  <div class="token"><div class="dot" style="background:var(--fg-secondary)"></div><div class="name">fg-secondary</div><div class="desc">Muted text</div></div>
+  <div class="token"><div class="dot" style="background:var(--fg-muted)"></div><div class="name">fg-muted</div><div class="desc">Placeholder/hint</div></div>
+</div>
+</body>
+</html>

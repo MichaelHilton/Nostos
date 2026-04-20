@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); font-family: var(--font-sans); padding: 20px 24px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .token { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; }
+  .bar { height: 6px; background: var(--accent); border-radius: 3px; margin-bottom: 8px; }
+  .name { font-size: 11px; font-weight: 600; color: var(--fg-primary); }
+  .val  { font-size: 10px; color: var(--fg-secondary); font-family: var(--font-mono); }
+  .radius-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .radius-box { background: var(--nostos-teal-mid); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="grid" style="margin-bottom:16px">
+    <div class="token"><div class="bar" style="width:4px; height:4px; border-radius:2px; display:inline-block; margin-bottom:6px"></div><div class="name">--radius-sm</div><div class="val">4px — badges</div></div>
+    <div class="token"><div class="name">--radius-md</div><div class="val">6px — photo tiles</div></div>
+    <div class="token"><div class="name">--radius-lg</div><div class="val">10px — cards</div></div>
+    <div class="token"><div class="name">--radius-xl</div><div class="val">14px — panels</div></div>
+  </div>
+  <div class="radius-row">
+    <div class="radius-box" style="width:36px; height:36px; border-radius:4px">sm</div>
+    <div class="radius-box" style="width:48px; height:48px; border-radius:6px">md</div>
+    <div class="radius-box" style="width:60px; height:60px; border-radius:10px">lg</div>
+    <div class="radius-box" style="width:72px; height:72px; border-radius:14px">xl</div>
+    <div class="radius-box" style="width:60px; height:28px; border-radius:9999px">pill</div>
+  </div>
+</body>
+</html>
