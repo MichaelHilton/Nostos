@@ -487,4 +487,76 @@ extension AppDatabase {
             try BackupResult.filter(Column("job_id") == jobId).fetchAll(db)
         }
     }
+
+    func totalPhotoSizeBytes() throws -> Int64 {
+        try dbWriter.read { db in
+            let cursor = try Row.fetchCursor(db, sql: "SELECT SUM(file_size) as total FROM photos")
+            if let row = try cursor.next() {
+                return row["total"] ?? 0
+            }
+            return 0
+        }
+    }
+
+    func fetchFormatBreakdown() throws -> [(ext: String, count: Int, bytes: Int64)] {
+        try dbWriter.read { db in
+            var breakdown: [(ext: String, count: Int, bytes: Int64)] = []
+            let cursor = try Row.fetchCursor(db, sql: """
+                SELECT UPPER(SUBSTR(path, INSTR(path, '.') + 1)) as ext, COUNT(*) as count, SUM(file_size) as bytes
+                FROM photos
+                WHERE INSTR(path, '.') > 0
+                GROUP BY ext
+                ORDER BY bytes DESC
+            """)
+            while let row = try cursor.next() {
+                if let ext = row["ext"] as? String,
+                   let count = row["count"] as? Int64,
+                   let bytes = row["bytes"] as? Int64 {
+                    breakdown.append((String(ext.dropFirst()), Int(count), bytes))
+                }
+            }
+            return breakdown
+        }
+    }
+
+    func fetchYearBreakdown() throws -> [(year: Int, count: Int)] {
+        try dbWriter.read { db in
+            var breakdown: [(year: Int, count: Int)] = []
+            let cursor = try Row.fetchCursor(db, sql: """
+                SELECT CAST(STRFTIME('%Y', taken_at) AS INTEGER) as year, COUNT(*) as count
+                FROM photos
+                WHERE taken_at IS NOT NULL
+                GROUP BY year
+                ORDER BY year DESC
+            """)
+            while let row = try cursor.next() {
+                if let year = row["year"] as? Int64,
+                   let count = row["count"] as? Int64 {
+                    breakdown.append((Int(year), Int(count)))
+                }
+            }
+            return breakdown
+        }
+    }
+
+    func fetchCameraBreakdown() throws -> [(model: String, count: Int)] {
+        try dbWriter.read { db in
+            var breakdown: [(model: String, count: Int)] = []
+            let cursor = try Row.fetchCursor(db, sql: """
+                SELECT camera_model, COUNT(*) as count
+                FROM photos
+                WHERE camera_model IS NOT NULL AND camera_model != ''
+                GROUP BY camera_model
+                ORDER BY count DESC
+                LIMIT 10
+            """)
+            while let row = try cursor.next() {
+                if let model = row["camera_model"] as? String,
+                   let count = row["count"] as? Int64 {
+                    breakdown.append((model, Int(count)))
+                }
+            }
+            return breakdown
+        }
+    }
 }

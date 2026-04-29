@@ -10,101 +10,135 @@ struct ScannerView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Scanner")
-                .font(.largeTitle)
-                .bold()
+        VStack(spacing: 0) {
+            PageHeaderView(
+                title: "Scanner",
+                subtitle: "Scan a folder to find and catalogue your photos"
+            )
 
-            // Directory picker
-            GroupBox("Source Folder") {
-                HStack {
-                    Text(selectedPath.isEmpty ? "No folder selected" : selectedPath)
-                        .foregroundColor(selectedPath.isEmpty ? .secondary : .primary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Button("Choose…") {
-                        if let url = state.pickDirectory() {
-                            selectedPath = url.path
+            ScrollView {
+                VStack(spacing: NostosSpacing.xxxl) {
+                    // Stat cards row
+                    HStack(spacing: NostosSpacing.xl) {
+                        NostosStatCard("Total Scanned", value: "\(state.totalPhotoCount)", color: .nostosFg1)
+                        NostosStatCard("Catalogued", value: "\(state.totalPhotoCount)", color: .nostosAccent)
+                        NostosStatCard("Duplicates", value: "\(state.duplicateGroups.count)", color: .nostosOrange)
+                        NostosStatCard("Last Scan", value: lastScanLabel, color: .nostosGreen)
+                    }
+                    .padding(.horizontal, NostosSpacing.pagePadding)
+
+                    // Source folder card
+                    CardView {
+                        VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                            SectionLabel("Source Folder", diamond: true)
+
+                            HStack(spacing: NostosSpacing.xl) {
+                                Text(selectedPath.isEmpty ? "No folder selected" : selectedPath)
+                                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                    .foregroundColor(.nostosFg2)
+                                    .padding(.horizontal, NostosSpacing.md)
+                                    .padding(.vertical, NostosSpacing.sm)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.nostosSurface2)
+                                    .border(Color.nostosBorder, width: 1)
+                                    .cornerRadius(NostosRadii.md)
+
+                                Button(action: {
+                                    if let url = state.pickDirectory() {
+                                        selectedPath = url.path
+                                    }
+                                }) {
+                                    Text("Choose…")
+                                }
+                                .buttonStyle(.bordered)
+                                .accessibilityIdentifier("scannerChooseDirectoryButton")
+                            }
+                        }
+                        .padding(NostosSpacing.lg)
+                    }
+
+                    // Scan button
+                    HStack(spacing: NostosSpacing.md) {
+                        Button(action: startScan) {
+                            Text(state.scanProgress.isScanning ? "↻  Scanning…" : "▶  Start Scan")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(selectedPath.isEmpty || state.scanProgress.isScanning)
+                        .accessibilityIdentifier("scannerStartScanButton")
+
+                        if state.scanProgress.isScanning {
+                            SpinnerView()
                         }
                     }
-                    .accessibilityIdentifier("scannerChooseDirectoryButton")
-                }
-                .padding(4)
-            }
+                    .padding(.horizontal, NostosSpacing.pagePadding)
 
-            // Scan button + progress
-            HStack {
-                Button(action: startScan) {
-                    Label(state.scanProgress.isScanning ? "Scanning…" : "Start Scan",
-                          systemImage: "play.fill")
-                }
-                .disabled(selectedPath.isEmpty || state.scanProgress.isScanning)
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("scannerStartScanButton")
+                    // Progress card
+                    if state.scanProgress.isScanning || state.scanProgress.processed > 0 {
+                        CardView {
+                            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                                SectionLabel("Progress", diamond: true)
 
-                if state.scanProgress.isScanning {
-                    SpinnerView()
-                        .padding(.leading, 4)
-                }
-            }
+                                NostosProgressBar(
+                                    Double(state.scanProgress.processed),
+                                    total: Double(max(1, state.scanProgress.total))
+                                )
 
-            if state.scanProgress.isScanning || state.scanProgress.processed > 0 {
-                GroupBox("Progress") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ProgressView(
-                            value: Double(state.scanProgress.processed),
-                            total: max(1.0, Double(state.scanProgress.total))
-                        )
-                        .progressViewStyle(SafeLinearProgressStyle())
-                        HStack(spacing: 24) {
-                            stat("Files Found", state.scanProgress.total)
-                            stat("Processed", state.scanProgress.processed)
-                            stat("Duplicates", state.scanProgress.duplicatesFound)
+                                HStack(spacing: 40) {
+                                    Stat("Files Found", value: "\(state.scanProgress.total)")
+                                    Stat("Processed", value: "\(state.scanProgress.processed)", color: .nostosAccent)
+                                    Stat("Duplicates", value: "\(state.scanProgress.duplicatesFound)", color: .nostosOrange)
+                                }
+                            }
+                            .padding(NostosSpacing.lg)
                         }
                     }
-                    .padding(4)
-                }
-            }
 
-            // Recent scans table
-            if !state.scanRuns.isEmpty {
-                GroupBox("Recent Scans") {
-                    if #available(macOS 13, *) {
-                        recentScansTable
-                    } else {
-                        LegacyRecentScansTable(scanRuns: state.scanRuns)
+                    // Recent scans table
+                    if !state.scanRuns.isEmpty {
+                        CardView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                SectionLabel("Recent Scans", diamond: true)
+                                    .padding(NostosSpacing.lg)
+
+                                if #available(macOS 13, *) {
+                                    recentScansTable
+                                        .padding(NostosSpacing.lg)
+                                } else {
+                                    LegacyRecentScansTable(scanRuns: state.scanRuns)
+                                        .padding(NostosSpacing.lg)
+                                }
+                            }
+                        }
                     }
                 }
+                .padding(.vertical, NostosSpacing.xxxl)
             }
-
-            Spacer()
+            .background(Color.nostosBg)
+            .overlay(alignment: .topLeading) {
+                StarDotBackground()
+            }
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func startScan() {
         state.startScan(rootURL: URL(fileURLWithPath: selectedPath))
     }
 
-    @ViewBuilder
-    private func stat(_ label: String, _ value: Int) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Text("\(value)")
-                .font(.title3)
-                .bold()
+    private var lastScanLabel: String {
+        if let lastRun = state.scanRuns.first {
+            if let finishedAt = lastRun.finishedAt {
+                let formatter = RelativeDateTimeFormatter()
+                return formatter.localizedString(for: finishedAt, relativeTo: Date())
+            }
         }
+        return "Never"
     }
 
     private func statusColor(_ status: ScanStatus) -> Color {
         switch status {
-        case .running:   return .orange
-        case .completed: return .green
-        case .failed:    return .red
+        case .running:   return .nostosOrange
+        case .completed: return .nostosGreen
+        case .failed:    return .nostosRed
         }
     }
 
@@ -122,24 +156,33 @@ private struct RecentScansTable: View {
         Table(scanRuns) {
             TableColumn("Path") { run in
                 Text(run.rootPath)
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundColor(.nostosFg1)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
             TableColumn("Status") { run in
                 Text(run.status.rawValue.capitalized)
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(statusColor(run.status))
             }
             .width(80)
             TableColumn("Photos") { run in
                 Text("\(run.photosFound)")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(.nostosFg1)
+            }
+            .width(70)
+            TableColumn("Dups") { run in
+                Text("\(run.duplicatesFound)")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(.nostosOrange)
             }
             .width(60)
-            TableColumn("Duplicates") { run in
-                Text("\(run.duplicatesFound)")
-            }
-            .width(80)
-            TableColumn("Started") { run in
+            TableColumn("Date") { run in
                 Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundColor(.nostosFg3)
             }
             .width(160)
         }
@@ -148,22 +191,20 @@ private struct RecentScansTable: View {
 
     private func statusColor(_ status: ScanStatus) -> Color {
         switch status {
-        case .running:   return .orange
-        case .completed: return .green
-        case .failed:    return .red
+        case .running:   return .nostosOrange
+        case .completed: return .nostosGreen
+        case .failed:    return .nostosRed
         }
     }
 }
 
-/// Pure-SwiftUI spinner — avoids NSProgressIndicator which crashes with
-/// EXC_BAD_INSTRUCTION in validateDimension on macOS 12.
 private struct SpinnerView: View {
     @State private var angle: Double = 0
 
     var body: some View {
         Circle()
             .trim(from: 0.1, to: 0.9)
-            .stroke(Color.accentColor, lineWidth: 2)
+            .stroke(Color.nostosAccent, lineWidth: 2)
             .frame(width: 14, height: 14)
             .rotationEffect(.degrees(angle))
             .onAppear {
@@ -174,16 +215,14 @@ private struct SpinnerView: View {
     }
 }
 
-/// Pure-SwiftUI linear progress bar — avoids NSProgressIndicator which
-/// crashes with EXC_BAD_INSTRUCTION in validateDimension on macOS 12.
 private struct SafeLinearProgressStyle: ProgressViewStyle {
     func makeBody(configuration: Configuration) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.secondary.opacity(0.25))
+                    .fill(Color.nostosProgressBg)
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.accentColor)
+                    .fill(Color.nostosAccent)
                     .frame(width: geo.size.width * CGFloat(configuration.fractionCompleted ?? 0))
             }
         }
@@ -199,18 +238,21 @@ private struct LegacyRecentScansTable: View {
             ForEach(scanRuns) { run in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(run.rootPath)
-                        .font(.headline)
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundColor(.nostosFg1)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     HStack(spacing: 12) {
                         Text(run.status.rawValue.capitalized)
                             .foregroundColor(statusColor(run.status))
                         Text("Photos: \(run.photosFound)")
-                        Text("Duplicates: \(run.duplicatesFound)")
+                        Text("Dups: \(run.duplicatesFound)")
                         Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
                     }
-                    .font(.caption)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundColor(.nostosFg3)
                     Divider()
+                        .background(Color.nostosBorder)
                 }
             }
         }
@@ -219,9 +261,9 @@ private struct LegacyRecentScansTable: View {
 
     private func statusColor(_ status: ScanStatus) -> Color {
         switch status {
-        case .running:   return .orange
-        case .completed: return .green
-        case .failed:    return .red
+        case .running:   return .nostosOrange
+        case .completed: return .nostosGreen
+        case .failed:    return .nostosRed
         }
     }
 }

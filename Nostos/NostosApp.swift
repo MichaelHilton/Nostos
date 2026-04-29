@@ -91,19 +91,32 @@ private struct VaultSetupView: View {
     let onChooseVault: (URL) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .center, spacing: 16) {
-                AppLogoView()
-                    .frame(width: 72, height: 72)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        VStack(alignment: .leading, spacing: NostosSpacing.xxxl) {
+            HStack(alignment: .center, spacing: NostosSpacing.xl) {
+                WaveLensLogo()
+                    .frame(width: 56, height: 56)
 
-                Text("Vault")
-                    .font(.largeTitle).bold()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Vault")
+                        .font(.nostosDisplay(size: 28, weight: .bold))
+                        .foregroundColor(.nostosFg1)
+
+                    Text("Set Up Storage")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.nostosFg3)
+                        .textCase(.uppercase)
+                }
             }
 
-            Text("Choose a folder to store copied photos and Nostos metadata. The app will keep its database and thumbnails inside that vault.")
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                Text("Choose a folder to store copied photos and Nostos metadata. The app will keep its database and thumbnails inside that vault.")
+                    .foregroundColor(.nostosFg2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineSpacing(4)
+            }
+            .padding(NostosSpacing.lg)
+            .background(Color.nostosSurface2)
+            .cornerRadius(NostosRadii.xl)
 
             Button("Choose Vault…") {
                 if let url = pickVaultDirectory() {
@@ -115,8 +128,12 @@ private struct VaultSetupView: View {
 
             Spacer()
         }
-        .padding(24)
+        .padding(NostosSpacing.pagePadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.nostosBg)
+        .overlay(alignment: .topLeading) {
+            StarDotBackground()
+        }
     }
 
     private func pickVaultDirectory() -> URL? {

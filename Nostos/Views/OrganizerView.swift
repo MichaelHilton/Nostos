@@ -12,128 +12,224 @@ struct VaultView: View {
         self.onVaultRootChange = onVaultRootChange
     }
 
+    var inVaultCount: Int {
+        state.photos.filter { $0.status == .copied }.count
+    }
+
+    var notYetVaultedCount: Int {
+        state.totalPhotoCount - inVaultCount
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Vault")
-                .font(.largeTitle).bold()
+        VStack(alignment: .leading, spacing: 0) {
+            PageHeaderView(
+                title: "Vault",
+                subtitle: "Organise and copy photos into your structured vault folder"
+            )
 
-            GroupBox("Vault Location") {
-                HStack(spacing: 12) {
-                    Text(state.vaultRootURL?.path ?? "No vault selected")
-                        .foregroundColor(state.vaultRootURL == nil ? .secondary : .primary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+            ScrollView {
+                VStack(spacing: NostosSpacing.xxxl) {
+                    StarDotBackground()
 
-                    Button("Change Vault…") {
-                        pendingVaultURL = state.pickVaultDirectory()
+                    // Stat cards row
+                    HStack(spacing: NostosSpacing.xl) {
+                        NostosStatCard("Photos Scanned", value: "\(state.totalPhotoCount)", color: .nostosFg1)
+                        NostosStatCard("In Vault", value: "\(inVaultCount)", color: .nostosGreen)
+                        NostosStatCard("Not Yet Vaulted", value: "\(notYetVaultedCount)", color: .nostosOrange)
+                        NostosStatCard("Total Size", value: formatBytes(state.totalPhotoSize), color: .nostosAccent)
                     }
-                    .buttonStyle(.bordered)
-                    .accessibilityIdentifier("vaultChangeVaultButton")
-                }
-                .padding(4)
-            }
+                    .padding(.horizontal, NostosSpacing.pagePadding)
 
-            GroupBox("Options") {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Folder Format")
-                            .frame(width: 110, alignment: .trailing)
-                        TextField("YYYY/MM/DD", text: $folderFormat)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(maxWidth: 200)
-                        Text("Tokens: YYYY, MM, DD")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    Toggle("Dry Run (preview only, no files copied)", isOn: $dryRun)
-                }
-                .padding(4)
-            }
+                    // Format breakdown
+                    if !state.formatBreakdown.isEmpty {
+                        CardView {
+                            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                                SectionLabel("Storage Breakdown — Format", diamond: true)
 
-            HStack {
-                Button(action: startOrganize) {
-                    Label(
-                        state.organizeProgress.isRunning
-                            ? "Vaulting…"
-                            : (dryRun ? "Preview" : "Save to Vault"),
-                        systemImage: state.organizeProgress.isRunning ? "stop.circle" : "play.fill"
-                    )
-                }
-                .disabled(state.vaultRootURL == nil || state.organizeProgress.isRunning)
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier(dryRun ? "vaultPreviewButton" : "vaultSaveButton")
-
-                if state.organizeProgress.isRunning {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                        .padding(.leading, 4)
-                }
-            }
-
-            if state.organizeProgress.isRunning || state.organizeProgress.total > 0 {
-                GroupBox("Progress") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if state.organizeProgress.total > 0 {
-                            ProgressView(
-                                value: Double(state.organizeProgress.copied + state.organizeProgress.skipped),
-                                total: Double(state.organizeProgress.total)
-                            )
-                        }
-                        HStack(spacing: 24) {
-                            stat("Total", state.organizeProgress.total, .primary)
-                            stat("Copied", state.organizeProgress.copied, .green)
-                            stat("Skipped", state.organizeProgress.skipped, .orange)
-                        }
-                    }
-                    .padding(4)
-                }
-            }
-
-            if !state.lastOrganizeResults.isEmpty {
-                GroupBox {
-                    HStack {
-                        Text("Last Run Results")
-                            .font(.headline)
-                        Spacer()
-                        Button(showResults ? "Hide" : "Show Details") {
-                            showResults.toggle()
-                        }
-                        .buttonStyle(.borderless)
-                        .accessibilityIdentifier("vaultToggleDetailsButton")
-                    }
-                    .padding(.bottom, 4)
-
-                    if showResults {
-                        if #available(macOS 13, *) {
-                            Table(state.lastOrganizeResults) {
-                                TableColumn("Source") { r in
-                                    Text(URL(fileURLWithPath: r.source).lastPathComponent)
-                                        .lineLimit(1)
+                                ForEach(Array(state.formatBreakdown.enumerated()), id: \.offset) { _, row in
+                                    formatBreakdownRow(row)
                                 }
-                                TableColumn("Destination") { r in
-                                    Text(r.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
-                                        .lineLimit(1)
-                                }
-                                TableColumn("Action") { r in
-                                    Text(r.action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
-                                        .foregroundColor(actionColor(r.action))
-                                }
-                                .width(120)
                             }
-                            .frame(minHeight: 200)
-                        } else {
-                            LegacyOrganizeResultsView(results: state.lastOrganizeResults)
-                                .frame(minHeight: 200)
+                            .padding(NostosSpacing.lg)
+                        }
+                        .padding(.horizontal, NostosSpacing.pagePadding)
+                    }
+
+                    // Year breakdown
+                    if !state.yearBreakdown.isEmpty {
+                        CardView {
+                            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                                SectionLabel("Breakdown — Year Taken", diamond: true)
+
+                                ForEach(Array(state.yearBreakdown.enumerated()), id: \.offset) { _, row in
+                                    yearBreakdownRow(row)
+                                }
+                            }
+                            .padding(NostosSpacing.lg)
+                        }
+                        .padding(.horizontal, NostosSpacing.pagePadding)
+                    }
+
+                    // Camera breakdown
+                    if !state.cameraBreakdown.isEmpty {
+                        CardView {
+                            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                                SectionLabel("Breakdown — Camera", diamond: true)
+
+                                ForEach(Array(state.cameraBreakdown.enumerated()), id: \.offset) { _, row in
+                                    cameraBreakdownRow(row)
+                                }
+                            }
+                            .padding(NostosSpacing.lg)
+                        }
+                        .padding(.horizontal, NostosSpacing.pagePadding)
+                    }
+
+                    // Vault location and format settings
+                    CardView {
+                        VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                            VStack(alignment: .leading, spacing: NostosSpacing.sm) {
+                                SectionLabel("Vault Location", diamond: true)
+
+                                HStack(spacing: NostosSpacing.xl) {
+                                    Text(state.vaultRootURL?.path ?? "No vault selected")
+                                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                        .foregroundColor(.nostosFg2)
+                                        .padding(.horizontal, NostosSpacing.md)
+                                        .padding(.vertical, NostosSpacing.sm)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color.nostosSurface2)
+                                        .border(Color.nostosBorder, width: 1)
+                                        .cornerRadius(NostosRadii.md)
+
+                                    Button(action: {
+                                        pendingVaultURL = state.pickVaultDirectory()
+                                    }) {
+                                        Text("Change…")
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .accessibilityIdentifier("vaultChangeVaultButton")
+                                }
+                            }
+
+                            Divider()
+                                .padding(.vertical, NostosSpacing.sm)
+
+                            VStack(alignment: .leading, spacing: NostosSpacing.sm) {
+                                SectionLabel("Folder Format", diamond: true)
+
+                                HStack(spacing: NostosSpacing.xl) {
+                                    TextField("YYYY/MM/DD", text: $folderFormat)
+                                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                        .padding(.horizontal, NostosSpacing.md)
+                                        .padding(.vertical, NostosSpacing.sm)
+                                        .background(Color.nostosSurface2)
+                                        .border(Color.nostosBorder, width: 1)
+                                        .cornerRadius(NostosRadii.md)
+
+                                    Text("YYYY, MM, DD")
+                                        .font(.system(size: 10, weight: .regular))
+                                        .foregroundColor(.nostosFg3)
+                                }
+                            }
+                        }
+                        .padding(NostosSpacing.lg)
+                    }
+                    .padding(.horizontal, NostosSpacing.pagePadding)
+
+                    // Organize button
+                    HStack(spacing: NostosSpacing.md) {
+                        Button(action: startOrganize) {
+                            Text(state.organizeProgress.isRunning ? "↻  Vaulting…" : "▶  Organise Vault")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(state.vaultRootURL == nil || state.organizeProgress.isRunning)
+                        .accessibilityIdentifier(dryRun ? "vaultPreviewButton" : "vaultSaveButton")
+
+                        if state.organizeProgress.isRunning {
+                            vaultSpinnerView()
                         }
                     }
-                }
-            }
+                    .padding(.horizontal, NostosSpacing.pagePadding)
 
-            Spacer()
+                    // Progress card
+                    if state.organizeProgress.isRunning || state.organizeProgress.total > 0 {
+                        CardView {
+                            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                                SectionLabel("Progress", diamond: true)
+
+                                if state.organizeProgress.total > 0 {
+                                    NostosProgressBar(
+                                        Double(state.organizeProgress.copied + state.organizeProgress.skipped),
+                                        total: Double(state.organizeProgress.total)
+                                    )
+                                }
+
+                                HStack(spacing: 40) {
+                                    Stat("Total", value: "\(state.organizeProgress.total)")
+                                    Stat("Copied", value: "\(state.organizeProgress.copied)", color: .nostosGreen)
+                                    Stat("Skipped", value: "\(state.organizeProgress.skipped)", color: .nostosOrange)
+                                }
+                            }
+                            .padding(NostosSpacing.lg)
+                        }
+                        .padding(.horizontal, NostosSpacing.pagePadding)
+                    }
+
+                    // Last run results
+                    if !state.lastOrganizeResults.isEmpty {
+                        CardView {
+                            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                                HStack {
+                                    SectionLabel("Last Run Results", diamond: true)
+                                    Spacer()
+                                    Button(action: { showResults.toggle() }) {
+                                        Text(showResults ? "Hide" : "Show Details")
+                                            .font(.system(size: 10, weight: .semibold))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.nostosAccent)
+                                    .accessibilityIdentifier("vaultToggleDetailsButton")
+                                }
+
+                                if showResults {
+                                    if #available(macOS 13, *) {
+                                        Table(state.lastOrganizeResults) {
+                                            TableColumn("Source") { r in
+                                                Text(URL(fileURLWithPath: r.source).lastPathComponent)
+                                                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                                    .lineLimit(1)
+                                            }
+                                            TableColumn("Destination") { r in
+                                                Text(r.destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—")
+                                                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                                    .lineLimit(1)
+                                            }
+                                            TableColumn("Action") { r in
+                                                Text(r.action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                                    .foregroundColor(actionColor(r.action))
+                                            }
+                                            .width(120)
+                                        }
+                                        .frame(minHeight: 200)
+                                    } else {
+                                        LegacyOrganizeResultsView(results: state.lastOrganizeResults)
+                                            .frame(minHeight: 200)
+                                    }
+                                }
+                            }
+                            .padding(NostosSpacing.lg)
+                        }
+                        .padding(.horizontal, NostosSpacing.pagePadding)
+                    }
+                }
+                .padding(.vertical, NostosSpacing.xxxl)
+            }
+            .background(Color.nostosBg)
+            .overlay(alignment: .topLeading) {
+                StarDotBackground()
+            }
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .confirmationDialog(
             "Change vault location?",
             isPresented: Binding(
@@ -163,24 +259,106 @@ struct VaultView: View {
     }
 
     @ViewBuilder
-    private func stat(_ label: String, _ value: Int, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Text("\(value)")
-                .font(.title3).bold()
-                .foregroundColor(color)
+    private func formatBreakdownRow(_ row: (ext: String, count: Int, bytes: Int64)) -> some View {
+        HStack(spacing: NostosSpacing.lg) {
+            Text(row.ext.isEmpty ? "No extension" : ".\(row.ext)")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundColor(.nostosFg1)
+                .frame(width: 60, alignment: .leading)
+
+            let totalBytes = state.totalPhotoSize
+            let percentage = totalBytes > 0 ? Double(row.bytes) / Double(totalBytes) : 0.0
+            NostosProgressBar(percentage, total: 1.0, color: .nostosAccent)
+                .frame(height: 5)
+
+            Text("\(row.count)")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(.nostosFg1)
+                .frame(width: 40, alignment: .trailing)
+
+            Text(formatBytes(row.bytes))
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.nostosFg3)
+                .frame(width: 60, alignment: .trailing)
         }
+    }
+
+    @ViewBuilder
+    private func yearBreakdownRow(_ row: (year: Int, count: Int)) -> some View {
+        let maxCount = state.yearBreakdown.map { $0.count }.max() ?? 1
+        let percentage = Double(row.count) / Double(maxCount)
+
+        HStack(spacing: NostosSpacing.lg) {
+            Text("\(row.year)")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.nostosFg1)
+                .frame(width: 50, alignment: .leading)
+
+            NostosProgressBar(percentage, total: 1.0, color: .nostosGold)
+                .frame(height: 5)
+
+            Text("\(row.count)")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(.nostosFg1)
+                .frame(width: 40, alignment: .trailing)
+
+            Text("\(Int(percentage * 100))%")
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.nostosFg3)
+                .frame(width: 40, alignment: .trailing)
+        }
+    }
+
+    @ViewBuilder
+    private func cameraBreakdownRow(_ row: (model: String, count: Int)) -> some View {
+        let maxCount = state.cameraBreakdown.map { $0.count }.max() ?? 1
+        let percentage = Double(row.count) / Double(maxCount)
+
+        HStack(spacing: NostosSpacing.lg) {
+            Text(row.model)
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(.nostosFg1)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: 120, alignment: .leading)
+
+            NostosProgressBar(percentage, total: 1.0, color: .nostosAccent)
+                .frame(height: 5)
+
+            Text("\(row.count)")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(.nostosFg1)
+                .frame(width: 40, alignment: .trailing)
+
+            Text("\(Int(percentage * 100))%")
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.nostosFg3)
+                .frame(width: 40, alignment: .trailing)
+        }
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
 
     private func actionColor(_ action: OrganizeAction) -> Color {
         switch action {
-        case .copy:            return .green
-        case .skipExists:      return .secondary
-        case .skipDuplicate:   return .orange
-        case .renameConflict:  return .yellow
+        case .copy:            return .nostosGreen
+        case .skipExists:      return .nostosFg3
+        case .skipDuplicate:   return .nostosOrange
+        case .renameConflict:  return .nostosGold
         }
+    }
+
+    @ViewBuilder
+    private func vaultSpinnerView() -> some View {
+        Circle()
+            .trim(from: 0.1, to: 0.9)
+            .stroke(Color.nostosAccent, lineWidth: 2)
+            .frame(width: 14, height: 14)
+            .rotationEffect(.degrees(45))
     }
 }
 

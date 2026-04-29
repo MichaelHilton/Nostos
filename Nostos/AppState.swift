@@ -30,6 +30,12 @@ final class AppState: ObservableObject {
     @Published var backupProgress = BackupProgress()
     @Published var lastBackupResults: [BackupResult] = []
 
+    // MARK: - Vault breakdown state
+    @Published var totalPhotoSize: Int64 = 0
+    @Published var formatBreakdown: [(ext: String, count: Int, bytes: Int64)] = []
+    @Published var yearBreakdown: [(year: Int, count: Int)] = []
+    @Published var cameraBreakdown: [(model: String, count: Int)] = []
+
     // MARK: - General error state
     @Published var errorMessage: String?
 
@@ -75,6 +81,7 @@ final class AppState: ObservableObject {
         await loadDuplicates()
         await loadOrganizeJobs()
         await loadBackupJobs()
+        await loadVaultBreakdowns()
     }
 
     func loadScanRuns() async {
@@ -234,6 +241,17 @@ final class AppState: ObservableObject {
             } else {
                 lastBackupResults = []
             }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadVaultBreakdowns() async {
+        do {
+            totalPhotoSize = try db.totalPhotoSizeBytes()
+            formatBreakdown = try db.fetchFormatBreakdown()
+            yearBreakdown = try db.fetchYearBreakdown()
+            cameraBreakdown = try db.fetchCameraBreakdown()
         } catch {
             errorMessage = error.localizedDescription
         }
