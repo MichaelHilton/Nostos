@@ -237,23 +237,17 @@ struct GalleryView: View {
                 .toggleStyle(.checkbox)
             }
 
-            Section("Years") {
-                if orderedYears.isEmpty {
-                    Text("No year data").foregroundColor(.secondary)
-                } else {
-                    YearRangeSlider(
-                        years: orderedYears,
-                        lowerYear: filterYearFrom,
-                        upperYear: filterYearTo,
-                        onChange: { lower, upper in
-                            updateYearRange(lower: lower, upper: upper)
-                        }
-                    )
-                    .frame(height: max(CGFloat(orderedYears.count) * 30, 160))
+            Section("Date Range") {
+                // Build a vertical year range selector from available photo dates
+                let years = Array(Set(state.photos.compactMap { $0.takenAt }.map { Calendar.current.component(.year, from: $0) })).sorted()
 
-                    Text(yearRangeSummary)
-                        .foregroundColor(.secondary)
-                        .font(.caption)
+                if years.isEmpty {
+                    Text("No date data").foregroundColor(.secondary).font(.caption)
+                } else {
+                    VerticalYearRangeSlider(years: years, yearFrom: $filterYearFrom, yearTo: $filterYearTo) {
+                        applyLocalFilters()
+                    }
+                    .frame(minHeight: 220)
                 }
             }
 
@@ -680,6 +674,141 @@ private extension GalleryView {
             Text(value)
                 .textSelection(.enabled)
         }
+    }
+}
+
+// Vertical year-range slider with two draggable thumbs (top = max year, bottom = min year)
+struct VerticalYearRangeSlider: View {
+    let years: [Int] // ascending sorted
+    @Binding var yearFrom: Int?
+    @Binding var yearTo: Int?
+    var onChange: () -> Void
+
+    @State private var activeThumb: ActiveThumb? = nil
+
+    enum ActiveThumb { case from, to }
+
+    private func index(of year: Int?) -> Int {
+        guard let y = year, let i = years.firstIndex(of: y) else { return 0 }
+        return i
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            // Year labels (top -> latest)
+            GeometryReader { geo in
+                let h = geo.size.height
+                let count = years.count
+                let step = count > 1 ? h / CGFloat(count - 1) : 0
+
+                ZStack {
+                    // vertical track
+                    RoundedRectangle(cornerRadius: 2)
+                        .frame(width: 4)
+                        .foregroundColor(.secondary.opacity(0.4))
+                        .position(x: 28, y: h / 2)
+
+                    // tick marks and labels
+                    ForEach(Array(years.enumerated()), id: \ .offset) { idx, y in
+                        let yPos = count > 1 ? (h - CGFloat(idx) * step) : (h / 2)
+                        HStack(spacing: 8) {
+                            Text(String(y))
+                                .font(.caption2)
+                                .foregroundColor(.primary)
+                                .frame(width: 44, alignment: .trailing)
+                            Rectangle()
+                                .frame(width: 6, height: 1)
+                                .foregroundColor(.clear)
+                        }
+                        .position(x: 2 + 44/2, y: yPos)
+                    }
+
+                    // thumbs
+                    Group {
+                        // from (bottom handle)
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 14, height: 14)
+                            .position(x: 28, y: positionY(for: index(of: yearFrom), height: h, step: step))
+                            .gesture(dragGesture(in: geo, thumb: .from))
+
+                        // to (top handle)
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 14, height: 14)
+                            .position(x: 28, y: positionY(for: index(of: yearTo), height: h, step: step))
+                            .gesture(dragGesture(in: geo, thumb: .to))
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .frame(minWidth: 80)
+
+            // Current selection summary and controls
+            VStack(alignment: .leading, spacing: 6) {
+                Text("From: \(yearFrom.map { String($0) } ?? "Any")")
+                    .font(.caption)
+                Text("To: \(yearTo.map { String($0) } ?? "Any")")
+                    .font(.caption)
+                HStack(spacing: 8) {
+                    Button("Clear") {
+                        yearFrom = nil
+                        yearTo = nil
+                        onChange()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Spacer()
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear {
+            // initialize defaults if empty
+            if yearFrom == nil { yearFrom = years.first }
+            if yearTo == nil { yearTo = years.last }
+        }
+    }
+
+    private func positionY(for index: Int, height: CGFloat, step: CGFloat) -> CGFloat {
+        let count = years.count
+        if count <= 1 { return height / 2 }
+        return height - CGFloat(index) * step
+    }
+
+    private func dragGesture(in geo: GeometryProxy, thumb: ActiveThumb) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                activeThumb = thumb
+                let locY = value.location.y
+                let h = geo.size.height
+                let count = years.count
+                let step = count > 1 ? h / CGFloat(count - 1) : 0
+                var idx = 0
+                if count > 1 {
+                    idx = Int(round((h - locY) / step))
+                    idx = min(max(idx, 0), count - 1)
+                }
+
+                if thumb == .from {
+                    // bottom handle (lower year)
+                    let newYear = years[idx]
+                    yearFrom = newYear
+                    // ensure from <= to
+                    if let to = yearTo, let f = yearFrom, f > to {
+                        yearTo = f
+                    }
+                } else {
+                    // to (upper year)
+                    let newYear = years[idx]
+                    yearTo = newYear
+                    if let from = yearFrom, let t = yearTo, t < from {
+                        yearFrom = t
+                    }
+                }
+                onChange()
+            }
+            .onEnded { _ in activeThumb = nil }
     }
 }
 
