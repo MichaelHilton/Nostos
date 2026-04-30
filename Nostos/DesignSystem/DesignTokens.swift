@@ -27,7 +27,16 @@ extension Color {
 // MARK: - Typography
 extension Font {
     static func nostosDisplay(size: CGFloat, weight: Font.Weight = .bold) -> Font {
-        .custom("Cormorant Garamond", size: size).weight(weight)
+        switch weight {
+        case .regular:
+            return .custom("CormorantGaramond-Regular", size: size)
+        case .semibold:
+            return .custom("CormorantGaramond-SemiBold", size: size)
+        case .bold:
+            return .custom("CormorantGaramond-Bold", size: size)
+        default:
+            return .custom("CormorantGaramond-Regular", size: size)
+        }
     }
 
     static let nostosTitle = Font.system(size: 34, weight: .bold, design: .default)
