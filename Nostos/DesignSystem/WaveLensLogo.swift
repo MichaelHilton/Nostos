@@ -22,7 +22,6 @@ struct WaveLensLogo: View {
             let endX = size.width * 0.87
             let topY = size.height * 0.13
             let bottomY = size.height * 0.835
-            let midY = size.height * 0.47
 
             path.move(to: CGPoint(x: startX, y: size.height * 0.5))
             path.addCurve(to: CGPoint(x: endX, y: size.height * 0.5),
@@ -67,7 +66,7 @@ struct WaveLensLogoWatermark: View {
             // Outer ring (dashed)
             var path = Path()
             path.addEllipse(in: CGRect(x: size.width * 0.04, y: size.height * 0.04, width: size.width * 0.92, height: size.height * 0.92))
-            var stroke = StrokeStyle(lineWidth: scale * 0.012, dash: [scale * 0.025, scale * 0.018])
+            let stroke = StrokeStyle(lineWidth: scale * 0.012, dash: [scale * 0.025, scale * 0.018])
             context.stroke(path, with: .color(.nostosAccent.opacity(0.35)), style: stroke)
 
             // Middle ring

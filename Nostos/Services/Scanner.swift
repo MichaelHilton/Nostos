@@ -63,7 +63,7 @@ final class Scanner {
             var active = 0
             var lastProgressDate = Date.distantPast
             let progressThrottle = 0.15 // seconds between UI updates
-            for case let url as URL in enumerator {
+            while let url = enumerator.nextObject() as? URL {
                 guard (try? url.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true else { continue }
                 guard supportedExtensions.contains(url.pathExtension.lowercased()) else { continue }
 

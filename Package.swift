@@ -15,6 +15,10 @@ let package = Package(
                 .product(name: "GRDB", package: "GRDB.swift"),
             ],
             path: "Nostos",
+            exclude: [
+                "README.md",
+                "scripts"
+            ],
             resources: [
                 .process("Resources")
             ]
