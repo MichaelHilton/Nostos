@@ -96,5 +96,10 @@ struct BackupProgress {
     var copied: Int = 0
     var skipped: Int = 0
     var isRunning: Bool = false
+    var isPaused: Bool = false
     var error: String?
+
+    var fraction: Double {
+        total > 0 ? Double(copied + skipped) / Double(total) : 0
+    }
 }

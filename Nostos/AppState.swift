@@ -29,6 +29,7 @@ final class AppState: ObservableObject {
     @Published var backupJobs: [BackupJob] = []
     @Published var backupProgress = BackupProgress()
     @Published var lastBackupResults: [BackupResult] = []
+    private var _pauseHolder: PauseStateHolder?
 
     // MARK: - General error state
     @Published var errorMessage: String?
@@ -252,10 +253,16 @@ final class AppState: ObservableObject {
         backupProgress = BackupProgress(isRunning: true)
         errorMessage = nil
 
+        let holder = PauseStateHolder()
+        _pauseHolder = holder
+
         Task {
             let service = BackupService(db: db) { [weak self] (progress: BackupProgress) in
                 Task { @MainActor [weak self] in
-                    self?.backupProgress = progress
+                    guard let self else { return }
+                    var p = progress
+                    p.isPaused = holder.isPaused
+                    self.backupProgress = p
                 }
             }
             do {
@@ -263,7 +270,8 @@ final class AppState: ObservableObject {
                     vaultRootURL: vaultRootURL,
                     folderFormat: folderFormat,
                     filter: filter,
-                    dryRun: dryRun
+                    dryRun: dryRun,
+                    isPaused: { holder.isPaused }
                 )
                 if let jobId = job.id {
                     lastBackupResults = (try? db.fetchBackupResults(jobId: jobId)) ?? []
@@ -274,6 +282,17 @@ final class AppState: ObservableObject {
                 backupProgress.isRunning = false
             }
         }
+    }
+
+    func pauseBackup() {
+        guard backupProgress.isRunning else { return }
+        _pauseHolder?.isPaused = true
+        backupProgress.isPaused = true
+    }
+
+    func resumeBackup() {
+        _pauseHolder?.isPaused = false
+        backupProgress.isPaused = false
     }
 
     // MARK: - Directory picker
@@ -449,4 +468,8 @@ final class AppState: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+}
+
+final class PauseStateHolder: @unchecked Sendable {
+    var isPaused: Bool = false
 }

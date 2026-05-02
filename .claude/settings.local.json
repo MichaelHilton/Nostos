@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xcodebuild -scheme Nostos -destination 'platform=macOS' build)"
+      "Bash(xcodebuild -scheme Nostos -destination 'platform=macOS' build)",
+      "Bash(xcodebuild test *)"
     ]
   }
 }

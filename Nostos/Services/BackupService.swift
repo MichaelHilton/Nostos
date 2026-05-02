@@ -14,7 +14,8 @@ final class BackupService {
         vaultRootURL: URL,
         folderFormat: String,
         filter: PhotoFilter,
-        dryRun: Bool
+        dryRun: Bool,
+        isPaused: @Sendable () async -> Bool = { false }
     ) async throws -> BackupJob {
         var job = BackupJob(
             folderFormat: folderFormat,
@@ -43,6 +44,9 @@ final class BackupService {
         var skipped = 0
 
         for photo in candidates {
+            while await isPaused() {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
             guard let photoId = photo.id else { continue }
 
             let (action, reason, destRelPath) = planAction(

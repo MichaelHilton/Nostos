@@ -60,6 +60,16 @@ struct GalleryView: View {
 
     private var orderedYears: [Int] { state.years.sorted() }
 
+    private var yearPhotoCounts: [Int: Int] {
+        var counts: [Int: Int] = [:]
+        let cal = Calendar.current
+        for photo in state.photos {
+            guard let date = photo.takenAt else { continue }
+            counts[cal.component(.year, from: date), default: 0] += 1
+        }
+        return counts
+    }
+
     var body: some View {
         HSplitView {
             // Photo grid + selected panel
@@ -102,16 +112,14 @@ struct GalleryView: View {
 
     private var galleryToolbar: some View {
         HStack(spacing: 10) {
-            Text("\(state.photos.count) of \(state.totalPhotoCount) photos")
-                .font(.system(size: 11))
-                .foregroundColor(NostosTheme.fg3)
-                .overlay(
-                    Text("\(state.photos.count)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(NostosTheme.fg1)
-                        .frame(maxWidth: .infinity, alignment: .leading),
-                    alignment: .leading
-                )
+            HStack(spacing: 0) {
+                Text("\(state.photos.count)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(NostosTheme.fg1)
+                Text(" of \(state.totalPhotoCount) photos")
+                    .font(.system(size: 11))
+                    .foregroundColor(NostosTheme.fg3)
+            }
 
             Spacer()
 
@@ -120,67 +128,51 @@ struct GalleryView: View {
                 Text("Filter:")
                     .font(.system(size: 10))
                     .foregroundColor(NostosTheme.fg3)
-
-                filterChip("Duplicates",
-                           on: filterHasDuplicates.contains(true)) {
-                    if filterHasDuplicates.contains(true) {
-                        filterHasDuplicates.remove(true)
-                    } else {
-                        filterHasDuplicates.insert(true)
-                    }
+                filterChip("Duplicates", on: filterHasDuplicates.contains(true)) {
+                    if filterHasDuplicates.contains(true) { filterHasDuplicates.remove(true) }
+                    else { filterHasDuplicates.insert(true) }
                     applyLocalFilters()
                 }
-                filterChip("In Vault",
-                           on: filterStatus.contains(.copied)) {
-                    if filterStatus.contains(.copied) {
-                        filterStatus.remove(.copied)
-                    } else {
-                        filterStatus.insert(.copied)
-                    }
+                filterChip("In Vault", on: filterStatus.contains(.copied)) {
+                    if filterStatus.contains(.copied) { filterStatus.remove(.copied) }
+                    else { filterStatus.insert(.copied) }
                     applyLocalFilters()
                 }
             }
+
+            toolbarSeparator
 
             // Tile size slider
             HStack(spacing: 7) {
                 Image(systemName: "square")
-                    .font(.system(size: 11))
+                    .font(.system(size: 10))
                     .foregroundColor(NostosTheme.fg3)
-                Slider(value: $tileSize, in: 80...220, step: 10)
-                    .frame(width: 72)
-                    .tint(NostosTheme.accent)
+                tileSizeSlider
                 Image(systemName: "square.fill")
                     .font(.system(size: 14))
                     .foregroundColor(NostosTheme.fg3)
             }
-            .padding(.leading, 8)
-            .overlay(
-                Rectangle()
-                    .fill(NostosTheme.border)
-                    .frame(width: 1)
-                    .padding(.vertical, 4),
-                alignment: .leading
-            )
 
-            // Per-page menu
-            Menu {
-                Button("25")  { setPage(25) }
-                Button("50")  { setPage(50) }
-                Button("100") { setPage(100) }
-                Button("200") { setPage(200) }
-                Button("All") { setPage(Int.max) }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundColor(NostosTheme.fg2)
-                    .accessibilityIdentifier("galleryPerPageMenuButton")
-            }
-            .menuStyle(.borderlessButton)
-            .frame(width: 20)
+            toolbarSeparator
 
-            // Prev / Next
-            let limit = state.photoFilter.limit
-            if limit > 0 && limit < Int.max {
-                HStack(spacing: 4) {
+            // Per-page menu + Prev / Next
+            HStack(spacing: 6) {
+                Menu {
+                    Button("25")  { setPage(25) }
+                    Button("50")  { setPage(50) }
+                    Button("100") { setPage(100) }
+                    Button("200") { setPage(200) }
+                    Button("All") { setPage(Int.max) }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundColor(NostosTheme.fg2)
+                }
+                .menuStyle(.borderlessButton)
+                .frame(width: 20)
+                .accessibilityIdentifier("galleryPerPageMenuButton")
+
+                let limit = state.photoFilter.limit
+                if limit > 0 && limit < Int.max {
                     Button("Prev") {
                         var f = state.photoFilter
                         f.offset = max(0, f.offset - f.limit)
@@ -206,6 +198,13 @@ struct GalleryView: View {
         .background(NostosTheme.surface)
     }
 
+    private var toolbarSeparator: some View {
+        Rectangle()
+            .fill(NostosTheme.border)
+            .frame(width: 1)
+            .padding(.vertical, 4)
+    }
+
     @ViewBuilder
     private func filterChip(_ label: String, on: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -224,6 +223,59 @@ struct GalleryView: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func backupStatCell(_ label: String, value: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(NostosTheme.fg3)
+                .textCase(.uppercase)
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(NostosTheme.surface2)
+        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(NostosTheme.border, lineWidth: 1)
+        )
+    }
+
+    private var tileSizeSlider: some View {
+        GeometryReader { geo in
+            let thumbD: CGFloat = 20
+            let trackW = geo.size.width
+            let fraction = (tileSize - 80) / (220 - 80)
+            let thumbX = fraction * (trackW - thumbD)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(NostosTheme.border)
+                    .frame(height: 3)
+                Circle()
+                    .fill(NostosTheme.accent)
+                    .frame(width: thumbD, height: thumbD)
+                    .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1.5)
+                    .offset(x: thumbX)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { val in
+                        let raw = max(0, min(1, (val.location.x - thumbD / 2) / (trackW - thumbD)))
+                        let stepped = (80 + raw * 140) / 10
+                        tileSize = max(80, min(220, CGFloat(Int(stepped.rounded()) * 10)))
+                    }
+            )
+        }
+        .frame(width: 80, height: 20)
     }
 
     private func setPage(_ limit: Int) {
@@ -263,7 +315,7 @@ struct GalleryView: View {
                                         .foregroundColor(NostosTheme.fg1)
                                         
                                     if group.id != "undated" {
-                                        Text("\(group.year)")
+                                        Text(String(group.year))
                                             .font(NostosTheme.displayFont(size: 16))
                                             .foregroundColor(NostosTheme.fg3)
                                             .italic()
@@ -445,72 +497,110 @@ struct GalleryView: View {
                                 years: orderedYears,
                                 lowerYear: filterYearFrom,
                                 upperYear: filterYearTo,
-                                onChange: { lower, upper in updateYearRange(lower: lower, upper: upper) }
+                                onChange: { lower, upper in updateYearRange(lower: lower, upper: upper) },
+                                photoCounts: yearPhotoCounts
                             )
-                            .frame(height: max(CGFloat(orderedYears.count) * 30, 160))
-                        }
-                    }
-
-                    divider()
-
-                    filterSection("Exact Date Range") {
-                        HStack(spacing: 8) {
-                            DatePicker("From",
-                                       selection: Binding(get: { filterDateFrom ?? Date() },
-                                                          set: { filterDateFrom = $0 }),
-                                       displayedComponents: .date)
-                                .labelsHidden()
-                                .opacity(filterDateFrom == nil ? 0.4 : 1)
-                                .onTapGesture { if filterDateFrom == nil { filterDateFrom = Date() } }
-                            Text("–").foregroundColor(NostosTheme.fg3)
-                            DatePicker("To",
-                                       selection: Binding(get: { filterDateTo ?? Date() },
-                                                          set: { filterDateTo = $0 }),
-                                       displayedComponents: .date)
-                                .labelsHidden()
-                                .opacity(filterDateTo == nil ? 0.4 : 1)
-                                .onTapGesture { if filterDateTo == nil { filterDateTo = Date() } }
-                        }
-                        if filterDateFrom != nil || filterDateTo != nil {
-                            Button("Clear") { filterDateFrom = nil; filterDateTo = nil; applyLocalFilters() }
-                                .buttonStyle(NostosButtonStyle(variant: .plain))
-                                .font(.system(size: 11))
                         }
                     }
 
                     divider()
 
                     filterSection("Back Up to Vault") {
-                        Text("\(estimatedBackupCount) photos to back up")
-                            .font(.system(size: 11))
-                            .foregroundColor(NostosTheme.fg3)
-
-                        HStack {
-                            Text("Format:")
-                                .font(.system(size: 11))
-                                .foregroundColor(NostosTheme.fg3)
-                            TextField("YYYY/MM/DD", text: $folderFormat)
-                                .font(.system(size: 11, design: .monospaced))
-                                .textFieldStyle(.roundedBorder)
+                        HStack(spacing: 0) {
+                            Text("\(estimatedBackupCount)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(NostosTheme.fg1)
+                            Text(" photos to back up")
+                                .font(.system(size: 13))
+                                .foregroundColor(NostosTheme.fg2)
                         }
 
-                        Toggle("Dry Run (preview only)", isOn: $dryRun)
-                            .toggleStyle(.checkbox)
-                            .font(.system(size: 11))
+                        let bp = state.backupProgress
+                        let backupDone = !bp.isRunning && bp.total > 0 && (bp.copied + bp.skipped >= bp.total)
+                        if backupDone {
+                            HStack(spacing: 6) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(NostosTheme.green)
+                                Text("Backup complete")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(NostosTheme.green)
+                            }
 
-                        Button(action: startBackup) {
-                            Label(
-                                state.backupProgress.isRunning
-                                    ? "Backing up…"
-                                    : (dryRun ? "Preview" : "Back Up Now"),
-                                systemImage: state.backupProgress.isRunning
-                                    ? "stop.circle" : "tray.and.arrow.down.fill"
-                            )
+                            Button(action: startBackup) {
+                                Text("Back Up Again")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 7)
+                                    .foregroundColor(NostosTheme.fg1)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(NostosTheme.surface2)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .stroke(NostosTheme.border, lineWidth: 1)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(state.vaultRootURL == nil || estimatedBackupCount == 0)
+                        } else if bp.isRunning || (bp.copied + bp.skipped > 0 && bp.total > 0) {
+                            // Progress bar + pause/resume button
+                            HStack(spacing: 8) {
+                                NostosProgressBar(value: bp.fraction, color: NostosTheme.accent)
+                                    .frame(height: 6)
+
+                                Button {
+                                    if bp.isPaused { state.resumeBackup() }
+                                    else { state.pauseBackup() }
+                                } label: {
+                                    Image(systemName: bp.isPaused ? "play.fill" : "pause.fill")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(NostosTheme.fg2)
+                                        .frame(width: 32, height: 32)
+                                        .background(NostosTheme.surface2)
+                                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                                .stroke(NostosTheme.border, lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            // Stat cells
+                            HStack(spacing: 6) {
+                                backupStatCell("Copied",  value: "\(bp.copied)",  color: NostosTheme.green)
+                                backupStatCell("Skipped", value: "\(bp.skipped)", color: NostosTheme.orange)
+                                backupStatCell("Total",   value: "\(bp.total)",   color: NostosTheme.fg1)
+                            }
+
+                            // Paused status
+                            if bp.isPaused {
+                                Text("Paused — \(Int(bp.fraction * 100))% complete")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(NostosTheme.orange)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                            }
+                        } else {
+                            Button(action: startBackup) {
+                                HStack(spacing: 7) {
+                                    Image(systemName: "arrow.down")
+                                        .font(.system(size: 13, weight: .semibold))
+                                    Text("Back Up to Vault")
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .foregroundColor(.white)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                        .fill(NostosTheme.accent)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(state.vaultRootURL == nil || estimatedBackupCount == 0)
+                            .accessibilityIdentifier("backupRunButton")
                         }
-                        .buttonStyle(NostosButtonStyle(variant: .primary))
-                        .disabled(state.vaultRootURL == nil || state.backupProgress.isRunning || estimatedBackupCount == 0)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier(dryRun ? "backupPreviewButton" : "backupRunButton")
                     }
 
                     divider()
@@ -621,7 +711,7 @@ struct GalleryView: View {
     }
 }
 
-// MARK: - Year Range Slider (unchanged functionally, restyled)
+// MARK: - Year Range Slider
 
 private struct YearRangeSlider: View {
     enum Handle { case lower, upper }
@@ -630,90 +720,101 @@ private struct YearRangeSlider: View {
     let lowerYear: Int?
     let upperYear: Int?
     let onChange: (_ lowerYear: Int?, _ upperYear: Int?) -> Void
+    var photoCounts: [Int: Int] = [:]
 
     @State private var activeHandle: Handle?
 
-    private let rowHeight: CGFloat = 30
-    private let railWidth: CGFloat = 2
-    private let railInset: CGFloat = 14
-    private let tickWidth: CGFloat = 10
-    private let tickHeight: CGFloat = 2
-    private let handleWidth: CGFloat = 14
-    private let handleHeight: CGFloat = 22
+    private let rowH: CGFloat = 44
+    private let circleD: CGFloat = 20
+    private let railW: CGFloat = 2
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Label("Year Range", systemImage: "calendar")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(NostosTheme.fg2)
-                Spacer()
-                Text(selectionSummary)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(NostosTheme.fg2)
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(
-                        Capsule().fill(NostosTheme.surface2)
-                    )
-            }
-
-            HStack(alignment: .top, spacing: 14) {
-                VStack(spacing: 0) {
-                    Text("Older")
-                    Spacer(minLength: 0)
-                    Text("Newer")
-                }
-                .font(.system(size: 9, weight: .semibold))
-                .textCase(.uppercase)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(selectionSummary)
+                .font(.system(size: 12).italic())
                 .foregroundColor(NostosTheme.fg3)
-                .frame(width: 40,
-                       height: CGFloat(years.count) * rowHeight - 4,
-                       alignment: .leading)
-                .padding(.top, 2)
 
-                ZStack(alignment: .topLeading) {
-                    if years.count > 1 {
-                        Capsule()
-                            .fill(NostosTheme.progressBg)
-                            .frame(width: railWidth,
-                                   height: CGFloat(years.count - 1) * rowHeight)
-                            .padding(.leading, railInset + (handleWidth - railWidth) / 2)
-                            .padding(.top, rowHeight / 2)
-                    }
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(years.indices, id: \.self) { index in
-                            yearRow(for: index).frame(height: rowHeight)
-                        }
-                    }
+            VStack(spacing: 0) {
+                ForEach(years.indices, id: \.self) { i in
+                    yearRow(for: i)
                 }
-                .coordinateSpace(name: "year-range-slider")
-                .contentShape(Rectangle())
-                .gesture(dragGesture)
             }
-            .padding(12)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(NostosTheme.surface2)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(NostosTheme.border, lineWidth: 1)
             )
+            .coordinateSpace(name: "year-range-slider")
+            .contentShape(Rectangle())
+            .gesture(dragGesture)
         }
     }
 
     private var lowerIndex: Int { index(for: lowerYear, fallback: 0) }
     private var upperIndex: Int { index(for: upperYear, fallback: max(0, years.count - 1)) }
 
+    @ViewBuilder
+    private func yearRow(for i: Int) -> some View {
+        let isLower = i == lowerIndex
+        let isUpper = i == upperIndex
+        let inRange = i >= lowerIndex && i <= upperIndex
+
+        HStack(spacing: 12) {
+            ZStack {
+                if inRange {
+                    if isLower && !isUpper {
+                        Rectangle()
+                            .fill(NostosTheme.accent)
+                            .frame(width: railW, height: rowH / 2)
+                            .frame(maxHeight: .infinity, alignment: .bottom)
+                    } else if isUpper && !isLower {
+                        Rectangle()
+                            .fill(NostosTheme.accent)
+                            .frame(width: railW, height: rowH / 2)
+                            .frame(maxHeight: .infinity, alignment: .top)
+                    } else if !isLower && !isUpper {
+                        Rectangle()
+                            .fill(NostosTheme.accent)
+                            .frame(width: railW, height: rowH)
+                    }
+                }
+                if isLower || isUpper {
+                    Circle()
+                        .strokeBorder(NostosTheme.accent, lineWidth: 2.5)
+                        .frame(width: circleD, height: circleD)
+                        .background(Circle().fill(NostosTheme.surface))
+                }
+            }
+            .frame(width: 32, height: rowH)
+
+            HStack(spacing: 6) {
+                Text(String(years[i]))
+                    .font(.system(size: 15, weight: inRange ? .bold : .regular))
+                    .foregroundColor(inRange ? NostosTheme.fg2 : NostosTheme.fg3)
+                if let count = photoCounts[years[i]] {
+                    Text("\(count) \(count == 1 ? "photo" : "photos")")
+                        .font(.system(size: 11))
+                        .foregroundColor(NostosTheme.fg3)
+                }
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: rowH)
+        .contentShape(Rectangle())
+        .onTapGesture { moveNearestHandle(to: i) }
+    }
+
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named("year-range-slider"))
-            .onChanged { value in
+            .onChanged { val in
                 guard !years.isEmpty else { return }
-                if activeHandle == nil {
-                    activeHandle = handle(for: value.startLocation.y)
-                }
+                if activeHandle == nil { activeHandle = handle(for: val.startLocation.y) }
                 guard let h = activeHandle else { return }
-                let idx = index(forLocation: value.location.y)
+                let idx = index(forLocation: val.location.y)
                 switch h {
                 case .lower: setLowerIndex(idx)
                 case .upper: setUpperIndex(idx)
@@ -722,61 +823,14 @@ private struct YearRangeSlider: View {
             .onEnded { _ in activeHandle = nil }
     }
 
-    @ViewBuilder
-    private func yearRow(for index: Int) -> some View {
-        let inRange = index >= lowerIndex && index <= upperIndex
-        let isLower = index == lowerIndex
-        let isUpper = index == upperIndex
-
-        HStack(spacing: 12) {
-            ZStack {
-                if index > 0 {
-                    Capsule()
-                        .fill(inRange ? NostosTheme.accent.opacity(0.55) : NostosTheme.border)
-                        .frame(width: tickWidth, height: tickHeight)
-                }
-                if isLower || isUpper {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(NostosTheme.accent)
-                        .frame(width: handleWidth, height: handleHeight)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(Color.white.opacity(0.7), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.14), radius: 1.5, x: 0, y: 1)
-                        .offset(x: -1)
-                }
-            }
-            .frame(width: 36, height: rowHeight)
-
-            Text(String(years[index]))
-                .font(.system(size: 19, weight: inRange ? .semibold : .medium, design: .rounded).monospacedDigit())
-                .foregroundColor(inRange ? NostosTheme.fg1 : NostosTheme.fg3)
-                .padding(.vertical, 2).padding(.horizontal, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(inRange ? NostosTheme.accentLight : Color.clear)
-                )
-            Spacer()
-        }
-        .padding(.horizontal, 2)
-        .contentShape(Rectangle())
-        .onTapGesture { moveNearestHandle(to: index) }
-    }
-
-    private func moveNearestHandle(to index: Int) {
-        if abs(index - lowerIndex) <= abs(index - upperIndex) { setLowerIndex(index) }
-        else { setUpperIndex(index) }
-    }
-
     private func handle(for y: CGFloat) -> Handle {
-        let lY = CGFloat(lowerIndex) * rowHeight + rowHeight / 2
-        let uY = CGFloat(upperIndex) * rowHeight + rowHeight / 2
+        let lY = CGFloat(lowerIndex) * rowH + rowH / 2
+        let uY = CGFloat(upperIndex) * rowH + rowH / 2
         return abs(y - lY) <= abs(y - uY) ? .lower : .upper
     }
 
     private func index(forLocation y: CGFloat) -> Int {
-        min(max(0, Int(y / rowHeight)), years.count - 1)
+        min(max(0, Int(y / rowH)), years.count - 1)
     }
 
     private func index(for year: Int?, fallback: Int) -> Int {
@@ -784,20 +838,26 @@ private struct YearRangeSlider: View {
         return i
     }
 
-    private func setLowerIndex(_ index: Int) {
-        guard !years.isEmpty else { return }
-        let clamped = min(max(0, index), upperIndex)
-        onChange(clamped == 0 ? nil : years[clamped], upperYear)
+    private func moveNearestHandle(to i: Int) {
+        if abs(i - lowerIndex) <= abs(i - upperIndex) { setLowerIndex(i) }
+        else { setUpperIndex(i) }
     }
 
-    private func setUpperIndex(_ index: Int) {
+    private func setLowerIndex(_ i: Int) {
         guard !years.isEmpty else { return }
-        let clamped = max(min(index, years.count - 1), lowerIndex)
-        onChange(lowerYear, clamped == years.count - 1 ? nil : years[clamped])
+        let c = min(max(0, i), upperIndex)
+        onChange(c == 0 ? nil : years[c], upperYear)
+    }
+
+    private func setUpperIndex(_ i: Int) {
+        guard !years.isEmpty else { return }
+        let c = max(min(i, years.count - 1), lowerIndex)
+        onChange(lowerYear, c == years.count - 1 ? nil : years[c])
     }
 
     private var selectionSummary: String {
-        "\(lowerYear.map(String.init) ?? "Any") – \(upperYear.map(String.init) ?? "Any")"
+        if lowerYear == nil && upperYear == nil { return "All years" }
+        return "\(lowerYear.map(String.init) ?? "Any") – \(upperYear.map(String.init) ?? "Any")"
     }
 }
 
