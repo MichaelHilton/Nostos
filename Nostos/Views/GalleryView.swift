@@ -487,123 +487,19 @@ struct GalleryView: View {
 
                     divider()
 
-                    filterSection("Year Range") {
-                        if orderedYears.isEmpty {
-                            Text("No year data")
-                                .font(.system(size: 11))
-                                .foregroundColor(NostosTheme.fg3)
-                        } else {
-                            YearRangeSlider(
-                                years: orderedYears,
-                                lowerYear: filterYearFrom,
-                                upperYear: filterYearTo,
-                                onChange: { lower, upper in updateYearRange(lower: lower, upper: upper) },
-                                photoCounts: yearPhotoCounts
-                            )
-                        }
+            Section("Date Range") {
+                // Build a vertical year range selector from available photo dates
+                let years = Array(Set(state.photos.compactMap { $0.takenAt }.map { Calendar.current.component(.year, from: $0) })).sorted()
+
+                if years.isEmpty {
+                    Text("No date data").foregroundColor(.secondary).font(.caption)
+                } else {
+                    VerticalYearRangeSlider(years: years, yearFrom: $filterYearFrom, yearTo: $filterYearTo) {
+                        applyLocalFilters()
                     }
-
-                    divider()
-
-                    filterSection("Back Up to Vault") {
-                        HStack(spacing: 0) {
-                            Text("\(estimatedBackupCount)")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(NostosTheme.fg1)
-                            Text(" photos to back up")
-                                .font(.system(size: 13))
-                                .foregroundColor(NostosTheme.fg2)
-                        }
-
-                        let bp = state.backupProgress
-                        let backupDone = !bp.isRunning && bp.total > 0 && (bp.copied + bp.skipped >= bp.total)
-                        if backupDone {
-                            HStack(spacing: 6) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(NostosTheme.green)
-                                Text("Backup complete")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(NostosTheme.green)
-                            }
-
-                            Button(action: startBackup) {
-                                Text("Back Up Again")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 7)
-                                    .foregroundColor(NostosTheme.fg1)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(NostosTheme.surface2)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .stroke(NostosTheme.border, lineWidth: 1)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(state.vaultRootURL == nil || estimatedBackupCount == 0)
-                        } else if bp.isRunning || (bp.copied + bp.skipped > 0 && bp.total > 0) {
-                            // Progress bar + pause/resume button
-                            HStack(spacing: 8) {
-                                NostosProgressBar(value: bp.fraction, color: NostosTheme.accent)
-                                    .frame(height: 6)
-
-                                Button {
-                                    if bp.isPaused { state.resumeBackup() }
-                                    else { state.pauseBackup() }
-                                } label: {
-                                    Image(systemName: bp.isPaused ? "play.fill" : "pause.fill")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundColor(NostosTheme.fg2)
-                                        .frame(width: 32, height: 32)
-                                        .background(NostosTheme.surface2)
-                                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                                .stroke(NostosTheme.border, lineWidth: 1)
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-
-                            // Stat cells
-                            HStack(spacing: 6) {
-                                backupStatCell("Copied",  value: "\(bp.copied)",  color: NostosTheme.green)
-                                backupStatCell("Skipped", value: "\(bp.skipped)", color: NostosTheme.orange)
-                                backupStatCell("Total",   value: "\(bp.total)",   color: NostosTheme.fg1)
-                            }
-
-                            // Paused status
-                            if bp.isPaused {
-                                Text("Paused — \(Int(bp.fraction * 100))% complete")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(NostosTheme.orange)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                            }
-                        } else {
-                            Button(action: startBackup) {
-                                HStack(spacing: 7) {
-                                    Image(systemName: "arrow.down")
-                                        .font(.system(size: 13, weight: .semibold))
-                                    Text("Back Up to Vault")
-                                        .font(.system(size: 14, weight: .semibold))
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .foregroundColor(.white)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                        .fill(NostosTheme.accent)
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(state.vaultRootURL == nil || estimatedBackupCount == 0)
-                            .accessibilityIdentifier("backupRunButton")
-                        }
-                    }
-
-                    divider()
+                    .frame(minHeight: 220)
+                }
+            }
 
                     HStack {
                         Spacer()
@@ -992,6 +888,177 @@ struct PhotoTile: View {
             await MainActor.run {
                 if let p = thumbPath { image = ThumbnailService.loadImage(path: p) }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func badge(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .bold))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
+            .background(color)
+            .foregroundColor(.white)
+            .cornerRadius(3)
+    }
+}
+
+private extension GalleryView {
+    @ViewBuilder
+    func metadataRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(label)
+                .foregroundColor(.secondary)
+                .frame(width: 80, alignment: .leading)
+            Text(value)
+                .textSelection(.enabled)
+        }
+    }
+}
+
+// Vertical year-range slider with two draggable thumbs (top = max year, bottom = min year)
+struct VerticalYearRangeSlider: View {
+    let years: [Int] // ascending sorted
+    @Binding var yearFrom: Int?
+    @Binding var yearTo: Int?
+    var onChange: () -> Void
+
+    @State private var activeThumb: ActiveThumb? = nil
+
+    enum ActiveThumb { case from, to }
+
+    private func index(of year: Int?) -> Int {
+        guard let y = year, let i = years.firstIndex(of: y) else { return 0 }
+        return i
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            // Year labels (top -> latest)
+            GeometryReader { geo in
+                let h = geo.size.height
+                let count = years.count
+                let step = count > 1 ? h / CGFloat(count - 1) : 0
+
+                ZStack {
+                    // vertical track
+                    RoundedRectangle(cornerRadius: 2)
+                        .frame(width: 4)
+                        .foregroundColor(.secondary.opacity(0.4))
+                        .position(x: 28, y: h / 2)
+
+                    // tick marks and labels
+                    ForEach(Array(years.enumerated()), id: \ .offset) { idx, y in
+                        let yPos = count > 1 ? (h - CGFloat(idx) * step) : (h / 2)
+                        HStack(spacing: 8) {
+                            Text(String(y))
+                                .font(.caption2)
+                                .foregroundColor(.primary)
+                                .frame(width: 44, alignment: .trailing)
+                            Rectangle()
+                                .frame(width: 6, height: 1)
+                                .foregroundColor(.clear)
+                        }
+                        .position(x: 2 + 44/2, y: yPos)
+                    }
+
+                    // thumbs
+                    Group {
+                        // from (bottom handle)
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 14, height: 14)
+                            .position(x: 28, y: positionY(for: index(of: yearFrom), height: h, step: step))
+                            .gesture(dragGesture(in: geo, thumb: .from))
+
+                        // to (top handle)
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 14, height: 14)
+                            .position(x: 28, y: positionY(for: index(of: yearTo), height: h, step: step))
+                            .gesture(dragGesture(in: geo, thumb: .to))
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .frame(minWidth: 80)
+
+            // Current selection summary and controls
+            VStack(alignment: .leading, spacing: 6) {
+                Text("From: \(yearFrom.map { String($0) } ?? "Any")")
+                    .font(.caption)
+                Text("To: \(yearTo.map { String($0) } ?? "Any")")
+                    .font(.caption)
+                HStack(spacing: 8) {
+                    Button("Clear") {
+                        yearFrom = nil
+                        yearTo = nil
+                        onChange()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Spacer()
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear {
+            // initialize defaults if empty
+            if yearFrom == nil { yearFrom = years.first }
+            if yearTo == nil { yearTo = years.last }
+        }
+    }
+
+    private func positionY(for index: Int, height: CGFloat, step: CGFloat) -> CGFloat {
+        let count = years.count
+        if count <= 1 { return height / 2 }
+        return height - CGFloat(index) * step
+    }
+
+    private func dragGesture(in geo: GeometryProxy, thumb: ActiveThumb) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                activeThumb = thumb
+                let locY = value.location.y
+                let h = geo.size.height
+                let count = years.count
+                let step = count > 1 ? h / CGFloat(count - 1) : 0
+                var idx = 0
+                if count > 1 {
+                    idx = Int(round((h - locY) / step))
+                    idx = min(max(idx, 0), count - 1)
+                }
+
+                if thumb == .from {
+                    // bottom handle (lower year)
+                    let newYear = years[idx]
+                    yearFrom = newYear
+                    // ensure from <= to
+                    if let to = yearTo, let f = yearFrom, f > to {
+                        yearTo = f
+                    }
+                } else {
+                    // to (upper year)
+                    let newYear = years[idx]
+                    yearTo = newYear
+                    if let from = yearFrom, let t = yearTo, t < from {
+                        yearFrom = t
+                    }
+                }
+                onChange()
+            }
+            .onEnded { _ in activeThumb = nil }
+    }
+}
+
+// small helper to conditionally apply macOS 13-only modifier
+fileprivate extension View {
+    @ViewBuilder
+    func ifAvailableFormStyleGrouped() -> some View {
+        if #available(macOS 13, *) {
+            self.formStyle(.grouped)
+        } else {
+            self
         }
     }
 }
