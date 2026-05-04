@@ -87,7 +87,7 @@ struct AppLogoView: View {
     }
 }
 
-private struct VaultSetupView: View {
+struct VaultSetupView: View {
     let onChooseVault: (URL) -> Void
 
     var body: some View {

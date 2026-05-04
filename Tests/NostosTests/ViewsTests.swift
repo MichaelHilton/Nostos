@@ -48,6 +48,12 @@ final class ViewsTests: XCTestCase {
     func testOrganizerShowsProgressAndStatsWhenRunning() throws {
         // Removed: view-inspector checks are flaky; test deleted.
     }
+
+    func testVaultSetupOverlayDoesNotBlockInteraction() throws {
+        let view = VaultSetupView { _ in }
+        let overlay = try view.inspect().find(ViewType.Overlay.self)
+        XCTAssertFalse(try overlay.allowsHitTesting())
+    }
 }
 
 // Make views inspectable for ViewInspector
@@ -55,3 +61,4 @@ import SwiftUI
 import AppKit
 extension GalleryView: Inspectable {}
 extension OrganizerView: Inspectable {}
+extension VaultSetupView: Inspectable {}
