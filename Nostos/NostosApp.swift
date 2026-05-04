@@ -133,6 +133,7 @@ struct VaultSetupView: View {
         .background(Color.nostosBg)
         .overlay(alignment: .topLeading) {
             StarDotBackground()
+                .allowsHitTesting(false)
         }
     }
 

@@ -51,8 +51,8 @@ final class ViewsTests: XCTestCase {
 
     func testVaultSetupOverlayDoesNotBlockInteraction() throws {
         let view = VaultSetupView { _ in }
-        let overlay = try view.inspect().find(ViewType.Overlay.self)
-        XCTAssertFalse(try overlay.allowsHitTesting())
+        let background = try view.inspect().find(StarDotBackground.self)
+        XCTAssertFalse(try background.allowsHitTesting())
     }
 }
 
@@ -62,3 +62,4 @@ import AppKit
 extension GalleryView: Inspectable {}
 extension OrganizerView: Inspectable {}
 extension VaultSetupView: Inspectable {}
+extension StarDotBackground: Inspectable {}
