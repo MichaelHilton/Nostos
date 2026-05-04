@@ -188,10 +188,10 @@ struct SidebarTabButton: View {
             .background(selected ? Color.nostosAccent : (hovered ? Color.nostosSurface2 : Color.clear))
             .cornerRadius(NostosRadii.md)
             .padding(.horizontal, NostosSpacing.sm)
-            .accessibilityIdentifier("\(tabLabel.lowercased())TabButton")
         }
         .buttonStyle(.plain)
         .onHover(perform: onHover)
+        .accessibilityIdentifier("\(tabLabel.lowercased())TabButton")
     }
 }
 

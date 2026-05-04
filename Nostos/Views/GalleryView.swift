@@ -41,6 +41,7 @@ struct GalleryView: View {
                         }
                         .overlay(alignment: .topLeading) {
                             StarDotBackground()
+                                .allowsHitTesting(false)
                         }
                     }
 
@@ -142,6 +143,7 @@ struct GalleryView: View {
                         }
                         applyLocalFilters()
                     }
+                    .accessibilityIdentifier("galleryFilterChipDuplicates")
 
                     filterChip("In Vault", isActive: filterStatus.contains(.copied)) {
                         if filterStatus.contains(.copied) {
@@ -151,6 +153,7 @@ struct GalleryView: View {
                         }
                         applyLocalFilters()
                     }
+                    .accessibilityIdentifier("galleryFilterChipInVault")
 
                     if isFiltered {
                         Button("Clear all") {
@@ -159,6 +162,7 @@ struct GalleryView: View {
                         .buttonStyle(.plain)
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(.nostosAccent)
+                        .accessibilityIdentifier("galleryToolbarClearAllButton")
                     }
 
                     Divider()
@@ -324,6 +328,7 @@ struct GalleryView: View {
         .cornerRadius(NostosRadii.md)
         .clipped()
         .border(selectedPhoto?.id == photo.id ? Color.nostosAccent : Color.clear, width: 2.5)
+        .accessibilityIdentifier("galleryPhotoTile")
         .onHover { hovering in
             hoveredPhotoId = hovering ? photo.id : nil
         }
@@ -367,6 +372,7 @@ struct GalleryView: View {
                     .buttonStyle(.plain)
                     .font(.system(size: 11, weight: .regular))
                     .foregroundColor(.nostosAccent)
+                    .accessibilityIdentifier("galleryClearSelectionButton")
                 }
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -411,18 +417,20 @@ struct GalleryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // Backup Status
-                SectionLabel("Backup Status", diamond: true)
+                SectionLabel("Backup Status")
                     .padding(.horizontal, NostosSpacing.lg)
                     .padding(.top, NostosSpacing.lg)
 
-                ForEach([PhotoStatus.new, .copied, .skippedDuplicate], id: \.self) { status in
-                    filterCheckbox(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized, isChecked: filterStatus.contains(status)) {
-                        if filterStatus.contains(status) {
-                            filterStatus.remove(status)
-                        } else {
-                            filterStatus.insert(status)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach([PhotoStatus.new, .copied, .skippedDuplicate], id: \.self) { status in
+                        filterCheckbox(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized, isChecked: filterStatus.contains(status)) {
+                            if filterStatus.contains(status) {
+                                filterStatus.remove(status)
+                            } else {
+                                filterStatus.insert(status)
+                            }
+                            applyLocalFilters()
                         }
-                        applyLocalFilters()
                     }
                 }
                 .padding(.horizontal, NostosSpacing.lg)
@@ -433,7 +441,7 @@ struct GalleryView: View {
                     .padding(.vertical, NostosSpacing.lg)
 
                 // Camera
-                SectionLabel("Camera", diamond: true)
+                SectionLabel("Camera")
                     .padding(.horizontal, NostosSpacing.lg)
 
                 ForEach(state.cameraModels, id: \.self) { model in
@@ -458,7 +466,7 @@ struct GalleryView: View {
                     .padding(.vertical, NostosSpacing.lg)
 
                 // Duplicates
-                SectionLabel("Duplicates", diamond: true)
+                SectionLabel("Duplicates")
                     .padding(.horizontal, NostosSpacing.lg)
 
                 filterCheckbox("With duplicates", isChecked: filterHasDuplicates.contains(true)) {
@@ -469,6 +477,7 @@ struct GalleryView: View {
                     }
                     applyLocalFilters()
                 }
+                .accessibilityIdentifier("galleryFilterWithDuplicates")
                 filterCheckbox("No duplicates", isChecked: filterHasDuplicates.contains(false)) {
                     if filterHasDuplicates.contains(false) {
                         filterHasDuplicates.remove(false)
@@ -477,6 +486,7 @@ struct GalleryView: View {
                     }
                     applyLocalFilters()
                 }
+                .accessibilityIdentifier("galleryFilterNoDuplicates")
                 .padding(.horizontal, NostosSpacing.lg)
                 .padding(.bottom, NostosSpacing.lg)
 
@@ -485,7 +495,7 @@ struct GalleryView: View {
                     .padding(.vertical, NostosSpacing.lg)
 
                 // Year Range
-                SectionLabel("Year Range", diamond: true)
+                SectionLabel("Year Range")
                     .padding(.horizontal, NostosSpacing.lg)
 
                 yearRangeSlider
@@ -505,6 +515,7 @@ struct GalleryView: View {
                 .border(Color.nostosRed, width: 1)
                 .padding(.horizontal, NostosSpacing.lg)
                 .padding(.bottom, NostosSpacing.lg)
+                .accessibilityIdentifier("galleryRemoveAllFiltersButton")
             }
         }
     }
@@ -524,7 +535,7 @@ struct GalleryView: View {
             }
         }
         .buttonStyle(.plain)
-        .padding(.vertical, 5)
+        .padding(.vertical, 2)
     }
 
     @ViewBuilder
@@ -656,7 +667,7 @@ struct BackupFooterBar: View {
             }
 
             if backupState == .running || backupState == .paused {
-                NostosProgressBar(progress, color: .nostosAccent)
+                NostosProgressBar(progress / 100.0, total: 1.0)
                     .frame(width: 100)
 
                 Text("\(Int(progress))%")
@@ -673,6 +684,7 @@ struct BackupFooterBar: View {
                 }
                 .buttonStyle(.bordered)
                 .font(.system(size: 12, weight: .medium))
+                .accessibilityIdentifier("galleryBackUpAgainButton")
             } else if backupState == .idle {
                 Button(action: { startBackup() }) {
                     Image(systemName: "play.fill")
@@ -681,12 +693,14 @@ struct BackupFooterBar: View {
                 .buttonStyle(.borderedProminent)
                 .font(.system(size: 12, weight: .medium))
                 .disabled(matchCount == 0)
+                .accessibilityIdentifier("galleryBackUpToVaultButton")
             } else {
                 Button(action: { backupState = backupState == .running ? .paused : .running }) {
                     Image(systemName: backupState == .running ? "pause.fill" : "play.fill")
                 }
                 .frame(width: 28, height: 28)
                 .buttonStyle(.bordered)
+                .accessibilityIdentifier("galleryBackupPauseResumeButton")
             }
         }
         .padding(.horizontal, NostosSpacing.lg)

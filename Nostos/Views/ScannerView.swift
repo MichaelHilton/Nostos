@@ -20,17 +20,17 @@ struct ScannerView: View {
                 VStack(spacing: NostosSpacing.xxxl) {
                     // Stat cards row
                     HStack(spacing: NostosSpacing.xl) {
-                        NostosStatCard("Total Scanned", value: "\(state.totalPhotoCount)", color: .nostosFg1)
-                        NostosStatCard("Catalogued", value: "\(state.totalPhotoCount)", color: .nostosAccent)
-                        NostosStatCard("Duplicates", value: "\(state.duplicateGroups.count)", color: .nostosOrange)
-                        NostosStatCard("Last Scan", value: lastScanLabel, color: .nostosGreen)
+                        NostosStatCard("Total Scanned", value: "\(state.totalPhotoCount)")
+                        NostosStatCard("Catalogued", value: "\(state.totalPhotoCount)")
+                        NostosStatCard("Duplicates", value: "\(state.duplicateGroups.count)")
+                        NostosStatCard("Last Scan", value: lastScanLabel)
                     }
                     .padding(.horizontal, NostosSpacing.pagePadding)
 
                     // Source folder card
                     CardView {
                         VStack(alignment: .leading, spacing: NostosSpacing.lg) {
-                            SectionLabel("Source Folder", diamond: true)
+                            SectionLabel("Source Folder")
 
                             HStack(spacing: NostosSpacing.xl) {
                                 Text(selectedPath.isEmpty ? "No folder selected" : selectedPath)
@@ -76,17 +76,15 @@ struct ScannerView: View {
                     if state.scanProgress.isScanning || state.scanProgress.processed > 0 {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
-                                SectionLabel("Progress", diamond: true)
+                                SectionLabel("Progress")
 
-                                NostosProgressBar(
-                                    Double(state.scanProgress.processed),
-                                    total: Double(max(1, state.scanProgress.total))
-                                )
+                                let progress = Double(state.scanProgress.processed) / Double(max(1, state.scanProgress.total))
+                                NostosProgressBar(progress, total: 1.0)
 
                                 HStack(spacing: 40) {
                                     Stat("Files Found", value: "\(state.scanProgress.total)")
-                                    Stat("Processed", value: "\(state.scanProgress.processed)", color: .nostosAccent)
-                                    Stat("Duplicates", value: "\(state.scanProgress.duplicatesFound)", color: .nostosOrange)
+                                    Stat("Processed", value: "\(state.scanProgress.processed)")
+                                    Stat("Duplicates", value: "\(state.scanProgress.duplicatesFound)")
                                 }
                             }
                             .padding(NostosSpacing.lg)
@@ -97,7 +95,7 @@ struct ScannerView: View {
                     if !state.scanRuns.isEmpty {
                         CardView {
                             VStack(alignment: .leading, spacing: 0) {
-                                SectionLabel("Recent Scans", diamond: true)
+                                SectionLabel("Recent Scans")
                                     .padding(NostosSpacing.lg)
 
                                 if #available(macOS 13, *) {
@@ -116,6 +114,7 @@ struct ScannerView: View {
             .background(Color.nostosBg)
             .overlay(alignment: .topLeading) {
                 StarDotBackground()
+                    .allowsHitTesting(false)
             }
         }
     }

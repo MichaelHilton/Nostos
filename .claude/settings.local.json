@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(swift build *)",
-      "Bash(xcodebuild build *)"
+      "Bash(xcodebuild build *)",
+      "Bash(bash Nostos/scripts/test-ui.sh)",
+      "Bash(./Nostos/scripts/test-ui.sh)"
     ]
   }
 }

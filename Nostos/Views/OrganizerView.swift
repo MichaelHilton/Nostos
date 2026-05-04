@@ -33,10 +33,10 @@ struct VaultView: View {
 
                     // Stat cards row
                     HStack(spacing: NostosSpacing.xl) {
-                        NostosStatCard("Photos Scanned", value: "\(state.totalPhotoCount)", color: .nostosFg1)
-                        NostosStatCard("In Vault", value: "\(inVaultCount)", color: .nostosGreen)
-                        NostosStatCard("Not Yet Vaulted", value: "\(notYetVaultedCount)", color: .nostosOrange)
-                        NostosStatCard("Total Size", value: formatBytes(state.totalPhotoSize), color: .nostosAccent)
+                        NostosStatCard("Photos Scanned", value: "\(state.totalPhotoCount)")
+                        NostosStatCard("In Vault", value: "\(inVaultCount)")
+                        NostosStatCard("Not Yet Vaulted", value: "\(notYetVaultedCount)")
+                        NostosStatCard("Total Size", value: formatBytes(state.totalPhotoSize))
                     }
                     .padding(.horizontal, NostosSpacing.pagePadding)
 
@@ -44,7 +44,7 @@ struct VaultView: View {
                     if !state.formatBreakdown.isEmpty {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
-                                SectionLabel("Storage Breakdown — Format", diamond: true)
+                                SectionLabel("Storage Breakdown — Format")
 
                                 ForEach(Array(state.formatBreakdown.enumerated()), id: \.offset) { _, row in
                                     formatBreakdownRow(row)
@@ -59,7 +59,7 @@ struct VaultView: View {
                     if !state.yearBreakdown.isEmpty {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
-                                SectionLabel("Breakdown — Year Taken", diamond: true)
+                                SectionLabel("Breakdown — Year Taken")
 
                                 ForEach(Array(state.yearBreakdown.enumerated()), id: \.offset) { _, row in
                                     yearBreakdownRow(row)
@@ -74,7 +74,7 @@ struct VaultView: View {
                     if !state.cameraBreakdown.isEmpty {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
-                                SectionLabel("Breakdown — Camera", diamond: true)
+                                SectionLabel("Breakdown — Camera")
 
                                 ForEach(Array(state.cameraBreakdown.enumerated()), id: \.offset) { _, row in
                                     cameraBreakdownRow(row)
@@ -89,7 +89,7 @@ struct VaultView: View {
                     CardView {
                         VStack(alignment: .leading, spacing: NostosSpacing.lg) {
                             VStack(alignment: .leading, spacing: NostosSpacing.sm) {
-                                SectionLabel("Vault Location", diamond: true)
+                                SectionLabel("Vault Location")
 
                                 HStack(spacing: NostosSpacing.xl) {
                                     Text(state.vaultRootURL?.path ?? "No vault selected")
@@ -116,7 +116,7 @@ struct VaultView: View {
                                 .padding(.vertical, NostosSpacing.sm)
 
                             VStack(alignment: .leading, spacing: NostosSpacing.sm) {
-                                SectionLabel("Folder Format", diamond: true)
+                                SectionLabel("Folder Format")
 
                                 HStack(spacing: NostosSpacing.xl) {
                                     TextField("YYYY/MM/DD", text: $folderFormat)
@@ -139,6 +139,9 @@ struct VaultView: View {
 
                     // Organize button
                     HStack(spacing: NostosSpacing.md) {
+                        Toggle("Dry Run (preview only, no files copied)", isOn: $dryRun)
+                            .toggleStyle(.checkbox)
+
                         Button(action: startOrganize) {
                             Text(state.organizeProgress.isRunning ? "↻  Vaulting…" : "▶  Organise Vault")
                         }
@@ -156,19 +159,17 @@ struct VaultView: View {
                     if state.organizeProgress.isRunning || state.organizeProgress.total > 0 {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
-                                SectionLabel("Progress", diamond: true)
+                                SectionLabel("Progress")
 
                                 if state.organizeProgress.total > 0 {
-                                    NostosProgressBar(
-                                        Double(state.organizeProgress.copied + state.organizeProgress.skipped),
-                                        total: Double(state.organizeProgress.total)
-                                    )
+                                    let progress = Double(state.organizeProgress.copied + state.organizeProgress.skipped) / Double(state.organizeProgress.total)
+                                    NostosProgressBar(progress, total: 1.0)
                                 }
 
                                 HStack(spacing: 40) {
                                     Stat("Total", value: "\(state.organizeProgress.total)")
-                                    Stat("Copied", value: "\(state.organizeProgress.copied)", color: .nostosGreen)
-                                    Stat("Skipped", value: "\(state.organizeProgress.skipped)", color: .nostosOrange)
+                                    Stat("Copied", value: "\(state.organizeProgress.copied)")
+                                    Stat("Skipped", value: "\(state.organizeProgress.skipped)")
                                 }
                             }
                             .padding(NostosSpacing.lg)
@@ -181,7 +182,7 @@ struct VaultView: View {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
                                 HStack {
-                                    SectionLabel("Last Run Results", diamond: true)
+                                    SectionLabel("Last Run Results")
                                     Spacer()
                                     Button(action: { showResults.toggle() }) {
                                         Text(showResults ? "Hide" : "Show Details")
@@ -228,6 +229,7 @@ struct VaultView: View {
             .background(Color.nostosBg)
             .overlay(alignment: .topLeading) {
                 StarDotBackground()
+                    .allowsHitTesting(false)
             }
         }
         .confirmationDialog(
@@ -268,7 +270,7 @@ struct VaultView: View {
 
             let totalBytes = state.totalPhotoSize
             let percentage = totalBytes > 0 ? Double(row.bytes) / Double(totalBytes) : 0.0
-            NostosProgressBar(percentage, total: 1.0, color: .nostosAccent)
+            NostosProgressBar(percentage, total: 1.0)
                 .frame(height: 5)
 
             Text("\(row.count)")
@@ -294,7 +296,7 @@ struct VaultView: View {
                 .foregroundColor(.nostosFg1)
                 .frame(width: 50, alignment: .leading)
 
-            NostosProgressBar(percentage, total: 1.0, color: .nostosGold)
+            NostosProgressBar(percentage, total: 1.0)
                 .frame(height: 5)
 
             Text("\(row.count)")
@@ -322,7 +324,7 @@ struct VaultView: View {
                 .truncationMode(.tail)
                 .frame(maxWidth: 120, alignment: .leading)
 
-            NostosProgressBar(percentage, total: 1.0, color: .nostosAccent)
+            NostosProgressBar(percentage, total: 1.0)
                 .frame(height: 5)
 
             Text("\(row.count)")

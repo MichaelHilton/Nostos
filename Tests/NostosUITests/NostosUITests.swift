@@ -84,30 +84,6 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(clearSelectionButton.waitForExistence(timeout: 5))
         click(clearSelectionButton, label: "galleryClearSelectionButton")
 
-        let loadMoreButton = app.buttons["galleryLoadMoreButton"]
-        XCTAssertTrue(loadMoreButton.waitForExistence(timeout: 5))
-        click(loadMoreButton, label: "galleryLoadMoreButton")
-
-        let perPageMenuButton = accessibleControl(in: app, identifier: "galleryPerPageMenuButton")
-        XCTAssertTrue(perPageMenuButton.waitForExistence(timeout: 5))
-        for title in ["25", "50", "100", "200"] {
-            click(perPageMenuButton, label: "galleryPerPageMenuButton")
-            XCTAssertTrue(menuItem(in: app, titled: title).waitForExistence(timeout: 5))
-            click(menuItem(in: app, titled: title), label: "galleryPerPageMenuItem:\(title)")
-        }
-
-        let nextPageButton = app.buttons["galleryNextPageButton"]
-        XCTAssertTrue(nextPageButton.waitForExistence(timeout: 5))
-        click(nextPageButton, label: "galleryNextPageButton")
-
-        let prevPageButton = app.buttons["galleryPrevPageButton"]
-        XCTAssertTrue(prevPageButton.waitForExistence(timeout: 5))
-        click(prevPageButton, label: "galleryPrevPageButton")
-
-        click(perPageMenuButton, label: "galleryPerPageMenuButton")
-        XCTAssertTrue(menuItem(in: app, titled: "All").waitForExistence(timeout: 5))
-        click(menuItem(in: app, titled: "All"), label: "galleryPerPageMenuItem:All")
-
         let removeAllFiltersButton = app.buttons["galleryRemoveAllFiltersButton"]
         XCTAssertTrue(removeAllFiltersButton.waitForExistence(timeout: 5))
         click(removeAllFiltersButton, label: "galleryRemoveAllFiltersButton")
@@ -115,6 +91,10 @@ final class NostosUITests: XCTestCase {
         let duplicatesTabButton = app.buttons["duplicatesTabButton"]
         XCTAssertTrue(duplicatesTabButton.waitForExistence(timeout: 10))
         click(duplicatesTabButton, label: "duplicatesTabButton")
+
+        let expandGroupButton = app.buttons["duplicateExpandGroupButton"].firstMatch
+        XCTAssertTrue(expandGroupButton.waitForExistence(timeout: 5))
+        click(expandGroupButton, label: "duplicateExpandGroupButton")
 
         let duplicatePhotoTiles = app.descendants(matching: .any).matching(identifier: "duplicatePhotoTile")
         XCTAssertGreaterThan(duplicatePhotoTiles.count, 0)
@@ -124,6 +104,14 @@ final class NostosUITests: XCTestCase {
                 click(tile, label: "duplicatePhotoTile[\(index)]")
             }
         }
+
+        let keepFirstButton = app.buttons["duplicatesKeepFirstButton"]
+        XCTAssertTrue(keepFirstButton.waitForExistence(timeout: 5))
+        click(keepFirstButton, label: "duplicatesKeepFirstButton")
+
+        let clearSelectionsButton = app.buttons["duplicatesClearSelectionsButton"]
+        XCTAssertTrue(clearSelectionsButton.waitForExistence(timeout: 5))
+        click(clearSelectionsButton, label: "duplicatesClearSelectionsButton")
 
         let vaultTabButton = app.buttons["vaultTabButton"]
         XCTAssertTrue(vaultTabButton.waitForExistence(timeout: 10))
@@ -164,6 +152,67 @@ final class NostosUITests: XCTestCase {
         let scannerTabAfterChange = app.buttons["scannerTabButton"]
         XCTAssertTrue(scannerTabAfterChange.waitForExistence(timeout: 10))
         XCTAssertTrue(scannerTabAfterChange.isHittable)
+    }
+
+    func testGalleryFilterAndBackupButtons() throws {
+        let fileManager = FileManager.default
+        let uniqueSuffix = UUID().uuidString
+        let vaultRoot = fileManager.temporaryDirectory.appendingPathComponent("nostos-ui-gallery-\(uniqueSuffix)")
+        try fileManager.createDirectory(at: vaultRoot, withIntermediateDirectories: true)
+
+        let app = XCUIApplication(bundleIdentifier: "com.github.michaelhilton.Nostos")
+        app.launchEnvironment = [
+            "UI_TESTING_VAULT_ROOT": vaultRoot.path,
+            "UI_TESTING_SEED_DATA": "1"
+        ]
+        app.launch()
+
+        let galleryTabButton = app.buttons["galleryTabButton"]
+        XCTAssertTrue(galleryTabButton.waitForExistence(timeout: 10))
+        click(galleryTabButton, label: "galleryTabButton")
+
+        // Filter chip: Duplicates — activates filter, making toolbar Clear all visible
+        let filterChipDuplicates = app.buttons["galleryFilterChipDuplicates"]
+        XCTAssertTrue(filterChipDuplicates.waitForExistence(timeout: 5))
+        click(filterChipDuplicates, label: "galleryFilterChipDuplicates")
+
+        let toolbarClearAllButton = app.buttons["galleryToolbarClearAllButton"]
+        XCTAssertTrue(toolbarClearAllButton.waitForExistence(timeout: 5))
+        click(toolbarClearAllButton, label: "galleryToolbarClearAllButton")
+
+        // Filter chip: In Vault
+        let filterChipInVault = app.buttons["galleryFilterChipInVault"]
+        XCTAssertTrue(filterChipInVault.waitForExistence(timeout: 5))
+        click(filterChipInVault, label: "galleryFilterChipInVault")
+
+        // Clear toolbar again (now visible because In Vault filter is active)
+        XCTAssertTrue(toolbarClearAllButton.waitForExistence(timeout: 5))
+        click(toolbarClearAllButton, label: "galleryToolbarClearAllButton (clear after In Vault)")
+
+        // Sidebar: With duplicates checkbox
+        let filterWithDuplicates = app.buttons["galleryFilterWithDuplicates"]
+        XCTAssertTrue(filterWithDuplicates.waitForExistence(timeout: 5))
+        click(filterWithDuplicates, label: "galleryFilterWithDuplicates")
+        click(filterWithDuplicates, label: "galleryFilterWithDuplicates (deactivate)")
+
+        // Sidebar: No duplicates checkbox
+        let filterNoDuplicates = app.buttons["galleryFilterNoDuplicates"]
+        XCTAssertTrue(filterNoDuplicates.waitForExistence(timeout: 5))
+        click(filterNoDuplicates, label: "galleryFilterNoDuplicates")
+        click(filterNoDuplicates, label: "galleryFilterNoDuplicates (deactivate)")
+
+        // Backup footer: Back Up to Vault (enabled because seeded photos include non-copied status)
+        let backUpToVaultButton = app.buttons["galleryBackUpToVaultButton"]
+        XCTAssertTrue(backUpToVaultButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(backUpToVaultButton.isEnabled)
+        click(backUpToVaultButton, label: "galleryBackUpToVaultButton")
+
+        // Pause/resume button appears immediately when backup starts
+        let pauseResumeButton = app.buttons["galleryBackupPauseResumeButton"]
+        XCTAssertTrue(pauseResumeButton.waitForExistence(timeout: 5))
+        click(pauseResumeButton, label: "galleryBackupPauseResumeButton (pause)")
+
+        print("UI test click log: \(clickedControls.joined(separator: " -> "))")
     }
 
     func testSetupScreenChooseVaultButton() throws {

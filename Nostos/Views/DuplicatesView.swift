@@ -50,6 +50,7 @@ struct DuplicatesView: View {
                 .background(Color.nostosBg)
                 .overlay(alignment: .topLeading) {
                     StarDotBackground()
+                        .allowsHitTesting(false)
                 }
             }
         }
@@ -62,12 +63,14 @@ struct DuplicatesView: View {
                 Text("Keep First in All Groups")
             }
             .buttonStyle(.bordered)
+            .accessibilityIdentifier("duplicatesKeepFirstButton")
 
             Button(action: clearSelections) {
                 Text("Clear Selections")
             }
             .buttonStyle(.bordered)
             .foregroundColor(.nostosRed)
+            .accessibilityIdentifier("duplicatesClearSelectionsButton")
 
             Spacer()
         }
@@ -160,6 +163,7 @@ struct DupGroupCard: View {
                         .foregroundColor(.nostosFg2)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("duplicateExpandGroupButton")
             }
             .padding(NostosSpacing.lg)
 
