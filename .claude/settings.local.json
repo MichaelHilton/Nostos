@@ -4,7 +4,24 @@
       "Bash(swift build *)",
       "Bash(xcodebuild build *)",
       "Bash(bash Nostos/scripts/test-ui.sh)",
-      "Bash(./Nostos/scripts/test-ui.sh)"
+      "Bash(./Nostos/scripts/test-ui.sh)",
+      "Bash(swift test *)",
+      "Bash(otool -l /Users/michaelhilton/Development/Nostos/.build/debug/NostosPackageTests.xctest/Contents/MacOS/NostosPackageTests)",
+      "Bash(nm /Users/michaelhilton/Development/Nostos/.build/debug/NostosPackageTests.xctest/Contents/MacOS/NostosPackageTests)",
+      "Bash(LLVM_PROFILE_FILE=/tmp/test_coverage.profraw /Users/michaelhilton/Development/Nostos/.build/debug/NostosPackageTests.xctest/Contents/MacOS/NostosPackageTests)",
+      "Read(//tmp/**)",
+      "Bash(xcrun xctest *)",
+      "Bash(LLVM_PROFILE_FILE=\"/tmp/nostos_cov_%p.profraw\" xcrun xctest /Users/michaelhilton/Development/Nostos/.build/debug/NostosPackageTests.xctest)",
+      "Bash(touch /Users/michaelhilton/Development/Nostos/.build/x86_64-apple-macosx/debug/codecov/test_write)",
+      "Bash(rm /Users/michaelhilton/Development/Nostos/.build/x86_64-apple-macosx/debug/codecov/test_write)",
+      "Bash(LLVM_PROFILE_FILE=\"/Users/michaelhilton/Development/Nostos/.build/x86_64-apple-macosx/debug/codecov/default%p.profraw\" xcrun xctest /Users/michaelhilton/Development/Nostos/.build/debug/NostosPackageTests.xctest)",
+      "Bash(./Nostos/scripts/test-with-coverage.sh)",
+      "Bash(codesign -d --entitlements - /Users/michaelhilton/Development/Nostos/.build/debug/NostosPackageTests.xctest/Contents/MacOS/NostosPackageTests)",
+      "Bash(LLVM_PROFILE_FILE=\"/tmp/test_from_env_%p.profraw\" swift test --enable-code-coverage)",
+      "Bash(xcrun llvm-profdata *)",
+      "Bash(xcrun llvm-cov *)",
+      "Bash(LLVM_PROFILE_FILE=\"/tmp/nostos_test_%10m.profraw\" xcrun xctest /Users/michaelhilton/Development/Nostos/.build/debug/NostosPackageTests.xctest)",
+      "Bash(python3 - ~/Library/Logs/DiagnosticReports/xctest-2026-05-05-103131.ips)"
     ]
   }
 }

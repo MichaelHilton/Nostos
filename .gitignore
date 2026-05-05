@@ -32,3 +32,4 @@ Thumbs.db
 Nostos/.build/
 .build/
 coverage/
+*.profraw
