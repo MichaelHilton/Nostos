@@ -13,6 +13,13 @@ struct EXIFData {
 }
 
 enum EXIFReader {
+    private static let exifDateFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy:MM:dd HH:mm:ss"
+        df.locale = Locale(identifier: "en_US_POSIX")
+        return df
+    }()
+
     static func read(from url: URL) -> EXIFData {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             return EXIFData()
@@ -31,15 +38,12 @@ enum EXIFReader {
         let gps  = props[kCGImagePropertyGPSDictionary as String] as? [String: Any]
 
         // Date taken — prefer EXIF DateTimeOriginal, fall back to DateTime
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         var takenAt: Date?
         let dateString = exif?[kCGImagePropertyExifDateTimeOriginal as String] as? String
             ?? exif?[kCGImagePropertyExifDateTimeDigitized as String] as? String
             ?? tiff?[kCGImagePropertyTIFFDateTime as String] as? String
         if let str = dateString {
-            takenAt = dateFormatter.date(from: str)
+            takenAt = exifDateFormatter.date(from: str)
         }
 
         // Camera info from TIFF IFD

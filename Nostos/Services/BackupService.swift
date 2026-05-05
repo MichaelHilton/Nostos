@@ -41,6 +41,9 @@ final class BackupService {
 
         var copied = 0
         var skipped = 0
+        var results: [BackupResult] = []
+        var vaultPhotos: [VaultPhoto] = []
+        results.reserveCapacity(candidates.count)
 
         for photo in candidates {
             guard let photoId = photo.id else { continue }
@@ -73,16 +76,14 @@ final class BackupService {
                         at: URL(fileURLWithPath: photo.path),
                         to: destURL
                     )
-
-                    var vaultPhoto = VaultPhoto(
+                    vaultPhotos.append(VaultPhoto(
                         vaultPath: destRel,
                         hash: photo.hash ?? "",
                         fileSize: photo.fileSize,
                         sourcePath: photo.path,
                         backedUpAt: Date(),
                         backupJobId: job.id
-                    )
-                    try db.insertVaultPhoto(&vaultPhoto)
+                    ))
                     copied += 1
                 } catch {
                     result.reason = error.localizedDescription
@@ -94,9 +95,13 @@ final class BackupService {
                 skipped += 1
             }
 
-            try db.insertBackupResult(&result)
+            results.append(result)
             onProgress(BackupProgress(total: total, copied: copied, skipped: skipped, isRunning: true))
         }
+
+        // Batch-write all results and vault photos in single transactions
+        try db.insertVaultPhotosBatch(vaultPhotos)
+        try db.insertBackupResultsBatch(results)
 
         job.finishedAt = Date()
         job.copiedFiles = copied
@@ -134,10 +139,10 @@ final class BackupService {
     }
 
     private func formatFolder(date: Date, format: String) -> String {
-        let cal = Calendar.current
-        let year  = String(cal.component(.year,  from: date))
-        let month = String(format: "%02d", cal.component(.month, from: date))
-        let day   = String(format: "%02d", cal.component(.day,   from: date))
+        let comps = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        let year  = String(comps.year ?? 1970)
+        let month = String(format: "%02d", comps.month ?? 1)
+        let day   = String(format: "%02d", comps.day ?? 1)
         return format
             .replacingOccurrences(of: "YYYY", with: year)
             .replacingOccurrences(of: "MM",   with: month)

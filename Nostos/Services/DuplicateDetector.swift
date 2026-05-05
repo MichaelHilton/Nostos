@@ -49,11 +49,6 @@ final class DuplicateDetector {
                     keptSet = true
                     try photo.update(db)
                 }
-                // Update keptPhotoId after we have group.id set on the kept photo
-                if let keptId = candidates.first?.id {
-                    try db.execute(sql: "UPDATE duplicate_groups SET kept_photo_id = ? WHERE id = ?",
-                                   arguments: [keptId, group.id])
-                }
                 created += 1
             }
         }
@@ -95,10 +90,6 @@ final class DuplicateDetector {
                     photo.isKept = !keptSet
                     keptSet = true
                     try photo.update(db)
-                }
-                if let keptId = candidates.first?.id {
-                    try db.execute(sql: "UPDATE duplicate_groups SET kept_photo_id = ? WHERE id = ?",
-                                   arguments: [keptId, group.id])
                 }
                 created += 1
             }

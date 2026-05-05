@@ -74,14 +74,17 @@ final class AppState: ObservableObject {
     // MARK: - Data loading
 
     func loadInitialData() async {
-        await loadScanRuns()
-        await loadPhotos()
-        await loadTotalPhotoCount()
-        await loadCameraModels()
-        await loadDuplicates()
-        await loadOrganizeJobs()
-        await loadBackupJobs()
-        await loadVaultBreakdowns()
+        // Start all independent reads as concurrent child tasks
+        async let a: () = loadScanRuns()
+        async let b: () = loadPhotos()
+        async let c: () = loadTotalPhotoCount()
+        async let d: () = loadCameraModels()
+        async let e: () = loadYears()
+        async let f: () = loadDuplicates()
+        async let g: () = loadOrganizeJobs()
+        async let h: () = loadBackupJobs()
+        async let i: () = loadVaultBreakdowns()
+        await a; await b; await c; await d; await e; await f; await g; await h; await i
     }
 
     func loadScanRuns() async {
@@ -112,7 +115,6 @@ final class AppState: ObservableObject {
         do {
             cameraModels = try db.fetchDistinctCameraModels()
         } catch {}
-        await loadYears()
     }
 
     func loadYears() async {

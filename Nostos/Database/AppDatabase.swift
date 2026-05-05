@@ -476,6 +476,20 @@ extension AppDatabase {
         try dbWriter.write { db in try result.insert(db) }
     }
 
+    func insertBackupResultsBatch(_ results: [BackupResult]) throws {
+        guard !results.isEmpty else { return }
+        try dbWriter.write { db in
+            for var result in results { try result.insert(db) }
+        }
+    }
+
+    func insertVaultPhotosBatch(_ photos: [VaultPhoto]) throws {
+        guard !photos.isEmpty else { return }
+        try dbWriter.write { db in
+            for var photo in photos { try photo.insert(db) }
+        }
+    }
+
     func fetchAllBackupJobs() throws -> [BackupJob] {
         try dbWriter.read { db in
             try BackupJob.order(Column("started_at").desc).fetchAll(db)
@@ -502,7 +516,8 @@ extension AppDatabase {
         try dbWriter.read { db in
             var breakdown: [(ext: String, count: Int, bytes: Int64)] = []
             let cursor = try Row.fetchCursor(db, sql: """
-                SELECT UPPER(SUBSTR(path, INSTR(path, '.') + 1)) as ext, COUNT(*) as count, SUM(file_size) as bytes
+                SELECT UPPER(SUBSTR(path, LENGTH(path) - INSTR(REVERSE(path), '.') + 2)) as ext,
+                       COUNT(*) as count, SUM(file_size) as bytes
                 FROM photos
                 WHERE INSTR(path, '.') > 0
                 GROUP BY ext
@@ -512,7 +527,7 @@ extension AppDatabase {
                 if let ext = row["ext"] as? String,
                    let count = row["count"] as? Int64,
                    let bytes = row["bytes"] as? Int64 {
-                    breakdown.append((String(ext.dropFirst()), Int(count), bytes))
+                    breakdown.append((ext, Int(count), bytes))
                 }
             }
             return breakdown

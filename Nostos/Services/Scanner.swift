@@ -39,10 +39,7 @@ final class Scanner {
         )
         try db.insertScanRun(&run)
 
-        // Do a fast count pass first so we can show total in progress
-        let total = countPhotos(in: rootURL)
-
-        await onProgress(ScanProgress(total: total, processed: 0, isScanning: true))
+        await onProgress(ScanProgress(total: 0, processed: 0, isScanning: true))
 
         let counter = ScanCounter()
         let knownPaths = (try? db.fetchAllPaths()) ?? []
@@ -59,6 +56,9 @@ final class Scanner {
             return run
         }
 
+        // Count files as they are discovered so we avoid a second full traversal
+        var totalFound = 0
+
         await withTaskGroup(of: Void.self) { group in
             var active = 0
             var lastProgressDate = Date.distantPast
@@ -66,6 +66,8 @@ final class Scanner {
             while let url = enumerator.nextObject() as? URL {
                 guard (try? url.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true else { continue }
                 guard supportedExtensions.contains(url.pathExtension.lowercased()) else { continue }
+
+                totalFound += 1
 
                 if active >= maxConcurrency {
                     await group.next()
@@ -81,7 +83,7 @@ final class Scanner {
                 if now.timeIntervalSince(lastProgressDate) >= progressThrottle {
                     lastProgressDate = now
                     let snap = await counter.snapshot()
-                    await onProgress(ScanProgress(total: total, processed: min(snap.processed, total), isScanning: true))
+                    await onProgress(ScanProgress(total: totalFound, processed: min(snap.processed, totalFound), isScanning: true))
                 }
             }
             await group.waitForAll()
@@ -95,23 +97,8 @@ final class Scanner {
         run.status = .completed
         try db.updateScanRun(run)
 
-        await onProgress(ScanProgress(total: total, processed: snap.processed, duplicatesFound: snap.duplicatesFound, isScanning: false))
+        await onProgress(ScanProgress(total: totalFound, processed: snap.processed, duplicatesFound: snap.duplicatesFound, isScanning: false))
         return run
-    }
-
-    private func countPhotos(in root: URL) -> Int {
-        let fm = FileManager.default
-        guard let enumerator = fm.enumerator(
-            at: root,
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants]
-        ) else { return 0 }
-        var count = 0
-        for case let url as URL in enumerator {
-            guard (try? url.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true else { continue }
-            if supportedExtensions.contains(url.pathExtension.lowercased()) { count += 1 }
-        }
-        return count
     }
 
     private func processPhoto(url: URL, scanRunId: Int64, knownPaths: Set<String>, counter: ScanCounter) async {
@@ -121,12 +108,13 @@ final class Scanner {
         // Open file once; derive file size, EXIF, and thumbnail from the same source
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else { return }
 
-        // File size from attributes (CGImageSource doesn't expose raw byte count)
-        let fileSize = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
+        // Single attributes call for both fileSize and modDate
+        let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
+        let fileSize = attrs?[.size] as? Int64 ?? 0
+        let modDate = attrs?[.modificationDate] as? Date
 
         let hash = computeHash(url: url)
         let exif = EXIFReader.read(from: imageSource)
-        let modDate = (try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate] as? Date)
 
         var photo = Photo(
             path: url.path,
@@ -188,6 +176,9 @@ final class Scanner {
             if !tail.isEmpty { hasher.update(data: tail) }
         }
 
-        return hasher.finalize().compactMap { String(format: "%02x", $0) }.joined()
+        var hex = ""
+        hex.reserveCapacity(64)
+        for byte in hasher.finalize() { hex += String(format: "%02x", byte) }
+        return hex
     }
 }

@@ -140,6 +140,24 @@ REPORT_OUT="$(cat "$FILTERED_REPORT_FILE")"
 
 echo "Coverage report generated: $OUTPUT_DIR/index.html"
 
+# Generate uncovered-lines file from HTML coverage if extractor script exists
+EXTRACTOR="$ROOT_DIR/scripts/extract_uncovered_lines.py"
+if [ -f "$EXTRACTOR" ]; then
+  echo "Generating coverage-uncovered.txt using $EXTRACTOR"
+  # run extractor but do not fail the whole script if it errors
+  set +e
+  python3 "$EXTRACTOR"
+  PY_RET=$?
+  set -e
+  if [ $PY_RET -ne 0 ]; then
+    echo "Warning: coverage extractor exited with code $PY_RET" >&2
+  else
+    echo "Wrote coverage-uncovered.txt"
+  fi
+else
+  echo "No extractor script found at $EXTRACTOR; skipping uncovered-lines generation"
+fi
+
 # Enforce threshold if provided (default 50%)
 THRESHOLD="${COVERAGE_THRESHOLD:-50}"
 # Try to find a percentage token on the TOTAL line (any % token on that line)

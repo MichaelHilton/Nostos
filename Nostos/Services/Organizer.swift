@@ -131,10 +131,10 @@ final class Organizer {
     }
 
     private func formatFolder(date: Date, format: String) -> String {
-        let cal = Calendar.current
-        let year  = String(cal.component(.year,  from: date))
-        let month = String(format: "%02d", cal.component(.month, from: date))
-        let day   = String(format: "%02d", cal.component(.day,   from: date))
+        let comps = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        let year  = String(comps.year ?? 1970)
+        let month = String(format: "%02d", comps.month ?? 1)
+        let day   = String(format: "%02d", comps.day ?? 1)
         return format
             .replacingOccurrences(of: "YYYY", with: year)
             .replacingOccurrences(of: "MM",   with: month)
@@ -150,7 +150,10 @@ final class Organizer {
             if chunk.isEmpty { break }
             hasher.update(data: chunk)
         }
-        return hasher.finalize().compactMap { String(format: "%02x", $0) }.joined()
+        var hex = ""
+        hex.reserveCapacity(64)
+        for byte in hasher.finalize() { hex += String(format: "%02x", byte) }
+        return hex
     }
 }
 
