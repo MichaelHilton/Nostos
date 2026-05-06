@@ -164,4 +164,22 @@ awk '
 echo
 echo "HTML report: $OUTPUT_DIR/index.html"
 
+# Generate uncovered-lines file from HTML coverage if extractor script exists
+EXTRACTOR="$ROOT_DIR/scripts/extract_uncovered_lines.py"
+if [ -f "$EXTRACTOR" ]; then
+  echo "Generating coverage-uncovered.txt using $EXTRACTOR"
+  # run extractor but do not fail the whole script if it errors
+  set +e
+  python3 "$EXTRACTOR"
+  PY_RET=$?
+  set -e
+  if [ $PY_RET -ne 0 ]; then
+    echo "Warning: coverage extractor exited with code $PY_RET" >&2
+  else
+    echo "Wrote coverage-uncovered.txt"
+  fi
+else
+  echo "No extractor script found at $EXTRACTOR; skipping uncovered-lines generation"
+fi
+
 echo "Done."
