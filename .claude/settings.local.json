@@ -24,7 +24,9 @@
       "Bash(python3 - ~/Library/Logs/DiagnosticReports/xctest-2026-05-05-103131.ips)",
       "Bash(./Nostos/scripts/test-all-with-coverage.sh)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(bash ../scripts/test-all-with-coverage.sh)",
+      "Bash(bash /Users/michaelhilton/Development/AI-Projects/Nostos/Nostos/scripts/test-all-with-coverage.sh)"
     ]
   }
 }

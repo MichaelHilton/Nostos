@@ -6,6 +6,8 @@ final class AppState: ObservableObject {
     private(set) var db: AppDatabase
     @Published private(set) var vaultRootURL: URL?
 
+    var directoryPicker: DirectoryPickerProtocol
+
     // MARK: - Scan state
     @Published var scanRuns: [ScanRun] = []
     @Published var scanProgress = ScanProgress()
@@ -42,6 +44,7 @@ final class AppState: ObservableObject {
     init() {
         let defaultVaultRoot = AppState.defaultVaultRootURL()
         self.vaultRootURL = defaultVaultRoot
+        self.directoryPicker = DefaultDirectoryPicker()
         do {
             db = try AppDatabase.makeShared(vaultRootURL: defaultVaultRoot)
         } catch {
@@ -53,6 +56,7 @@ final class AppState: ObservableObject {
 
     init(vaultRootURL: URL) {
         self.vaultRootURL = vaultRootURL
+        self.directoryPicker = DefaultDirectoryPicker()
         do {
             db = try AppDatabase.makeShared(vaultRootURL: vaultRootURL)
         } catch {
@@ -66,9 +70,10 @@ final class AppState: ObservableObject {
         Task { await loadInitialData() }
     }
 
-    init(db: AppDatabase) {
+    init(db: AppDatabase, directoryPicker: DirectoryPickerProtocol = DefaultDirectoryPicker()) {
         self.db = db
         self.vaultRootURL = nil
+        self.directoryPicker = directoryPicker
     }
 
     // MARK: - Data loading
@@ -154,7 +159,7 @@ final class AppState: ObservableObject {
         errorMessage = nil
 
         Task {
-            let scanner = Scanner(db: db) { [weak self] progress in
+            let scanner = makeScanner { [weak self] progress in
                 await MainActor.run { [weak self] in
                     self?.scanProgress = progress
                 }
@@ -163,7 +168,7 @@ final class AppState: ObservableObject {
                 _ = try await scanner.scan(rootURL: rootURL)
 
                 // Run duplicate detection after scan
-                let detector = DuplicateDetector(db: db)
+                let detector = makeDuplicateDetector()
                 let groups = try detector.detect()
 
                 await loadInitialData()
@@ -174,6 +179,14 @@ final class AppState: ObservableObject {
                 scanProgress.error = error.localizedDescription
             }
         }
+    }
+
+    func makeScanner(onProgress: @Sendable @escaping (ScanProgress) async -> Void) -> Scanner {
+        Scanner(db: db, onProgress: onProgress)
+    }
+
+    func makeDuplicateDetector() -> DuplicateDetector {
+        DuplicateDetector(db: db)
     }
 
     // MARK: - Gallery
@@ -210,7 +223,7 @@ final class AppState: ObservableObject {
         errorMessage = nil
 
         Task {
-            let organizer = Organizer(db: db) { [weak self] progress in
+            let organizer = makeOrganizer { [weak self] progress in
                 Task { @MainActor [weak self] in
                     self?.organizeProgress = progress
                 }
@@ -231,6 +244,10 @@ final class AppState: ObservableObject {
                 organizeProgress.isRunning = false
             }
         }
+    }
+
+    func makeOrganizer(onProgress: @Sendable @escaping (OrganizeProgress) -> Void) -> Organizer {
+        Organizer(db: db, onProgress: onProgress)
     }
 
     // MARK: - Backup
@@ -273,7 +290,7 @@ final class AppState: ObservableObject {
         errorMessage = nil
 
         Task {
-            let service = BackupService(db: db) { [weak self] (progress: BackupProgress) in
+            let service = makeBackupService { [weak self] (progress: BackupProgress) in
                 Task { @MainActor [weak self] in
                     self?.backupProgress = progress
                 }
@@ -296,22 +313,14 @@ final class AppState: ObservableObject {
         }
     }
 
+    func makeBackupService(onProgress: @Sendable @escaping (BackupProgress) -> Void) -> BackupService {
+        BackupService(db: db, onProgress: onProgress)
+    }
+
     // MARK: - Directory picker
 
     func pickDirectory() -> URL? {
-        if let uiTestingURL = ProcessInfo.processInfo.environment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"], !uiTestingURL.isEmpty {
-            return URL(fileURLWithPath: uiTestingURL)
-        }
-
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = false
-        panel.message = "Choose a folder to scan"
-        panel.prompt = "Select"
-        guard panel.runModal() == .OK else { return nil }
-        return panel.url
+        directoryPicker.pickSourceDirectory()
     }
 
     static func defaultVaultRootURL() -> URL {
@@ -326,19 +335,7 @@ final class AppState: ObservableObject {
     }
 
     func pickVaultDirectory() -> URL? {
-        if let uiTestingURL = ProcessInfo.processInfo.environment["UI_TESTING_VAULT_DIRECTORY_TO_PICK"], !uiTestingURL.isEmpty {
-            return URL(fileURLWithPath: uiTestingURL)
-        }
-
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = true
-        panel.message = "Choose a vault folder"
-        panel.prompt = "Select"
-        guard panel.runModal() == .OK else { return nil }
-        return panel.url
+        directoryPicker.pickVaultDirectory()
     }
 
     func changeVaultRoot(to newVaultRootURL: URL) {
