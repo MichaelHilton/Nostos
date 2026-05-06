@@ -33,9 +33,9 @@ fi
 # Phase 2: re-run the instrumented test bundle with LLVM_PROFILE_FILE set to a
 # simple %p pattern so the profraw lands in the codecov directory. SPM overrides
 # any parent-process LLVM_PROFILE_FILE, so we must run xctest directly here.
-TEST_BUNDLE=$(find "$ROOT_DIR/.build/debug" -maxdepth 1 -name "*.xctest" -type d 2>/dev/null | head -1)
+TEST_BUNDLE=$(find "$ROOT_DIR/.build" -name "*.xctest" -type d 2>/dev/null | head -1)
 if [ -z "$TEST_BUNDLE" ]; then
-  echo "Test bundle not found in .build/debug — ensure swift test --enable-code-coverage succeeded above." >&2
+  echo "Test bundle not found in .build — ensure swift test --enable-code-coverage succeeded above." >&2
   exit 1
 fi
 echo "Collecting profraw data (phase 2: direct xctest run)..."
@@ -66,9 +66,13 @@ fi
 
 # Gather all .profraw files under the codecov dir
 echo "Searching for .profraw files..."
-PROFRAW_FILES=( $(find "$BUILD_CODECOV_DIR" -name "*.profraw" 2>/dev/null || true) )
+# Use a null-separated list to handle filenames with spaces
+find "$BUILD_CODECOV_DIR" -name "*.profraw" -print0 2>/dev/null > /tmp/profraw_files.txt 2>/dev/null || true
 
-if [ ${#PROFRAW_FILES[@]} -eq 0 ]; then
+# Count the files
+PROFRAW_COUNT=$(find "$BUILD_CODECOV_DIR" -name "*.profraw" 2>/dev/null | wc -l)
+
+if [ "$PROFRAW_COUNT" -eq 0 ]; then
   echo "No .profraw files found under $BUILD_CODECOV_DIR. Coverage may be unavailable from UI tests." >&2
 fi
 
@@ -86,9 +90,10 @@ fi
 
 # Merge profraws into a single profdata
 PROFDATA="$BUILD_CODECOV_DIR/default.profdata"
-if [ ${#PROFRAW_FILES[@]} -gt 0 ]; then
-  echo "Merging ${#PROFRAW_FILES[@]} profraw files into $PROFDATA"
-  $LLVM_PROFDATA merge -sparse "${PROFRAW_FILES[@]}" -o "$PROFDATA"
+if [ "$PROFRAW_COUNT" -gt 0 ]; then
+  echo "Merging $PROFRAW_COUNT profraw files into $PROFDATA"
+  # Use find with -print0 and xargs to handle filenames with spaces
+  find "$BUILD_CODECOV_DIR" -name "*.profraw" -print0 2>/dev/null | xargs -0 $LLVM_PROFDATA merge -sparse -o "$PROFDATA"
 fi
 
 if [ ! -f "$PROFDATA" ]; then
@@ -145,9 +150,13 @@ awk '
   # file header lines typically end with a colon and are the filename
   /^[^[:space:]].*:[[:space:]]*$/ { file=substr($0,1,length($0)-1); next }
   # match lines that start with 0: or  0: optionally with spaces, then capture the source line number
-  /^[[:space:]]*0:[[:space:]]*([0-9]+)/ {
-    if (match($0,/^[[:space:]]*0:[[:space:]]*([0-9]+)/,m)) {
-      print file":"m[1]
+  /^[[:space:]]*0:[[:space:]]*/ {
+    # Extract the line number after "0:"
+    for (i=1; i<=NF; i++) {
+      if ($i ~ /^[0-9]+$/) {
+        print file":"$i
+        break
+      }
     }
   }
 ' "$ANNOTATED_FILE" | sort -u || true
