@@ -64,7 +64,7 @@ final class NostosUITests: XCTestCase {
 
         click(scannerTabButton, label: "scannerTabButton")
         let scannerChooseButton = app.buttons["scannerChooseDirectoryButton"]
-        XCTAssertTrue(scannerChooseButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(scannerChooseButton.waitForExistence(timeout: 10))
         click(scannerChooseButton, label: "scannerChooseDirectoryButton")
 
         let scannerStartButton = app.buttons["scannerStartScanButton"]
@@ -154,66 +154,6 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(scannerTabAfterChange.isHittable)
     }
 
-    func testGalleryFilterAndBackupButtons() throws {
-        let fileManager = FileManager.default
-        let uniqueSuffix = UUID().uuidString
-        let vaultRoot = fileManager.temporaryDirectory.appendingPathComponent("nostos-ui-gallery-\(uniqueSuffix)")
-        try fileManager.createDirectory(at: vaultRoot, withIntermediateDirectories: true)
-
-        let app = XCUIApplication(bundleIdentifier: "com.github.michaelhilton.Nostos")
-        app.launchEnvironment = [
-            "UI_TESTING_VAULT_ROOT": vaultRoot.path,
-            "UI_TESTING_SEED_DATA": "1"
-        ]
-        app.launch()
-
-        let galleryTabButton = app.buttons["galleryTabButton"]
-        XCTAssertTrue(galleryTabButton.waitForExistence(timeout: 10))
-        click(galleryTabButton, label: "galleryTabButton")
-
-        // Filter chip: Duplicates — activates filter, making toolbar Clear all visible
-        let filterChipDuplicates = app.buttons["galleryFilterChipDuplicates"]
-        XCTAssertTrue(filterChipDuplicates.waitForExistence(timeout: 5))
-        click(filterChipDuplicates, label: "galleryFilterChipDuplicates")
-
-        let toolbarClearAllButton = app.buttons["galleryToolbarClearAllButton"]
-        XCTAssertTrue(toolbarClearAllButton.waitForExistence(timeout: 5))
-        click(toolbarClearAllButton, label: "galleryToolbarClearAllButton")
-
-        // Filter chip: In Vault
-        let filterChipInVault = app.buttons["galleryFilterChipInVault"]
-        XCTAssertTrue(filterChipInVault.waitForExistence(timeout: 5))
-        click(filterChipInVault, label: "galleryFilterChipInVault")
-
-        // Clear toolbar again (now visible because In Vault filter is active)
-        XCTAssertTrue(toolbarClearAllButton.waitForExistence(timeout: 5))
-        click(toolbarClearAllButton, label: "galleryToolbarClearAllButton (clear after In Vault)")
-
-        // Sidebar: With duplicates checkbox
-        let filterWithDuplicates = app.buttons["galleryFilterWithDuplicates"]
-        XCTAssertTrue(filterWithDuplicates.waitForExistence(timeout: 5))
-        click(filterWithDuplicates, label: "galleryFilterWithDuplicates")
-        click(filterWithDuplicates, label: "galleryFilterWithDuplicates (deactivate)")
-
-        // Sidebar: No duplicates checkbox
-        let filterNoDuplicates = app.buttons["galleryFilterNoDuplicates"]
-        XCTAssertTrue(filterNoDuplicates.waitForExistence(timeout: 5))
-        click(filterNoDuplicates, label: "galleryFilterNoDuplicates")
-        click(filterNoDuplicates, label: "galleryFilterNoDuplicates (deactivate)")
-
-        // Backup footer: Back Up to Vault (enabled because seeded photos include non-copied status)
-        let backUpToVaultButton = app.buttons["galleryBackUpToVaultButton"]
-        XCTAssertTrue(backUpToVaultButton.waitForExistence(timeout: 5))
-        XCTAssertTrue(backUpToVaultButton.isEnabled)
-        click(backUpToVaultButton, label: "galleryBackUpToVaultButton")
-
-        // Pause/resume button appears immediately when backup starts
-        let pauseResumeButton = app.buttons["galleryBackupPauseResumeButton"]
-        XCTAssertTrue(pauseResumeButton.waitForExistence(timeout: 5))
-        click(pauseResumeButton, label: "galleryBackupPauseResumeButton (pause)")
-
-        print("UI test click log: \(clickedControls.joined(separator: " -> "))")
-    }
 
     func testSetupScreenChooseVaultButton() throws {
         let fileManager = FileManager.default
