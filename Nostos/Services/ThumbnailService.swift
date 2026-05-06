@@ -6,6 +6,9 @@ import AppKit
 enum ThumbnailService {
     static let size: Int = 300
 
+    // Test hook: when set, `loadImage(path:)` will use this closure instead of reading disk.
+    static var testImageLoader: ((String) -> NSImage?)? = nil
+
     private static var cacheDir: URL = {
         let fm = FileManager.default
         let appSupport = try! fm.url(
@@ -91,6 +94,9 @@ enum ThumbnailService {
     }
 
     static func loadImage(path: String) -> NSImage? {
-        NSImage(contentsOfFile: path)
+        if let loader = Self.testImageLoader {
+            return loader(path)
+        }
+        return NSImage(contentsOfFile: path)
     }
 }
