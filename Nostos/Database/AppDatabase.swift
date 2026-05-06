@@ -33,6 +33,15 @@ final class AppDatabase {
         config.prepareDatabase { db in
             try db.execute(sql: "PRAGMA journal_mode = WAL")
             try db.execute(sql: "PRAGMA foreign_keys = ON")
+
+            // Register a custom SQL function `REVERSE` so SQL queries
+            // that rely on reversing strings (used to find the last dot
+            // in a path) work with SQLite/GRDB.
+            let reverse = DatabaseFunction("REVERSE", argumentCount: 1, pure: true) { (values: [DatabaseValue]) in
+                guard let string = String.fromDatabaseValue(values[0]) else { return nil }
+                return String(string.reversed())
+            }
+            db.add(function: reverse)
         }
         let pool = try DatabasePool(path: dbURL.path, configuration: config)
         return try AppDatabase(pool)
