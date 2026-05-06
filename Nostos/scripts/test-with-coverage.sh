@@ -32,9 +32,17 @@ fi
 # Phase 2: re-run the instrumented test bundle with LLVM_PROFILE_FILE set to a
 # simple %p pattern so the profraw lands in the codecov directory. SPM overrides
 # any parent-process LLVM_PROFILE_FILE, so we must run xctest directly here.
-TEST_BUNDLE=$(find "$ROOT_DIR/.build/debug" -maxdepth 1 -name "*.xctest" -type d 2>/dev/null | head -1)
+TEST_BUNDLE=""
+# Locate the test bundle. .build/debug is often a symlink to an arch-specific
+# directory (e.g. .build/arm64-apple-macosx/debug). Use find -L to follow
+# symlinks and search under .build so we reliably locate the *.xctest bundle.
+if command -v find >/dev/null 2>&1; then
+  TEST_BUNDLE=$(find -L "$ROOT_DIR/.build" -maxdepth 3 -type d -name "*.xctest" -print -quit 2>/dev/null || true)
+else
+  TEST_BUNDLE=$(ls -d "$ROOT_DIR/.build"/*/debug/*.xctest 2>/dev/null | head -n1 || true)
+fi
 if [ -z "$TEST_BUNDLE" ]; then
-  echo "Test bundle not found in .build/debug — ensure swift test --enable-code-coverage succeeded above." >&2
+  echo "Test bundle not found in .build; ensure swift test --enable-code-coverage succeeded above." >&2
   exit 1
 fi
 echo "Collecting profraw data (phase 2: direct xctest run)..."

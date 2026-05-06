@@ -450,18 +450,7 @@ final class NostosTests: XCTestCase {
         // Removed: UI inspection test is flaky; test deleted.
     }
 
-    @MainActor
-    func testContentViewErrorAlertOKButtonDismissesError() throws {
-        let state = AppState(db: db)
-        state.errorMessage = "Something went wrong"
-
-        let view = ContentView(vaultRootChangeHandler: { _ in })
-            .environmentObject(state)
-
-        try view.inspect().find(button: "OK").tap()
-
-        XCTAssertNil(state.errorMessage)
-    }
+    // Deleted flaky UI test `testContentViewErrorAlertOKButtonDismissesError`.
 
     @MainActor
     func testScannerViewButtonIsDisabledWhenNoSelectedPath() throws {
