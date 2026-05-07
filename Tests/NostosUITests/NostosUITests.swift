@@ -23,6 +23,10 @@ final class NostosUITests: XCTestCase {
         // Tells the app's startBackup() to complete instantly instead of using a timer.
         app.launchEnvironment["XCTestConfigurationFilePath"] = "1"
         app.launch()
+
+        // Wait for app to be ready (app initializes and loads data)
+        let tabButton = app.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
+        XCTAssertTrue(tabButton.waitForExistence(timeout: 30), "App failed to initialize within 30s")
     }
 
     override func tearDownWithError() throws {
@@ -34,7 +38,7 @@ final class NostosUITests: XCTestCase {
 
     /// Waits for an element to exist, fails the test if it doesn't, then returns it.
     @discardableResult
-    private func el(_ id: String, timeout: TimeInterval = 5) -> XCUIElement {
+    private func el(_ id: String, timeout: TimeInterval = 10) -> XCUIElement {
         let match = app.descendants(matching: .any).matching(identifier: id).firstMatch
         XCTAssertTrue(match.waitForExistence(timeout: timeout), "'\(id)' not found within \(timeout)s")
         return match

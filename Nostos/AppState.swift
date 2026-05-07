@@ -40,6 +40,7 @@ final class AppState: ObservableObject {
 
     // MARK: - General error state
     @Published var errorMessage: String?
+    @Published private(set) var isInitialDataLoaded: Bool = false
 
     init() {
         let defaultVaultRoot = AppState.defaultVaultRootURL()
@@ -90,6 +91,7 @@ final class AppState: ObservableObject {
         async let h: () = loadBackupJobs()
         async let i: () = loadVaultBreakdowns()
         await a; await b; await c; await d; await e; await f; await g; await h; await i
+        isInitialDataLoaded = true
     }
 
     func loadScanRuns() async {
