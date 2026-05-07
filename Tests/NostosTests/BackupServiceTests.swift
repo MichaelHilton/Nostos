@@ -265,4 +265,224 @@ final class BackupServiceTests: XCTestCase {
         let count = await collector.count
         XCTAssertGreaterThanOrEqual(count, 2, "At least start and end progress should be emitted")
     }
+
+    // MARK: - describeFilter date range tests (Phase 1)
+
+    func testDescribeFilterWithDateFrom() async throws {
+        let db = try AppDatabase.makeInMemory()
+        let dateFrom = Calendar.current.date(from: DateComponents(year: 2024, month: 3, day: 15))!
+        _ = try makePhoto(db: db, path: "/src/photo.jpg", hash: "h1", takenAt: dateFrom)
+
+        var filter = PhotoFilter()
+        filter.dateFrom = dateFrom
+        filter.limit = Int.max
+
+        let tmpVault = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("nostos_backup_datefrom_\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: tmpVault) }
+
+        let service = BackupService(db: db) { _ in }
+        let job = try await service.backup(
+            vaultRootURL: tmpVault,
+            folderFormat: "YYYY/MM",
+            filter: filter,
+            dryRun: true
+        )
+
+        XCTAssertTrue(job.filterSummary?.contains("from") == true, "Summary should contain 'from' when dateFrom is set")
+    }
+
+    func testDescribeFilterWithDateTo() async throws {
+        let db = try AppDatabase.makeInMemory()
+        let dateTo = Calendar.current.date(from: DateComponents(year: 2024, month: 12, day: 31))!
+        _ = try makePhoto(db: db, path: "/src/photo.jpg", hash: "h1", takenAt: dateTo)
+
+        var filter = PhotoFilter()
+        filter.dateTo = dateTo
+        filter.limit = Int.max
+
+        let tmpVault = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("nostos_backup_dateto_\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: tmpVault) }
+
+        let service = BackupService(db: db) { _ in }
+        let job = try await service.backup(
+            vaultRootURL: tmpVault,
+            folderFormat: "YYYY/MM",
+            filter: filter,
+            dryRun: true
+        )
+
+        XCTAssertTrue(job.filterSummary?.contains("to") == true, "Summary should contain 'to' when dateTo is set")
+    }
+
+    func testDescribeFilterWithAllFilters() async throws {
+        let db = try AppDatabase.makeInMemory()
+        let dateFrom = Calendar.current.date(from: DateComponents(year: 2024, month: 1, day: 1))!
+        let dateTo = Calendar.current.date(from: DateComponents(year: 2024, month: 12, day: 31))!
+
+        _ = try makePhoto(db: db, path: "/src/photo.jpg", hash: "h1", cameraModel: "Canon EOS", takenAt: dateFrom)
+
+        var filter = PhotoFilter()
+        filter.cameraModels = ["Canon EOS"]
+        filter.yearFrom = 2024
+        filter.yearTo = 2024
+        filter.dateFrom = dateFrom
+        filter.dateTo = dateTo
+        filter.limit = Int.max
+
+        let tmpVault = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("nostos_backup_allfilters_\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: tmpVault) }
+
+        let service = BackupService(db: db) { _ in }
+        let job = try await service.backup(
+            vaultRootURL: tmpVault,
+            folderFormat: "YYYY/MM",
+            filter: filter,
+            dryRun: true
+        )
+
+        let summary = job.filterSummary ?? ""
+        XCTAssertTrue(summary.contains("cameras:"), "Summary should include camera filter")
+        XCTAssertTrue(summary.contains("year ≥"), "Summary should include year from filter")
+        XCTAssertTrue(summary.contains("year ≤"), "Summary should include year to filter")
+        XCTAssertTrue(summary.contains("from"), "Summary should include date from filter")
+        XCTAssertTrue(summary.contains("to"), "Summary should include date to filter")
+    }
+
+    // MARK: - planAction direct tests (Phase 2)
+
+    func testPlanActionSkipsDuplicateWhenNotKept() {
+        let db = try! AppDatabase.makeInMemory()
+        let service = BackupService(db: db) { _ in }
+
+        let photo = Photo(
+            id: 1,
+            path: "/src/photo.jpg",
+            hash: "hash1",
+            fileSize: 100,
+            width: nil,
+            height: nil,
+            takenAt: Date(),
+            cameraMake: nil,
+            cameraModel: nil,
+            gpsLat: nil,
+            gpsLon: nil,
+            thumbnailPath: nil,
+            duplicateGroupId: 42,
+            isKept: false,
+            status: .new,
+            scannedAt: Date(),
+            scanRunId: nil
+        )
+
+        let (action, reason, _) = service.planAction(
+            photo: photo,
+            folderFormat: "YYYY/MM",
+            vaultHashes: []
+        )
+
+        XCTAssertEqual(action, .skipDuplicate)
+        XCTAssertEqual(reason, "not the kept copy")
+    }
+
+    func testPlanActionSkipsWhenHashAlreadyInVault() {
+        let db = try! AppDatabase.makeInMemory()
+        let service = BackupService(db: db) { _ in }
+
+        let photo = Photo(
+            id: 2,
+            path: "/src/photo.jpg",
+            hash: "hash_in_vault",
+            fileSize: 100,
+            width: nil,
+            height: nil,
+            takenAt: Date(),
+            cameraMake: nil,
+            cameraModel: nil,
+            gpsLat: nil,
+            gpsLon: nil,
+            thumbnailPath: nil,
+            duplicateGroupId: nil,
+            isKept: false,
+            status: .new,
+            scannedAt: Date(),
+            scanRunId: nil
+        )
+
+        let (action, reason, _) = service.planAction(
+            photo: photo,
+            folderFormat: "YYYY/MM",
+            vaultHashes: ["hash_in_vault"]
+        )
+
+        XCTAssertEqual(action, .skipInVault)
+        XCTAssertEqual(reason, "already in vault")
+    }
+
+    func testPlanActionCopiesWhenEligible() {
+        let db = try! AppDatabase.makeInMemory()
+        let service = BackupService(db: db) { _ in }
+
+        let photo = Photo(
+            id: 3,
+            path: "/src/photo.jpg",
+            hash: "unique_hash",
+            fileSize: 100,
+            width: nil,
+            height: nil,
+            takenAt: Date(),
+            cameraMake: nil,
+            cameraModel: nil,
+            gpsLat: nil,
+            gpsLon: nil,
+            thumbnailPath: nil,
+            duplicateGroupId: nil,
+            isKept: false,
+            status: .new,
+            scannedAt: Date(),
+            scanRunId: nil
+        )
+
+        let (action, reason, destRel) = service.planAction(
+            photo: photo,
+            folderFormat: "YYYY/MM",
+            vaultHashes: []
+        )
+
+        XCTAssertEqual(action, .copy)
+        XCTAssertNil(reason)
+        XCTAssertNotNil(destRel)
+        XCTAssertTrue(destRel!.contains("photo.jpg"))
+    }
+
+    // MARK: - File copy error handling (Phase 3)
+
+    func testCopyFailureIncrementsSkippedAndSetsReason() async throws {
+        let db = try AppDatabase.makeInMemory()
+        let fm = FileManager.default
+
+        // Photo with a path that doesn't exist on disk — copyItem will fail
+        _ = try makePhoto(db: db, path: "/nonexistent/ghost.jpg", hash: "ghost_hash")
+
+        let tmpVault = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("nostos_err_vault_\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: tmpVault) }
+
+        let service = BackupService(db: db) { _ in }
+        let job = try await service.backup(
+            vaultRootURL: tmpVault,
+            folderFormat: "YYYY/MM",
+            filter: PhotoFilter(),
+            dryRun: false
+        )
+
+        XCTAssertEqual(job.skippedFiles, 1)
+        XCTAssertEqual(job.copiedFiles, 0)
+
+        let results = try db.fetchBackupResults(jobId: job.id!)
+        XCTAssertEqual(results.count, 1)
+        XCTAssertNotNil(results.first?.reason, "reason should be set to the error description when copy fails")
+    }
 }

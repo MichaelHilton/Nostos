@@ -115,7 +115,7 @@ final class BackupService {
 
     // MARK: - Private helpers
 
-    private func planAction(
+    func planAction(
         photo: Photo,
         folderFormat: String,
         vaultHashes: Set<String>
