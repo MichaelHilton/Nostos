@@ -64,6 +64,14 @@ if [ $XCODE_EXIT -ne 0 ]; then
   echo "Warning: xcodebuild returned exit code $XCODE_EXIT" >&2
 fi
 
+# Capture the xcresult bundle produced by xcodebuild for later UI coverage filtering.
+XCRESULT=$(find "$DERIVED_DATA" -name "*.xcresult" -type d 2>/dev/null | head -1)
+if [ -n "$XCRESULT" ]; then
+  echo "Found xcresult: $(basename "$XCRESULT")"
+else
+  echo "No xcresult found under $DERIVED_DATA — UI coverage filtering will be skipped." >&2
+fi
+
 # Gather all .profraw files under the codecov dir
 echo "Searching for .profraw files..."
 # Use a null-separated list to handle filenames with spaces
@@ -180,6 +188,21 @@ if [ -f "$EXTRACTOR" ]; then
   fi
 else
   echo "No extractor script found at $EXTRACTOR; skipping uncovered-lines generation"
+fi
+
+# Remove from coverage-uncovered.txt any lines that the UI tests actually exercised.
+UI_FILTER="$ROOT_DIR/scripts/filter_ui_coverage.py"
+if [ -n "${XCRESULT:-}" ] && [ -d "$XCRESULT" ] && [ -f "$UI_FILTER" ]; then
+  echo "Filtering coverage-uncovered.txt with UI test coverage..."
+  set +e
+  python3 "$UI_FILTER" "$XCRESULT" "$ROOT_DIR"
+  UI_FILTER_EXIT=$?
+  set -e
+  if [ $UI_FILTER_EXIT -ne 0 ]; then
+    echo "Warning: UI coverage filter returned exit code $UI_FILTER_EXIT" >&2
+  fi
+else
+  echo "Skipping UI coverage filter (xcresult or filter script not found)."
 fi
 
 echo "Done."

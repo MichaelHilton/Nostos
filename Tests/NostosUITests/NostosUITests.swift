@@ -185,6 +185,30 @@ final class NostosUITests: XCTestCase {
         el("vaultToggleDetailsButton").click()   // "Hide" → hide table
     }
 
+    /// Year range slider shows "All years" by default; tapping a year activates a filter; Clear resets it.
+    func testGalleryYearRangeSlider() {
+        goToTab("galleryTabButton")
+
+        // Default: no filter active — summary shows "All years", Clear is absent
+        XCTAssertEqual(el("galleryFilterYearSummary").label, "All years")
+        notPresent("galleryFilterYearClear")
+
+        // Tap the first year button that appears in the slider
+        let yearButton = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'galleryFilterYear_'")
+        ).firstMatch
+        XCTAssertTrue(yearButton.waitForExistence(timeout: 5), "No year labels found in year range slider")
+        yearButton.click()
+
+        // Summary updates to a specific year (no longer "All years")
+        XCTAssertNotEqual(el("galleryFilterYearSummary").label, "All years")
+
+        // Clear button appears; clicking it resets the filter
+        el("galleryFilterYearClear").click()
+        XCTAssertEqual(el("galleryFilterYearSummary").label, "All years")
+        notPresent("galleryFilterYearClear")
+    }
+
     /// Change vault dialog can be cancelled without changing the vault path.
     func testVaultChangeVaultCancelPath() {
         goToTab("vaultTabButton")

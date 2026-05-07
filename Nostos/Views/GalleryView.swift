@@ -1021,11 +1021,13 @@ struct VerticalYearRangeSlider: View {
                     Text("\(from) – \(to)")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.nostosFg1)
+                        .accessibilityIdentifier("galleryFilterYearSummary")
                 } else {
                     Text("All years")
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(.nostosFg3)
                         .italic()
+                        .accessibilityIdentifier("galleryFilterYearSummary")
                 }
 
                 Spacer()
@@ -1047,10 +1049,18 @@ struct VerticalYearRangeSlider: View {
             HStack(spacing: 0) {
                 VStack(spacing: 28) {
                     ForEach(years, id: \.self) { year in
-                        Text("\(year)")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(.nostosFg3)
-                            .frame(height: 28, alignment: .center)
+                        Button {
+                            yearFrom = year
+                            yearTo = year
+                            onChange()
+                        } label: {
+                            Text("\(year)")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(yearFrom == year ? .nostosAccent : .nostosFg3)
+                                .frame(height: 28, alignment: .center)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("galleryFilterYear_\(year)")
                     }
                 }
                 .padding(.leading, 10)
