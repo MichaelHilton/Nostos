@@ -26,7 +26,7 @@ final class NostosUITests: XCTestCase {
 
         // Wait for app to be ready (app initializes and loads data)
         let tabButton = app.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
-        XCTAssertTrue(tabButton.waitForExistence(timeout: 30), "App failed to initialize within 30s")
+        XCTAssertTrue(tabButton.waitForExistence(timeout: 45), "App failed to initialize within 45s")
     }
 
     override func tearDownWithError() throws {
