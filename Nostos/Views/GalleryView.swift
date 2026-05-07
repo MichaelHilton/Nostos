@@ -410,6 +410,7 @@ struct GalleryView: View {
                             }
                             applyLocalFilters()
                         }
+                        .accessibilityIdentifier("galleryFilterStatus_\(status.rawValue)")
                     }
                 }
                 .padding(.horizontal, NostosSpacing.lg)
@@ -437,6 +438,7 @@ struct GalleryView: View {
                     filterIncludeNoCamera.toggle()
                     applyLocalFilters()
                 }
+                .accessibilityIdentifier("galleryFilterNoCameraInfo")
                 .padding(.horizontal, NostosSpacing.lg)
                 .padding(.bottom, NostosSpacing.lg)
 
@@ -1037,6 +1039,7 @@ struct VerticalYearRangeSlider: View {
                     .font(.system(size: 10, weight: .regular))
                     .foregroundColor(.nostosAccent)
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("galleryFilterYearClear")
                 }
             }
             .padding(.bottom, 10)

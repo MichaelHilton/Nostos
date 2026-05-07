@@ -27,7 +27,8 @@
       "Bash(git commit -m ' *)",
       "Bash(bash ../scripts/test-all-with-coverage.sh)",
       "Bash(bash /Users/michaelhilton/Development/AI-Projects/Nostos/Nostos/scripts/test-all-with-coverage.sh)",
-      "Bash(./scripts/test-with-coverage.sh)"
+      "Bash(./scripts/test-with-coverage.sh)",
+      "Bash(xcodebuild test *)"
     ]
   }
 }

@@ -141,6 +141,7 @@ struct VaultView: View {
                     HStack(spacing: NostosSpacing.md) {
                         Toggle("Dry Run (preview only, no files copied)", isOn: $dryRun)
                             .toggleStyle(.checkbox)
+                            .accessibilityIdentifier("vaultDryRunToggle")
 
                         Button(action: startOrganize) {
                             Text(state.organizeProgress.isRunning ? "↻  Vaulting…" : "▶  Organise Vault")
