@@ -169,18 +169,17 @@ struct GalleryView: View {
                         .frame(height: 16)
 
                     HStack(spacing: 7) {
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 13))
+                        Image(systemName: "square")
+                            .font(.system(size: 11))
                             .foregroundColor(.nostosFg3)
-                            .opacity(0.4)
 
                         Slider(value: $tileSize, in: 80...220, step: 10)
+                            .tint(Color.nostosAccent)
                             .frame(width: 72)
 
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 16))
+                        Image(systemName: "square")
+                            .font(.system(size: 15))
                             .foregroundColor(.nostosFg3)
-                            .opacity(0.4)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -200,12 +199,13 @@ struct GalleryView: View {
             Text(label)
                 .font(.system(size: 11, weight: .medium))
         }
+        .buttonStyle(.plain)
         .padding(.horizontal, 10)
         .padding(.vertical, 3)
-        .background(isActive ? Color.nostosAccent : Color.clear)
-        .foregroundColor(isActive ? .white : .nostosFg2)
-        .border(Color.nostosBorder, width: 1)
+        .background(isActive ? Color.nostosAccent : .clear)
         .cornerRadius(5)
+        .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.nostosBorder, lineWidth: 1))
+        .foregroundColor(isActive ? .white : .nostosFg2)
     }
 
     @ViewBuilder
@@ -402,7 +402,15 @@ struct GalleryView: View {
 
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach([PhotoStatus.new, .copied, .skippedDuplicate], id: \.self) { status in
-                        filterCheckbox(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized, isChecked: filterStatus.contains(status)) {
+                        let label: String = {
+                            switch status {
+                            case .new:              return "Not backed up"
+                            case .copied:           return "In Vault"
+                            case .skippedDuplicate: return "Kept (duplicate)"
+                            default:                return status.rawValue
+                            }
+                        }()
+                        filterCheckbox(label, isChecked: filterStatus.contains(status)) {
                             if filterStatus.contains(status) {
                                 filterStatus.remove(status)
                             } else {
@@ -424,21 +432,23 @@ struct GalleryView: View {
                 SectionLabel("Camera")
                     .padding(.horizontal, NostosSpacing.lg)
 
-                ForEach(state.cameraModels, id: \.self) { model in
-                    filterCheckbox(model, isChecked: filterCameraModels.contains(model)) {
-                        if filterCameraModels.contains(model) {
-                            filterCameraModels.remove(model)
-                        } else {
-                            filterCameraModels.insert(model)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(state.cameraModels, id: \.self) { model in
+                        filterCheckbox(model, isChecked: filterCameraModels.contains(model)) {
+                            if filterCameraModels.contains(model) {
+                                filterCameraModels.remove(model)
+                            } else {
+                                filterCameraModels.insert(model)
+                            }
+                            applyLocalFilters()
                         }
+                    }
+                    filterCheckbox("No camera info", isChecked: filterIncludeNoCamera) {
+                        filterIncludeNoCamera.toggle()
                         applyLocalFilters()
                     }
+                    .accessibilityIdentifier("galleryFilterNoCameraInfo")
                 }
-                filterCheckbox("No camera info", isChecked: filterIncludeNoCamera) {
-                    filterIncludeNoCamera.toggle()
-                    applyLocalFilters()
-                }
-                .accessibilityIdentifier("galleryFilterNoCameraInfo")
                 .padding(.horizontal, NostosSpacing.lg)
                 .padding(.bottom, NostosSpacing.lg)
 
@@ -521,14 +531,12 @@ struct GalleryView: View {
 
     @ViewBuilder
     private var yearRangeSlider: some View {
-        let years = Array(Set(state.photos.compactMap { $0.takenAt }.map { Calendar.current.component(.year, from: $0) })).sorted()
-
-        if years.isEmpty {
+        if state.years.isEmpty {
             Text("No date data")
                 .font(.system(size: 10, weight: .regular))
                 .foregroundColor(.nostosFg3)
         } else {
-            VerticalYearRangeSlider(years: years, yearFrom: $filterYearFrom, yearTo: $filterYearTo) {
+            VerticalYearRangeSlider(years: state.years, yearFrom: $filterYearFrom, yearTo: $filterYearTo) {
                 applyLocalFilters()
             }
         }
@@ -842,18 +850,17 @@ struct GalleryToolbar: View {
                         .frame(height: 16)
 
                     HStack(spacing: 7) {
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 13))
+                        Image(systemName: "square")
+                            .font(.system(size: 11))
                             .foregroundColor(.nostosFg3)
-                            .opacity(0.4)
 
                         Slider(value: $tileSize, in: 80...220, step: 10)
+                            .tint(Color.nostosAccent)
                             .frame(width: 72)
 
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 16))
+                        Image(systemName: "square")
+                            .font(.system(size: 15))
                             .foregroundColor(.nostosFg3)
-                            .opacity(0.4)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -956,6 +963,7 @@ struct BackupFooterBar: View {
                     Text("Back Up to Vault")
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Color.nostosAccent)
                 .font(.system(size: 12, weight: .medium))
                 .disabled(matchCount == 0)
                 .accessibilityIdentifier("galleryBackUpToVaultButton")

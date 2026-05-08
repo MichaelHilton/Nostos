@@ -36,7 +36,9 @@
       "Bash(grep -E \"\\(Test Suite|Test Case|Passed|Failed|^\\\\w+\\\\w+ ScannerViewTests|^$\\)\")",
       "Bash(swiftc -parse Tests/NostosTests/ScannerViewTests.swift)",
       "Bash(git commit -m 'Improve ScannerView test coverage to 78.57% through architectural refactoring *)",
-      "Bash(git commit -m 'Refactor ScannerView for architectural testability: 90% coverage via subcomponent extraction *)"
+      "Bash(git commit -m 'Refactor ScannerView for architectural testability: 90% coverage via subcomponent extraction *)",
+      "Bash(./Nostos/scripts/test-ui.sh testScannerChooseDirectoryButtonUpdatesPath)",
+      "Bash(git commit -m 'Add UI tests for ScannerView button interactions \\(covers inline closures\\) *)"
     ]
   }
 }
