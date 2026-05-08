@@ -4,12 +4,12 @@ import SwiftUI
 struct PageHeaderView: View {
     let title: String
     let subtitle: String?
-    let actions: [AnyView]?
+    let actions: [AnyView]
 
-    init(title: String, subtitle: String? = nil, @ViewBuilder actions: () -> [AnyView] = { [] }) {
+    init(title: String, subtitle: String? = nil, actions: [AnyView] = []) {
         self.title = title
         self.subtitle = subtitle
-        self.actions = actions()
+        self.actions = actions
     }
 
     var body: some View {
@@ -28,7 +28,7 @@ struct PageHeaderView: View {
                 }
                 Spacer()
 
-                if let actions {
+                if !actions.isEmpty {
                     HStack(spacing: 8) {
                         ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
                             action
