@@ -29,6 +29,21 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(tabButton.waitForExistence(timeout: 45), "App failed to initialize within 45s")
     }
 
+    /// Launches a fresh app instance with the given source directory preset in the picker mock.
+    private func launchAppWithSourceDirectory(_ sourcePath: String) -> XCUIApplication {
+        let freshApp = XCUIApplication()
+        freshApp.launchEnvironment["UI_TESTING_SEED_DATA"] = "1"
+        freshApp.launchEnvironment["UI_TESTING_VAULT_ROOT"] = vaultRootPath
+        freshApp.launchEnvironment["XCTestConfigurationFilePath"] = "1"
+        freshApp.launchEnvironment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] = sourcePath
+        freshApp.launch()
+
+        let tabButton = freshApp.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
+        XCTAssertTrue(tabButton.waitForExistence(timeout: 45), "App failed to initialize within 45s")
+
+        return freshApp
+    }
+
     override func tearDownWithError() throws {
         app.terminate()
         try? FileManager.default.removeItem(atPath: vaultRootPath)
@@ -87,6 +102,67 @@ final class NostosUITests: XCTestCase {
 
         // Start Scan is disabled until a directory is chosen — just verify it exists.
         el("scannerStartScanButton")
+    }
+
+    /// Tapping Choose… button updates the selected folder path (covers ScannerView.body closure line 32-34).
+    func testScannerChooseDirectoryButtonUpdatesPath() {
+        // Launch with a preset source directory path
+        let sourceDir = (NSTemporaryDirectory() as NSString).appendingPathComponent("test-photos-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(atPath: sourceDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: sourceDir) }
+
+        let freshApp = launchAppWithSourceDirectory(sourceDir)
+
+        let scannerTab = freshApp.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
+        XCTAssertTrue(scannerTab.waitForExistence(timeout: 10))
+        scannerTab.click()
+
+        // Tap the Choose… button
+        let chooseButton = freshApp.descendants(matching: .any).matching(identifier: "scannerChooseDirectoryButton").firstMatch
+        XCTAssertTrue(chooseButton.waitForExistence(timeout: 10))
+        chooseButton.click()
+
+        // Wait briefly for the picker to be processed and path to update
+        Thread.sleep(forTimeInterval: 0.5)
+
+        // Verify that the folder path now appears in the UI (covers the closure at lines 32-34)
+        let pathText = freshApp.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", sourceDir)).firstMatch
+        XCTAssertTrue(pathText.exists, "Path '\(sourceDir)' should appear after tapping Choose…")
+    }
+
+    /// Tapping Start Scan button initiates a scan (covers ScannerView.body closure line 42-43).
+    func testScannerStartScanButtonInitiatesScan() {
+        // Launch with a preset source directory path so the Start Scan button is enabled
+        let sourceDir = (NSTemporaryDirectory() as NSString).appendingPathComponent("test-scan-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(atPath: sourceDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: sourceDir) }
+
+        let freshApp = launchAppWithSourceDirectory(sourceDir)
+
+        let scannerTab = freshApp.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
+        XCTAssertTrue(scannerTab.waitForExistence(timeout: 10))
+        scannerTab.click()
+
+        // Tap the Choose… button first to set a valid path
+        let chooseButton = freshApp.descendants(matching: .any).matching(identifier: "scannerChooseDirectoryButton").firstMatch
+        XCTAssertTrue(chooseButton.waitForExistence(timeout: 10))
+        chooseButton.click()
+
+        // Wait for path to update
+        Thread.sleep(forTimeInterval: 0.5)
+
+        // Now tap the Start Scan button (covers closure at lines 42-43)
+        let startButton = freshApp.descendants(matching: .any).matching(identifier: "scannerStartScanButton").firstMatch
+        XCTAssertTrue(startButton.waitForExistence(timeout: 10))
+        XCTAssertTrue(startButton.isEnabled, "Start Scan button should be enabled after choosing a directory")
+        startButton.click()
+
+        // Wait briefly for scan to start
+        Thread.sleep(forTimeInterval: 0.5)
+
+        // Verify the button changes to show scanning state (button text changes to include "Scanning")
+        let scanningText = freshApp.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Scanning")).firstMatch
+        XCTAssertTrue(scanningText.exists, "Scanning indicator should appear after tapping Start Scan")
     }
 
     // MARK: - Gallery Tab
