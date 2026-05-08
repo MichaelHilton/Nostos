@@ -28,45 +28,20 @@ struct ScannerView: View {
                     .padding(.horizontal, NostosSpacing.pagePadding)
 
                     // Source folder card
-                    CardView {
-                        VStack(alignment: .leading, spacing: NostosSpacing.lg) {
-                            SectionLabel("Source Folder")
-
-                            HStack(spacing: NostosSpacing.xl) {
-                                Text(selectedPath.isEmpty ? "No folder selected" : selectedPath)
-                                    .font(.system(size: 11, weight: .regular, design: .monospaced))
-                                    .foregroundColor(.nostosFg2)
-                                    .padding(.horizontal, NostosSpacing.md)
-                                    .padding(.vertical, NostosSpacing.sm)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(Color.nostosSurface2)
-                                    .border(Color.nostosBorder, width: 1)
-                                    .cornerRadius(NostosRadii.md)
-
-                                Button(action: pickDirectory) {
-                                    Text("Choose…")
-                                }
-                                .buttonStyle(.bordered)
-                                .accessibilityIdentifier("scannerChooseDirectoryButton")
-                            }
+                    SourceFolderCard(selectedPath: selectedPath, onChoose: {
+                        if let url = state.pickDirectory() {
+                            selectedPath = url.path
                         }
-                        .padding(NostosSpacing.lg)
-                    }
+                    })
 
                     // Scan button
-                    HStack(spacing: NostosSpacing.md) {
-                        Button(action: startScan) {
-                            Text(state.scanProgress.isScanning ? "↻  Scanning…" : "▶  Start Scan")
+                    ScanActionBar(
+                        isScanning: state.scanProgress.isScanning,
+                        isDisabled: selectedPath.isEmpty || state.scanProgress.isScanning,
+                        onStartScan: {
+                            state.startScan(rootURL: URL(fileURLWithPath: selectedPath))
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(selectedPath.isEmpty || state.scanProgress.isScanning)
-                        .accessibilityIdentifier("scannerStartScanButton")
-
-                        if state.scanProgress.isScanning {
-                            SpinnerView()
-                        }
-                    }
-                    .padding(.horizontal, NostosSpacing.pagePadding)
+                    )
 
                     // Progress card
                     if state.scanProgress.isScanning || state.scanProgress.processed > 0 {
@@ -110,64 +85,67 @@ struct ScannerView: View {
         }
     }
 
-    private func pickDirectory() {
-        if let url = state.pickDirectory() {
-            selectedPath = url.path
-        }
-    }
-
-    private func startScan() {
-        state.startScan(rootURL: URL(fileURLWithPath: selectedPath))
-    }
-
     private var recentScansTable: some View {
         RecentScansTable(scanRuns: state.scanRuns)
     }
 }
 
-struct RecentScansTable: View {
-    let scanRuns: [ScanRun]
+struct SourceFolderCard: View {
+    let selectedPath: String
+    let onChoose: () -> Void
 
     var body: some View {
-        Table(scanRuns) {
-            TableColumn("Path") { run in
-                Text(run.rootPath)
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundColor(.nostosFg1)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+        CardView {
+            VStack(alignment: .leading, spacing: NostosSpacing.lg) {
+                SectionLabel("Source Folder")
+
+                HStack(spacing: NostosSpacing.xl) {
+                    Text(selectedPath.isEmpty ? "No folder selected" : selectedPath)
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundColor(.nostosFg2)
+                        .padding(.horizontal, NostosSpacing.md)
+                        .padding(.vertical, NostosSpacing.sm)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.nostosSurface2)
+                        .border(Color.nostosBorder, width: 1)
+                        .cornerRadius(NostosRadii.md)
+
+                    Button(action: onChoose) {
+                        Text("Choose…")
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("scannerChooseDirectoryButton")
+                }
             }
-            TableColumn("Status") { run in
-                Text(run.status.rawValue.capitalized)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(run.status.color)
-            }
-            .width(80)
-            TableColumn("Photos") { run in
-                Text("\(run.photosFound)")
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundColor(.nostosFg1)
-            }
-            .width(70)
-            TableColumn("Dups") { run in
-                Text("\(run.duplicatesFound)")
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundColor(.nostosOrange)
-            }
-            .width(60)
-            TableColumn("Date") { run in
-                Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundColor(.nostosFg3)
-            }
-            .width(160)
+            .padding(NostosSpacing.lg)
         }
-        .frame(minHeight: 140)
+    }
+}
+
+struct ScanActionBar: View {
+    let isScanning: Bool
+    let isDisabled: Bool
+    let onStartScan: () -> Void
+
+    var body: some View {
+        HStack(spacing: NostosSpacing.md) {
+            Button(action: onStartScan) {
+                Text(isScanning ? "↻  Scanning…" : "▶  Start Scan")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isDisabled)
+            .accessibilityIdentifier("scannerStartScanButton")
+
+            if isScanning {
+                SpinnerView()
+            }
+        }
+        .padding(.horizontal, NostosSpacing.pagePadding)
     }
 }
 
 struct SpinnerView: View {
-    @State private var angle: Double = 0
+    @State var angle: Double = 0
 
     var body: some View {
         Circle()
@@ -175,15 +153,17 @@ struct SpinnerView: View {
             .stroke(Color.nostosAccent, lineWidth: 2)
             .frame(width: 14, height: 14)
             .rotationEffect(.degrees(angle))
-            .onAppear {
-                withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
-                    angle = 360
-                }
-            }
+            .onAppear { startRotation() }
+    }
+
+    func startRotation() {
+        withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+            angle = 360
+        }
     }
 }
 
-struct LegacyRecentScansTable: View {
+struct RecentScansTable: View {
     let scanRuns: [ScanRun]
 
     var body: some View {
