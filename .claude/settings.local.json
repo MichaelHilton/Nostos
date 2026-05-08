@@ -32,7 +32,10 @@
       "Bash(bash Nostos/scripts/test-all-with-coverage.sh)",
       "Bash(xcrun xccov *)",
       "Bash(python3 -c ' *)",
-      "Bash(./Nostos/scripts/test-ui.sh testGalleryYearRangeSlider)"
+      "Bash(./Nostos/scripts/test-ui.sh testGalleryYearRangeSlider)",
+      "Bash(grep -E \"\\(Test Suite|Test Case|Passed|Failed|^\\\\w+\\\\w+ ScannerViewTests|^$\\)\")",
+      "Bash(swiftc -parse Tests/NostosTests/ScannerViewTests.swift)",
+      "Bash(git commit -m 'Improve ScannerView test coverage to 78.57% through architectural refactoring *)"
     ]
   }
 }

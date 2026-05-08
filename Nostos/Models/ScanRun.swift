@@ -38,3 +38,11 @@ struct ScanProgress {
     var isScanning: Bool = false
     var error: String?
 }
+
+extension Array where Element == ScanRun {
+    var lastScanLabel: String {
+        guard let last = first, let finishedAt = last.finishedAt else { return "Never" }
+        let formatter = RelativeDateTimeFormatter()
+        return formatter.localizedString(for: finishedAt, relativeTo: Date())
+    }
+}

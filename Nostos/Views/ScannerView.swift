@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ScannerView: View {
     @EnvironmentObject var state: AppState
-    @State private var selectedPath: String
+    @State var selectedPath: String
 
     init() {
         let sourcePath = ProcessInfo.processInfo.environment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] ?? ""
@@ -23,7 +23,7 @@ struct ScannerView: View {
                         NostosStatCard("Total Scanned", value: "\(state.totalPhotoCount)")
                         NostosStatCard("Catalogued", value: "\(state.totalPhotoCount)")
                         NostosStatCard("Duplicates", value: "\(state.duplicateGroups.count)")
-                        NostosStatCard("Last Scan", value: lastScanLabel)
+                        NostosStatCard("Last Scan", value: state.scanRuns.lastScanLabel)
                     }
                     .padding(.horizontal, NostosSpacing.pagePadding)
 
@@ -43,11 +43,7 @@ struct ScannerView: View {
                                     .border(Color.nostosBorder, width: 1)
                                     .cornerRadius(NostosRadii.md)
 
-                                Button(action: {
-                                    if let url = state.pickDirectory() {
-                                        selectedPath = url.path
-                                    }
-                                }) {
+                                Button(action: pickDirectory) {
                                     Text("Choose…")
                                 }
                                 .buttonStyle(.bordered)
@@ -98,13 +94,8 @@ struct ScannerView: View {
                                 SectionLabel("Recent Scans")
                                     .padding(NostosSpacing.lg)
 
-                                if #available(macOS 13, *) {
-                                    recentScansTable
-                                        .padding(NostosSpacing.lg)
-                                } else {
-                                    LegacyRecentScansTable(scanRuns: state.scanRuns)
-                                        .padding(NostosSpacing.lg)
-                                }
+                                recentScansTable
+                                    .padding(NostosSpacing.lg)
                             }
                         }
                     }
@@ -119,36 +110,22 @@ struct ScannerView: View {
         }
     }
 
+    private func pickDirectory() {
+        if let url = state.pickDirectory() {
+            selectedPath = url.path
+        }
+    }
+
     private func startScan() {
         state.startScan(rootURL: URL(fileURLWithPath: selectedPath))
     }
 
-    private var lastScanLabel: String {
-        if let lastRun = state.scanRuns.first {
-            if let finishedAt = lastRun.finishedAt {
-                let formatter = RelativeDateTimeFormatter()
-                return formatter.localizedString(for: finishedAt, relativeTo: Date())
-            }
-        }
-        return "Never"
-    }
-
-    private func statusColor(_ status: ScanStatus) -> Color {
-        switch status {
-        case .running:   return .nostosOrange
-        case .completed: return .nostosGreen
-        case .failed:    return .nostosRed
-        }
-    }
-
-    @available(macOS 13, *)
     private var recentScansTable: some View {
         RecentScansTable(scanRuns: state.scanRuns)
     }
 }
 
-@available(macOS 13, *)
-private struct RecentScansTable: View {
+struct RecentScansTable: View {
     let scanRuns: [ScanRun]
 
     var body: some View {
@@ -163,7 +140,7 @@ private struct RecentScansTable: View {
             TableColumn("Status") { run in
                 Text(run.status.rawValue.capitalized)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(statusColor(run.status))
+                    .foregroundColor(run.status.color)
             }
             .width(80)
             TableColumn("Photos") { run in
@@ -187,17 +164,9 @@ private struct RecentScansTable: View {
         }
         .frame(minHeight: 140)
     }
-
-    private func statusColor(_ status: ScanStatus) -> Color {
-        switch status {
-        case .running:   return .nostosOrange
-        case .completed: return .nostosGreen
-        case .failed:    return .nostosRed
-        }
-    }
 }
 
-private struct SpinnerView: View {
+struct SpinnerView: View {
     @State private var angle: Double = 0
 
     var body: some View {
@@ -214,22 +183,7 @@ private struct SpinnerView: View {
     }
 }
 
-private struct SafeLinearProgressStyle: ProgressViewStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.nostosProgressBg)
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.nostosAccent)
-                    .frame(width: geo.size.width * CGFloat(configuration.fractionCompleted ?? 0))
-            }
-        }
-        .frame(height: 6)
-    }
-}
-
-private struct LegacyRecentScansTable: View {
+struct LegacyRecentScansTable: View {
     let scanRuns: [ScanRun]
 
     var body: some View {
@@ -243,7 +197,7 @@ private struct LegacyRecentScansTable: View {
                         .truncationMode(.middle)
                     HStack(spacing: 12) {
                         Text(run.status.rawValue.capitalized)
-                            .foregroundColor(statusColor(run.status))
+                            .foregroundColor(run.status.color)
                         Text("Photos: \(run.photosFound)")
                         Text("Dups: \(run.duplicatesFound)")
                         Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
@@ -256,13 +210,5 @@ private struct LegacyRecentScansTable: View {
             }
         }
         .frame(minHeight: 140)
-    }
-
-    private func statusColor(_ status: ScanStatus) -> Color {
-        switch status {
-        case .running:   return .nostosOrange
-        case .completed: return .nostosGreen
-        case .failed:    return .nostosRed
-        }
     }
 }

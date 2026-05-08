@@ -80,7 +80,7 @@ final class NostosComponentsTests: XCTestCase {
 
     func testPageHeaderView_withSubtitle_andActions() throws {
         let actionsArray: () -> [AnyView] = { return [AnyView(Button("Act1") {})] }
-        let view = PageHeaderView(title: "My Title", subtitle: "My Subtitle", actions: actionsArray)
+        let view = PageHeaderView(title: "My Title", subtitle: "My Subtitle", actions: actionsArray())
 
         let sut = try view.inspect()
 
@@ -148,10 +148,6 @@ final class NostosComponentsTests: XCTestCase {
 // Make views inspectable for ViewInspector
 import SwiftUI
 import AppKit
-extension PageHeaderView: Inspectable {}
-extension SectionLabel: Inspectable {}
 extension NostosStatCard: Inspectable {}
 extension NostosProgressBar: Inspectable {}
 extension MeanderDivider: Inspectable {}
-extension DiamondAccent: Inspectable {}
-extension Stat: Inspectable {}
