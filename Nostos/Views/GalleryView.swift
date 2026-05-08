@@ -1017,18 +1017,20 @@ struct VerticalYearRangeSlider: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                if let from = yearFrom, let to = yearTo {
-                    Text("\(from) – \(to)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.nostosFg1)
-                        .accessibilityIdentifier("galleryFilterYearSummary")
-                } else {
-                    Text("All years")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(.nostosFg3)
-                        .italic()
-                        .accessibilityIdentifier("galleryFilterYearSummary")
+                Group {
+                    if let from = yearFrom, let to = yearTo {
+                        Text("\(from) – \(to)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.nostosFg1)
+                    } else {
+                        Text("All years")
+                            .font(.system(size: 11, weight: .regular).italic())
+                            .foregroundColor(.nostosFg3)
+                    }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(yearFrom != nil && yearTo != nil ? "\(yearFrom!) – \(yearTo!)" : "All years")
+                .accessibilityIdentifier("galleryFilterYearSummary")
 
                 Spacer()
 

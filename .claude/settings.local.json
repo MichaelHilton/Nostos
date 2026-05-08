@@ -31,7 +31,8 @@
       "Bash(xcodebuild test *)",
       "Bash(bash Nostos/scripts/test-all-with-coverage.sh)",
       "Bash(xcrun xccov *)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(./Nostos/scripts/test-ui.sh testGalleryYearRangeSlider)"
     ]
   }
 }
