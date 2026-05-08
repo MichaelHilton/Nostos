@@ -103,6 +103,30 @@ final class AppDatabaseFilterTests: XCTestCase {
         XCTAssertEqual(results[0].path, "/2024.jpg")
     }
 
+    func testFetchPhotos_yearFromAndTo() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        func date(year: Int) -> Date {
+            calendar.date(from: DateComponents(timeZone: TimeZone(abbreviation: "UTC"), year: year, month: 6, day: 15))!
+        }
+
+        var photo2020 = makePhoto(path: "/2020.jpg", takenAt: date(year: 2020))
+        var photo2022 = makePhoto(path: "/2022.jpg", takenAt: date(year: 2022))
+        var photo2024 = makePhoto(path: "/2024.jpg", takenAt: date(year: 2024))
+
+        try db.insertPhoto(&photo2020)
+        try db.insertPhoto(&photo2022)
+        try db.insertPhoto(&photo2024)
+
+        var filter = PhotoFilter()
+        filter.yearFrom = 2021
+        filter.yearTo = 2023
+
+        let results = try db.fetchPhotos(filter: filter)
+
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results[0].path, "/2022.jpg")
+    }
+
     func testFetchPhotos_yearToOnly() throws {
         let calendar = Calendar(identifier: .gregorian)
         var components2022 = DateComponents()

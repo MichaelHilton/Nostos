@@ -304,11 +304,7 @@ extension AppDatabase {
         try dbWriter.read { db in
             let sql = "SELECT DISTINCT CAST((CASE WHEN typeof(taken_at) IN ('integer','real') THEN strftime('%Y', taken_at, 'unixepoch') ELSE strftime('%Y', taken_at) END) AS INTEGER) AS year FROM photos WHERE taken_at IS NOT NULL ORDER BY year DESC"
             let rows = try Row.fetchAll(db, sql: sql)
-            return rows.compactMap { (row) -> Int? in
-                if let i64 = row["year"] as? Int64 { return Int(i64) }
-                if let i = row["year"] as? Int { return i }
-                return nil
-            }
+            return rows.compactMap { row in (row["year"] as? Int64).map(Int.init) }
         }
     }
 
@@ -513,11 +509,8 @@ extension AppDatabase {
 
     func totalPhotoSizeBytes() throws -> Int64 {
         try dbWriter.read { db in
-            let cursor = try Row.fetchCursor(db, sql: "SELECT SUM(file_size) as total FROM photos")
-            if let row = try cursor.next() {
-                return row["total"] ?? 0
-            }
-            return 0
+            let row = try Row.fetchOne(db, sql: "SELECT SUM(file_size) as total FROM photos")
+            return row?["total"] ?? 0
         }
     }
 

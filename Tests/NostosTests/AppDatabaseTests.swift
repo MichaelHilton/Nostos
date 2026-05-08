@@ -3,6 +3,12 @@ import XCTest
 
 final class AppDatabaseTests: XCTestCase {
 
+    func testMakeShared_fallbackToApplicationSupport() throws {
+        let db = try AppDatabase.makeShared()
+        let count = try db.photoCount()
+        XCTAssertGreaterThanOrEqual(count, 0)
+    }
+
     func testInsertAndFetchScanRun() throws {
         let db = try AppDatabase.makeInMemory()
 
