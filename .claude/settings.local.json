@@ -30,7 +30,8 @@
       "Bash(./scripts/test-with-coverage.sh)",
       "Bash(xcodebuild test *)",
       "Bash(bash Nostos/scripts/test-all-with-coverage.sh)",
-      "Bash(xcrun xccov *)"
+      "Bash(xcrun xccov *)",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

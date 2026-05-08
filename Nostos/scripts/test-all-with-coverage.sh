@@ -8,10 +8,18 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_CODECOV_DIR="$ROOT_DIR/.build/debug/codecov"
 OUTPUT_DIR="$ROOT_DIR/coverage"
 SCHEME="Nostos"
-DESTINATION="platform=macOS"
+ARCH=$(uname -m)   # arm64 on Apple Silicon, x86_64 on Intel
+DESTINATION="platform=macOS,arch=$ARCH"
 UI_TEST_TARGET="NostosUITests"
 
-IGNORE_REGEX='\.build(/|$)'
+# SPM always builds into an arch-specific subdirectory; the .build/debug symlink
+# also works, but scoping searches here prevents picking up xcodebuild artifacts.
+SPM_DEBUG_DIR="$ROOT_DIR/.build/${ARCH}-apple-macosx/debug"
+if [ ! -d "$SPM_DEBUG_DIR" ]; then
+  SPM_DEBUG_DIR="$ROOT_DIR/.build/debug"  # fallback to symlink
+fi
+
+IGNORE_REGEX='(\.build|Tests)(/|$)'
 
 mkdir -p "$BUILD_CODECOV_DIR"
 mkdir -p "$OUTPUT_DIR"
@@ -33,7 +41,7 @@ fi
 # Phase 2: re-run the instrumented test bundle with LLVM_PROFILE_FILE set to a
 # simple %p pattern so the profraw lands in the codecov directory. SPM overrides
 # any parent-process LLVM_PROFILE_FILE, so we must run xctest directly here.
-TEST_BUNDLE=$(find "$ROOT_DIR/.build" -name "*.xctest" -type d 2>/dev/null | head -1)
+TEST_BUNDLE=$(find "$SPM_DEBUG_DIR" -name "*.xctest" -type d 2>/dev/null | head -1)
 if [ -z "$TEST_BUNDLE" ]; then
   echo "Test bundle not found in .build — ensure swift test --enable-code-coverage succeeded above." >&2
   exit 1
@@ -110,13 +118,14 @@ if [ ! -f "$PROFDATA" ]; then
   exit 1
 fi
 
-# Locate the test executable for llvm-cov mapping
+# Locate the test executable for llvm-cov mapping.
+# Search only the SPM debug dir so we never accidentally pick up a xcodebuild
+# artifact (which lives under BUILD_CODECOV_DIR/xcode and may be a different arch).
 TEST_EXECUTABLE=""
-SEARCH_DIR="$ROOT_DIR/.build"
 if command -v find >/dev/null 2>&1; then
-  TEST_EXECUTABLE=$(find "$SEARCH_DIR" -path '*/Contents/MacOS/*' -type f -perm -111 -print -quit 2>/dev/null || true)
+  TEST_EXECUTABLE=$(find "$SPM_DEBUG_DIR" -path '*/Contents/MacOS/*' -type f -perm -111 -print -quit 2>/dev/null || true)
   if [ -z "$TEST_EXECUTABLE" ]; then
-    TEST_EXECUTABLE=$(find "$SEARCH_DIR" -type f -perm -111 \( ! -name '*.dylib' ! -name '*.so' ! -name '*.a' ! -name '*.o' ! -name '*.swiftmodule' \) -print -quit 2>/dev/null || true)
+    TEST_EXECUTABLE=$(find "$SPM_DEBUG_DIR" -type f -perm -111 \( ! -name '*.dylib' ! -name '*.so' ! -name '*.a' ! -name '*.o' ! -name '*.swiftmodule' \) -print -quit 2>/dev/null || true)
   fi
 fi
 

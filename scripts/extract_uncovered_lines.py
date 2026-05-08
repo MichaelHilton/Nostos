@@ -56,6 +56,8 @@ def main():
             if rel.startswith('..'):
                 # skip files outside repository
                 continue
+            if rel.startswith('Tests/'):
+                continue
             uncovered = find_uncovered_lines_in_html(content)
             if uncovered:
                 uncovered.sort()

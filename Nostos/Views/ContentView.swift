@@ -7,11 +7,20 @@ enum Tab {
 struct ContentView: View {
     @EnvironmentObject var state: AppState
     let vaultRootChangeHandler: (URL) -> Void
-    @State private var selectedTab: Tab = .gallery
+    @State private var selectedTab: Tab
+    var useLegacyNavigation: Bool
+    var useLegacyAlert: Bool
+
+    init(vaultRootChangeHandler: @escaping (URL) -> Void, useLegacyNavigation: Bool = false, useLegacyAlert: Bool = false) {
+        self.vaultRootChangeHandler = vaultRootChangeHandler
+        self.useLegacyNavigation = useLegacyNavigation
+        self.useLegacyAlert = useLegacyAlert
+        _selectedTab = State(wrappedValue: .gallery)
+    }
 
     var body: some View {
         Group {
-            if #available(macOS 13, *) {
+            if #available(macOS 13, *), !useLegacyNavigation {
                 NavigationSplitView {
                     NostosAppSidebar(selectedTab: $selectedTab, vaultPath: state.vaultRootURL?.path ?? "")
                 } detail: {
@@ -48,7 +57,7 @@ struct ContentView: View {
                 .navigationTitle("Nostos")
             }
         }
-        .modifier(ErrorAlert(state: state))
+        .modifier(ErrorAlert(state: state, useLegacy: useLegacyAlert))
     }
 }
 
@@ -195,11 +204,17 @@ struct SidebarTabButton: View {
     }
 }
 
-fileprivate struct ErrorAlert: ViewModifier {
+struct ErrorAlert: ViewModifier {
     @ObservedObject var state: AppState
+    var useLegacy: Bool
+
+    init(state: AppState, useLegacy: Bool = false) {
+        self._state = ObservedObject(wrappedValue: state)
+        self.useLegacy = useLegacy
+    }
 
     func body(content: Content) -> some View {
-        if #available(macOS 13, *) {
+        if #available(macOS 13, *), !useLegacy {
             content.alert("Error", isPresented: Binding(
                 get: { state.errorMessage != nil },
                 set: { if !$0 { state.errorMessage = nil } }
