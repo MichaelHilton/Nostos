@@ -56,6 +56,10 @@ def main():
             if rel.startswith('..'):
                 # skip files outside repository
                 continue
+<<<<<<< HEAD
+=======
+            # Skip test files
+>>>>>>> f82d45a (Enhance coverage report generation by ignoring test files and update regex for build directory)
             if rel.startswith('Tests/'):
                 continue
             uncovered = find_uncovered_lines_in_html(content)

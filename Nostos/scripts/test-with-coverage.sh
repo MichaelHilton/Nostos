@@ -8,9 +8,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_CODECOV_DIR="$ROOT_DIR/.build/debug/codecov"
 OUTPUT_DIR="$ROOT_DIR/coverage"
 
-# Regex to ignore files under the build directory when generating reports
-# Match any path containing ".build/" (covers both relative and absolute paths)
-IGNORE_REGEX='\.build(/|$)'
+# Regex to ignore files under the build directory and test files when generating reports
+# Match any path containing ".build/" or "Tests/" (covers both relative and absolute paths)
+IGNORE_REGEX='(\.build(/|$)|/Tests/)'
 
 mkdir -p "$BUILD_CODECOV_DIR"
 mkdir -p "$OUTPUT_DIR"
