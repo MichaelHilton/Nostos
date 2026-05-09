@@ -168,7 +168,7 @@ struct RecentScansTable: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(scanRuns) { run in
+            ForEach(scanRuns) { (run: ScanRun) in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(run.rootPath)
                         .font(.system(size: 10, weight: .regular, design: .monospaced))

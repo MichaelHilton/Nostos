@@ -34,6 +34,7 @@
 	800000000000000000000019 /* WaveLensLogo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000019 /* WaveLensLogo.swift */; };
 	80000000000000000000001A /* NavIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001A /* NavIcons.swift */; };
 	80000000000000000000001B /* DirectoryPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001B /* DirectoryPicker.swift */; };
+	80000000000000000000001C /* WaveLensLogoRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001C /* WaveLensLogoRenderer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +75,7 @@
 	200000000000000000000019 /* WaveLensLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/DesignSystem/WaveLensLogo.swift; sourceTree = SOURCE_ROOT; };
 	20000000000000000000001A /* NavIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/DesignSystem/NavIcons.swift; sourceTree = SOURCE_ROOT; };
 	20000000000000000000001B /* DirectoryPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/DirectoryPicker.swift; sourceTree = SOURCE_ROOT; };
+	20000000000000000000001C /* WaveLensLogoRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/DesignSystem/WaveLensLogoRenderer.swift; sourceTree = SOURCE_ROOT; };
 	200000000000000000000020 /* Nostos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nostos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 	200000000000000000000021 /* NostosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NostosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -112,6 +114,7 @@
 			20000000000000000000001A /* NavIcons.swift */,
 			200000000000000000000018 /* NostosComponents.swift */,
 			200000000000000000000019 /* WaveLensLogo.swift */,
+			20000000000000000000001C /* WaveLensLogoRenderer.swift */,
 		);
 		path = DesignSystem;
 		sourceTree = "<group>";
@@ -322,6 +325,7 @@
 					800000000000000000000017 /* DesignTokens.swift in Sources */,
 					800000000000000000000018 /* NostosComponents.swift in Sources */,
 					800000000000000000000019 /* WaveLensLogo.swift in Sources */,
+					80000000000000000000001C /* WaveLensLogoRenderer.swift in Sources */,
 					80000000000000000000001A /* NavIcons.swift in Sources */,
 			80000000000000000000001B /* DirectoryPicker.swift in Sources */,
 		);

@@ -12,8 +12,7 @@ final class AppDatabaseTests: XCTestCase {
     func testInsertAndFetchScanRun() throws {
         let db = try AppDatabase.makeInMemory()
 
-        var run = ScanRun(id: nil,
-                          rootPath: "/tmp/test",
+        var run = ScanRun(rootPath: "/tmp/test",
                           startedAt: Date(),
                           finishedAt: nil,
                           photosFound: 0,
@@ -31,8 +30,7 @@ final class AppDatabaseTests: XCTestCase {
     func testInsertUpsertAndFetchPhoto() throws {
         let db = try AppDatabase.makeInMemory()
 
-        var run = ScanRun(id: nil,
-                          rootPath: "/tmp/photos",
+        var run = ScanRun(rootPath: "/tmp/photos",
                           startedAt: Date(),
                           finishedAt: nil,
                           photosFound: 0,

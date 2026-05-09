@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import GRDB
 
 enum ScanStatus: String, Codable {
@@ -6,7 +7,7 @@ enum ScanStatus: String, Codable {
 }
 
 struct ScanRun: Identifiable, Codable, FetchableRecord, MutablePersistableRecord {
-    var id: Int64?
+    var id: Int64 = 0
     var rootPath: String
     var startedAt: Date
     var finishedAt: Date?

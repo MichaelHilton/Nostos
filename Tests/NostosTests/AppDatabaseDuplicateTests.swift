@@ -6,8 +6,7 @@ final class AppDatabaseDuplicateTests: XCTestCase {
     func testFetchDuplicateGroupsWithPhotosOrdering() throws {
         let db = try AppDatabase.makeInMemory()
 
-        var run = ScanRun(id: nil,
-                          rootPath: "/tmp/dups",
+        var run = ScanRun(rootPath: "/tmp/dups",
                           startedAt: Date(),
                           finishedAt: nil,
                           photosFound: 0,
@@ -77,8 +76,7 @@ final class AppDatabaseDuplicateTests: XCTestCase {
     func testSetKeptPhotoUpdatesGroupAndPhotos() throws {
         let db = try AppDatabase.makeInMemory()
 
-        var run = ScanRun(id: nil,
-                          rootPath: "/tmp/dups",
+        var run = ScanRun(rootPath: "/tmp/dups",
                           startedAt: Date(),
                           finishedAt: nil,
                           photosFound: 0,

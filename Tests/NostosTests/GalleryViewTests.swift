@@ -55,7 +55,7 @@ final class GalleryViewTests: XCTestCase {
         XCTAssertTrue(texts.contains("No photos match"))
 
         // VerticalYearRangeSlider with no selection shows "All years"
-        let slider = VerticalYearRangeSlider(years: [], yearFrom: .constant(nil), yearTo: .constant(nil)) {}
+        let slider = VerticalYearRangeSlider(yearBreakdown: [], yearFrom: .constant(nil), yearTo: .constant(nil)) {}
         let s2 = try slider.inspect()
         let t = try s2.find(ViewType.Text.self).string()
         XCTAssertEqual(t, "All years")

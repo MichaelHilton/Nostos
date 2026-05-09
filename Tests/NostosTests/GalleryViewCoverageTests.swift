@@ -49,7 +49,7 @@ final class GalleryViewCoverageTests: XCTestCase {
         var to: Int? = 2020
         var onChangeCalled = false
 
-        let slider = VerticalYearRangeSlider(years: [2018,2019,2020], yearFrom: .init(get: { from }, set: { from = $0 }), yearTo: .init(get: { to }, set: { to = $0 })) {
+        let slider = VerticalYearRangeSlider(yearBreakdown: [(year: 2018, count: 5), (year: 2019, count: 10), (year: 2020, count: 8)], yearFrom: .init(get: { from }, set: { from = $0 }), yearTo: .init(get: { to }, set: { to = $0 })) {
             onChangeCalled = true
         }
 

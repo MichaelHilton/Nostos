@@ -396,7 +396,7 @@ struct GalleryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // Backup Status
-                SectionLabel("Backup Status")
+                SectionLabel("Backup Status", diamond: true)
                     .padding(.horizontal, NostosSpacing.lg)
                     .padding(.top, NostosSpacing.lg)
 
@@ -429,7 +429,7 @@ struct GalleryView: View {
                     .padding(.vertical, NostosSpacing.lg)
 
                 // Camera
-                SectionLabel("Camera")
+                SectionLabel("Camera", diamond: true)
                     .padding(.horizontal, NostosSpacing.lg)
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -457,7 +457,7 @@ struct GalleryView: View {
                     .padding(.vertical, NostosSpacing.lg)
 
                 // Duplicates
-                SectionLabel("Duplicates")
+                SectionLabel("Duplicates", diamond: true)
                     .padding(.horizontal, NostosSpacing.lg)
 
                 filterCheckbox("With duplicates", isChecked: filterHasDuplicates.contains(true)) {
@@ -486,7 +486,7 @@ struct GalleryView: View {
                     .padding(.vertical, NostosSpacing.lg)
 
                 // Year Range
-                SectionLabel("Year Range")
+                SectionLabel("Year Range", diamond: true)
                     .padding(.horizontal, NostosSpacing.lg)
 
                 yearRangeSlider
@@ -531,12 +531,12 @@ struct GalleryView: View {
 
     @ViewBuilder
     private var yearRangeSlider: some View {
-        if state.years.isEmpty {
+        if state.yearBreakdown.isEmpty {
             Text("No date data")
                 .font(.system(size: 10, weight: .regular))
                 .foregroundColor(.nostosFg3)
         } else {
-            VerticalYearRangeSlider(years: state.years, yearFrom: $filterYearFrom, yearTo: $filterYearTo) {
+            VerticalYearRangeSlider(yearBreakdown: state.yearBreakdown, yearFrom: $filterYearFrom, yearTo: $filterYearTo) {
                 applyLocalFilters()
             }
         }
@@ -1017,7 +1017,7 @@ struct BackupFooterBar: View {
 
 // MARK: - Year Range Slider
 struct VerticalYearRangeSlider: View {
-    let years: [Int]
+    let yearBreakdown: [(year: Int, count: Int)]
     @Binding var yearFrom: Int?
     @Binding var yearTo: Int?
     let onChange: () -> Void
@@ -1056,26 +1056,100 @@ struct VerticalYearRangeSlider: View {
             }
             .padding(.bottom, 10)
 
-            HStack(spacing: 0) {
-                VStack(spacing: 28) {
-                    ForEach(years, id: \.self) { year in
-                        Button {
-                            yearFrom = year
-                            yearTo = year
-                            onChange()
-                        } label: {
-                            Text("\(year)")
-                                .font(.system(size: 12, weight: .regular))
-                                .foregroundColor(yearFrom == year ? .nostosAccent : .nostosFg3)
-                                .frame(height: 28, alignment: .center)
+            HStack(spacing: 8) {
+                VStack(spacing: 0) {
+                    ForEach(Array(yearBreakdown.enumerated()), id: \.element.year) { index, item in
+                        let isFirst = index == 0
+                        let isLast = index == yearBreakdown.count - 1
+                        let isInRange = (yearFrom == nil || item.year >= yearFrom!) && (yearTo == nil || item.year <= yearTo!)
+                        let isStart = item.year == yearFrom
+                        let isEnd = item.year == yearTo
+
+                        VStack(spacing: 0) {
+                            // Top connector
+                            if !isFirst && isInRange && !isStart {
+                                Rectangle()
+                                    .fill(Color.nostosAccent)
+                                    .frame(width: 2)
+                                    .frame(height: 14)
+                            } else {
+                                Spacer()
+                                    .frame(height: 14)
+                            }
+
+                            // Circle indicator
+                            if isStart || isEnd {
+                                Circle()
+                                    .fill(Color.nostosAccent)
+                                    .frame(width: 12, height: 12)
+                            } else {
+                                Circle()
+                                    .strokeBorder(Color.nostosFg3, lineWidth: 2)
+                                    .frame(width: 12, height: 12)
+                            }
+
+                            // Bottom connector
+                            if !isLast && isInRange && !isEnd {
+                                Rectangle()
+                                    .fill(Color.nostosAccent)
+                                    .frame(width: 2)
+                                    .frame(height: 14)
+                            } else {
+                                Spacer()
+                                    .frame(height: 14)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("galleryFilterYear_\(year)")
+                        .frame(height: 28)
                     }
                 }
-                .padding(.leading, 10)
+                .frame(width: 12)
 
-                Spacer(minLength: 10)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(yearBreakdown, id: \.year) { item in
+                        Button {
+                            let isStart = item.year == yearFrom
+                            let isEnd = item.year == yearTo
+
+                            if isStart && isEnd {
+                                yearFrom = nil
+                                yearTo = nil
+                            } else if yearFrom == nil {
+                                yearFrom = item.year
+                                yearTo = item.year
+                            } else if yearTo == nil {
+                                if item.year < yearFrom! {
+                                    yearTo = yearFrom
+                                    yearFrom = item.year
+                                } else {
+                                    yearTo = item.year
+                                }
+                            } else if item.year < yearFrom! {
+                                yearFrom = item.year
+                            } else if item.year > yearTo! {
+                                yearTo = item.year
+                            } else {
+                                yearFrom = nil
+                                yearTo = nil
+                            }
+                            onChange()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text("\(item.year)")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.nostosFg1)
+
+                                Text("\(item.count) photos")
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundColor(.nostosFg3)
+
+                                Spacer()
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .frame(height: 28)
+                        .accessibilityIdentifier("galleryFilterYear_\(item.year)")
+                    }
+                }
             }
         }
     }
