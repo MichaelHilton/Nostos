@@ -143,7 +143,6 @@ final class GalleryViewTests: XCTestCase {
 import SwiftUI
 import AppKit
 extension BackupFooterBar: Inspectable {}
-extension VerticalYearRangeSlider: Inspectable {}
 extension Badge: Inspectable {}
 extension VaultBadge: Inspectable {}
 extension GalleryPhotoTile: Inspectable {}

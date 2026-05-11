@@ -388,7 +388,7 @@ final class AppState: ObservableObject {
                 rootPath: "/tmp/ui-test-source",
                 startedAt: now.addingTimeInterval(-3600),
                 finishedAt: now.addingTimeInterval(-3500),
-                photosFound: 26,
+                photosFound: 36,
                 duplicatesFound: 1,
                 status: .completed
             )
@@ -399,29 +399,42 @@ final class AppState: ObservableObject {
 
             var seededPhotoIds: [Int64] = []
 
-            for index in 1...26 {
-                var photo = Photo(
-                    id: nil,
-                    path: "/tmp/ui-test-source/photo-\(index).jpg",
-                    hash: index <= 2 ? "shared-hash" : "hash-\(index)",
-                    fileSize: Int64(1_024 + index),
-                    width: 160,
-                    height: 160,
-                    takenAt: Calendar.current.date(byAdding: .day, value: -index, to: now),
-                    cameraMake: index.isMultiple(of: 2) ? "Canon" : "Nikon",
-                    cameraModel: index.isMultiple(of: 2) ? "EOS" : "Z8",
-                    gpsLat: nil,
-                    gpsLon: nil,
-                    thumbnailPath: nil,
-                    duplicateGroupId: index <= 2 ? duplicateGroup.id : nil,
-                    isKept: index == 1,
-                    status: index.isMultiple(of: 3) ? .copied : .new,
-                    scannedAt: now,
-                    scanRunId: scanRun.id
-                )
-                try db.insertPhoto(&photo)
-                if let photoId = photo.id {
-                    seededPhotoIds.append(photoId)
+            let cameraModels = ["Canon EOS R5", "Sony A7 IV", "Nikon Z6 II", "iPhone 15 Pro", "Fujifilm X-T5"]
+            let years = [2021, 2022, 2023, 2024]
+            let photosPerYear = 9
+
+            var photoIndex = 1
+            for year in years {
+                for photoInYear in 1...photosPerYear {
+                    let dateComponents = DateComponents(year: year, month: 6, day: photoInYear)
+                    guard let takenAt = Calendar.current.date(from: dateComponents) else { continue }
+
+                    let cameraModel = cameraModels[(photoIndex - 1) % cameraModels.count]
+
+                    var photo = Photo(
+                        id: nil,
+                        path: "/tmp/ui-test-source/photo-\(photoIndex).jpg",
+                        hash: photoIndex <= 2 ? "shared-hash" : "hash-\(photoIndex)",
+                        fileSize: Int64(1_024 + photoIndex),
+                        width: 160,
+                        height: 160,
+                        takenAt: takenAt,
+                        cameraMake: nil,
+                        cameraModel: cameraModel,
+                        gpsLat: nil,
+                        gpsLon: nil,
+                        thumbnailPath: nil,
+                        duplicateGroupId: photoIndex <= 2 ? duplicateGroup.id : nil,
+                        isKept: photoIndex == 1,
+                        status: photoIndex.isMultiple(of: 3) ? .copied : .new,
+                        scannedAt: now,
+                        scanRunId: scanRun.id
+                    )
+                    try db.insertPhoto(&photo)
+                    if let photoId = photo.id {
+                        seededPhotoIds.append(photoId)
+                    }
+                    photoIndex += 1
                 }
             }
 

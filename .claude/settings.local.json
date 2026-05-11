@@ -44,7 +44,8 @@
       "Bash(rm -rf ~/Library/Developer/Xcode/DerivedData/Nostos-* && ./Nostos/scripts/test-ui.sh 2>&1 | grep -A 5 \"Test session\\\\|PASS\\\\|FAIL\" | tail -30)",
       "Bash(swift run *)",
       "Bash(open Nostos.xcodeproj)",
-      "Bash(UI_TESTING_SEED_DATA=1 timeout 30 xcodebuild test -scheme Nostos -configuration Debug -destination 'platform=macOS')"
+      "Bash(UI_TESTING_SEED_DATA=1 timeout 30 xcodebuild test -scheme Nostos -configuration Debug -destination 'platform=macOS')",
+      "Bash(open /Users/michaelhilton/Development/AI-Projects/Nostos/Nostos.xcodeproj)"
     ],
     "additionalDirectories": [
       "/Users/michaelhilton/Library/Developer/Xcode/DerivedData"

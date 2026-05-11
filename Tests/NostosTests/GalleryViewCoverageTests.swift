@@ -95,6 +95,52 @@ final class GalleryViewCoverageTests: XCTestCase {
         XCTAssertTrue(cleared)
     }
 
+    func testVerticalYearRangeSlider_displaysCounts() throws {
+        var from: Int? = nil
+        var to: Int? = nil
+
+        let slider = VerticalYearRangeSlider(
+            yearBreakdown: [
+                (year: 2021, count: 9),
+                (year: 2022, count: 9),
+                (year: 2023, count: 9),
+                (year: 2024, count: 9)
+            ],
+            yearFrom: .init(get: { from }, set: { from = $0 }),
+            yearTo: .init(get: { to }, set: { to = $0 })
+        ) {}
+
+        let sut = try slider.inspect()
+
+        // Verify all photo counts are displayed
+        let allTexts = try sut.findAll(ViewType.Text.self).map { try? $0.string() }
+        XCTAssertTrue(allTexts.contains("9 photos"), "Photo counts should be displayed")
+        XCTAssertTrue(allTexts.contains("2021"), "Years should be displayed")
+        XCTAssertTrue(allTexts.contains("2024"), "Years should be displayed")
+
+        // Verify "All years" text is shown when no selection
+        XCTAssertTrue(allTexts.contains("All years"), "Should show 'All years' when no range selected")
+    }
+
+    func testGalleryFilterSidebar_displaysCameraModels() throws {
+        let cameraModels = ["Canon EOS R5", "Sony A7 IV", "Nikon Z6 II", "iPhone 15 Pro", "Fujifilm X-T5"]
+        var toggledCamera: String? = nil
+
+        let sidebar = GalleryFilterSidebar(cameraModels: cameraModels, onToggleCameraModel: { toggled in
+            toggledCamera = toggled
+        })
+
+        let sut = try sidebar.inspect()
+
+        // Verify all camera models are displayed
+        let allTexts = try sut.findAll(ViewType.Text.self).map { try? $0.string() }
+        XCTAssertTrue(allTexts.contains("Canon EOS R5"), "Should display Canon EOS R5")
+        XCTAssertTrue(allTexts.contains("Sony A7 IV"), "Should display Sony A7 IV")
+        XCTAssertTrue(allTexts.contains("Nikon Z6 II"), "Should display Nikon Z6 II")
+        XCTAssertTrue(allTexts.contains("iPhone 15 Pro"), "Should display iPhone 15 Pro")
+        XCTAssertTrue(allTexts.contains("Fujifilm X-T5"), "Should display Fujifilm X-T5")
+    }
+
     // Backup start path is exercised by other AppState tests; avoid invoking private startBackup here.
 }
 
@@ -105,3 +151,4 @@ extension GalleryEmptyState: Inspectable {}
 extension GalleryFilterSidebar: Inspectable {}
 extension SelectedPhotoPanel: Inspectable {}
 extension GalleryToolbar: Inspectable {}
+extension VerticalYearRangeSlider: Inspectable {}

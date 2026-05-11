@@ -503,7 +503,6 @@ struct GalleryView: View {
                 }
                 .buttonStyle(.bordered)
                 .foregroundColor(.nostosRed)
-                .border(Color.nostosRed, width: 1)
                 .padding(.horizontal, NostosSpacing.lg)
                 .padding(.bottom, NostosSpacing.lg)
                 .accessibilityIdentifier("galleryRemoveAllFiltersButton")
