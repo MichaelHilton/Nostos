@@ -75,7 +75,7 @@ struct SectionLabel: View {
     var body: some View {
         HStack(spacing: 6) {
             if diamond {
-                DiamondAccent(size: 4)
+                DiamondAccent(size: 5)
             }
             Text(text)
                 .font(.nostosLabel)

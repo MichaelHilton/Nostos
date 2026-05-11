@@ -398,7 +398,7 @@ struct GalleryView: View {
                 // Backup Status
                 SectionLabel("Backup Status", diamond: true)
                     .padding(.horizontal, NostosSpacing.lg)
-                    .padding(.top, NostosSpacing.lg)
+                    .padding(.top, NostosSpacing.sm)
 
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach([PhotoStatus.new, .copied, .skippedDuplicate], id: \.self) { status in
@@ -422,11 +422,11 @@ struct GalleryView: View {
                     }
                 }
                 .padding(.horizontal, NostosSpacing.lg)
-                .padding(.bottom, NostosSpacing.lg)
+                .padding(.bottom, NostosSpacing.sm)
 
                 Divider()
                     .padding(.horizontal, NostosSpacing.lg)
-                    .padding(.vertical, NostosSpacing.lg)
+                    .padding(.vertical, NostosSpacing.sm)
 
                 // Camera
                 SectionLabel("Camera", diamond: true)
@@ -450,7 +450,7 @@ struct GalleryView: View {
                     .accessibilityIdentifier("galleryFilterNoCameraInfo")
                 }
                 .padding(.horizontal, NostosSpacing.lg)
-                .padding(.bottom, NostosSpacing.lg)
+                .padding(.bottom, NostosSpacing.sm)
 
                 Divider()
                     .padding(.horizontal, NostosSpacing.lg)
@@ -460,30 +460,32 @@ struct GalleryView: View {
                 SectionLabel("Duplicates", diamond: true)
                     .padding(.horizontal, NostosSpacing.lg)
 
-                filterCheckbox("With duplicates", isChecked: filterHasDuplicates.contains(true)) {
-                    if filterHasDuplicates.contains(true) {
-                        filterHasDuplicates.remove(true)
-                    } else {
-                        filterHasDuplicates.insert(true)
+                VStack(alignment: .leading, spacing: 0) {
+                    filterCheckbox("With duplicates", isChecked: filterHasDuplicates.contains(true)) {
+                        if filterHasDuplicates.contains(true) {
+                            filterHasDuplicates.remove(true)
+                        } else {
+                            filterHasDuplicates.insert(true)
+                        }
+                        applyLocalFilters()
                     }
-                    applyLocalFilters()
-                }
-                .accessibilityIdentifier("galleryFilterWithDuplicates")
-                filterCheckbox("No duplicates", isChecked: filterHasDuplicates.contains(false)) {
-                    if filterHasDuplicates.contains(false) {
-                        filterHasDuplicates.remove(false)
-                    } else {
-                        filterHasDuplicates.insert(false)
+                    .accessibilityIdentifier("galleryFilterWithDuplicates")
+                    filterCheckbox("No duplicates", isChecked: filterHasDuplicates.contains(false)) {
+                        if filterHasDuplicates.contains(false) {
+                            filterHasDuplicates.remove(false)
+                        } else {
+                            filterHasDuplicates.insert(false)
+                        }
+                        applyLocalFilters()
                     }
-                    applyLocalFilters()
+                    .accessibilityIdentifier("galleryFilterNoDuplicates")
                 }
-                .accessibilityIdentifier("galleryFilterNoDuplicates")
                 .padding(.horizontal, NostosSpacing.lg)
-                .padding(.bottom, NostosSpacing.lg)
+                .padding(.bottom, NostosSpacing.sm)
 
                 Divider()
                     .padding(.horizontal, NostosSpacing.lg)
-                    .padding(.vertical, NostosSpacing.lg)
+                    .padding(.vertical, NostosSpacing.sm)
 
                 // Year Range
                 SectionLabel("Year Range", diamond: true)
