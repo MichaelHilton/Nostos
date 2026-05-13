@@ -439,7 +439,9 @@ final class ScannerViewTests: XCTestCase {
         // Try to find and tap the Choose button within SourceFolderCard
         do {
             try sut.find(button: "Choose…").tap()
-            XCTAssertEqual(view.selectedPath, "/test/photos")
+            // @State mutations don't propagate back to the original struct variable;
+            // assert on the observable side effect instead.
+            XCTAssertTrue(picker.sourcePickerCalled)
         } catch {
             // If tapping fails due to ViewInspector limitations, the inline closure
             // at lines 32-34 remains uncovered but is tested via subcomponent unit tests

@@ -45,7 +45,9 @@
       "Bash(swift run *)",
       "Bash(open Nostos.xcodeproj)",
       "Bash(UI_TESTING_SEED_DATA=1 timeout 30 xcodebuild test -scheme Nostos -configuration Debug -destination 'platform=macOS')",
-      "Bash(open /Users/michaelhilton/Development/AI-Projects/Nostos/Nostos.xcodeproj)"
+      "Bash(open /Users/michaelhilton/Development/AI-Projects/Nostos/Nostos.xcodeproj)",
+      "Bash(./scripts/test-all-with-coverage.sh)",
+      "Bash(echo \"Exit: $?\")"
     ],
     "additionalDirectories": [
       "/Users/michaelhilton/Library/Developer/Xcode/DerivedData"
