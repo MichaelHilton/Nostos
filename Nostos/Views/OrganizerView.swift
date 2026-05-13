@@ -144,33 +144,33 @@ struct VaultView: View {
                             .accessibilityIdentifier("vaultDryRunToggle")
 
                         Button(action: startOrganize) {
-                            Text(state.organizeProgress.isRunning ? "↻  Vaulting…" : "▶  Organise Vault")
+                            Text((state.organizeOperation?.isLoading ?? false) ? "↻  Vaulting…" : "▶  Organise Vault")
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(state.vaultRootURL == nil || state.organizeProgress.isRunning)
+                        .disabled(state.vaultRootURL == nil || (state.organizeOperation?.isLoading ?? false))
                         .accessibilityIdentifier(dryRun ? "vaultPreviewButton" : "vaultSaveButton")
 
-                        if state.organizeProgress.isRunning {
+                        if state.organizeOperation?.isLoading ?? false {
                             vaultSpinnerView()
                         }
                     }
                     .padding(.horizontal, NostosSpacing.pagePadding)
 
                     // Progress card
-                    if state.organizeProgress.isRunning || state.organizeProgress.total > 0 {
+                    if (state.organizeOperation?.isLoading ?? false) || (state.organizeOperation?.organizeProgress.total ?? 0) > 0 {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
                                 SectionLabel("Progress")
 
-                                if state.organizeProgress.total > 0 {
-                                    let progress = Double(state.organizeProgress.copied + state.organizeProgress.skipped) / Double(state.organizeProgress.total)
+                                if (state.organizeOperation?.organizeProgress.total ?? 0) > 0 {
+                                    let progress = Double((state.organizeOperation?.organizeProgress.copied ?? 0) + (state.organizeOperation?.organizeProgress.skipped ?? 0)) / Double(state.organizeOperation?.organizeProgress.total ?? 0)
                                     NostosProgressBar(progress, total: 1.0)
                                 }
 
                                 HStack(spacing: 40) {
-                                    Stat("Total", value: "\(state.organizeProgress.total)")
-                                    Stat("Copied", value: "\(state.organizeProgress.copied)")
-                                    Stat("Skipped", value: "\(state.organizeProgress.skipped)")
+                                    Stat("Total", value: "\(state.organizeOperation?.organizeProgress.total ?? 0)")
+                                    Stat("Copied", value: "\(state.organizeOperation?.organizeProgress.copied ?? 0)")
+                                    Stat("Skipped", value: "\(state.organizeOperation?.organizeProgress.skipped ?? 0)")
                                 }
                             }
                             .padding(NostosSpacing.lg)

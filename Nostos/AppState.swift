@@ -7,10 +7,11 @@ final class AppState: ObservableObject {
     @Published private(set) var vaultRootURL: URL?
 
     var directoryPicker: DirectoryPickerProtocol
+    var container: ServiceContainer
 
     // MARK: - Scan state
     @Published var scanRuns: [ScanRun] = []
-    @Published var scanProgress = ScanProgress()
+    @Published var scanOperation: ScanOperation?
 
     // MARK: - Gallery state
     @Published var photos: [Photo] = []
@@ -21,15 +22,16 @@ final class AppState: ObservableObject {
 
     // MARK: - Duplicates state
     @Published var duplicateGroups: [DuplicateGroupWithPhotos] = []
+    @Published var duplicateDetectOperation: DuplicateDetectOperation?
 
     // MARK: - Vault state
     @Published var organizeJobs: [OrganizeJob] = []
-    @Published var organizeProgress = OrganizeProgress()
+    @Published var organizeOperation: OrganizeOperation?
     @Published var lastOrganizeResults: [OrganizeResult] = []
 
     // MARK: - Backup state
     @Published var backupJobs: [BackupJob] = []
-    @Published var backupProgress = BackupProgress()
+    @Published var backupOperation: BackupOperation?
     @Published var lastBackupResults: [BackupResult] = []
 
     // MARK: - Vault breakdown state
@@ -51,6 +53,7 @@ final class AppState: ObservableObject {
         } catch {
             fatalError("Failed to open database: \(error)")
         }
+        self.container = ServiceContainer(db: db)
         ThumbnailService.configure(vaultRootURL: defaultVaultRoot)
         Task { await loadInitialData() }
     }
@@ -63,6 +66,7 @@ final class AppState: ObservableObject {
         } catch {
             fatalError("Failed to open database: \(error)")
         }
+        self.container = ServiceContainer(db: db)
         ThumbnailService.configure(vaultRootURL: vaultRootURL)
         seedUITestDataIfNeeded()
         if ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" {
@@ -75,6 +79,7 @@ final class AppState: ObservableObject {
         self.db = db
         self.vaultRootURL = nil
         self.directoryPicker = directoryPicker
+        self.container = ServiceContainer(db: db)
     }
 
     // MARK: - Data loading
@@ -156,42 +161,22 @@ final class AppState: ObservableObject {
     // MARK: - Scanning
 
     func startScan(rootURL: URL) {
-        guard !scanProgress.isScanning else { return }
-        scanProgress = ScanProgress(isScanning: true)
+        guard scanOperation?.isLoading != true else { return }
+
+        let operation = ScanOperation(container: container, rootURL: rootURL)
+        scanOperation = operation
         errorMessage = nil
 
+        operation.execute()
+
         Task {
-            let scanner = makeScanner { [weak self] progress in
-                await MainActor.run { [weak self] in
-                    self?.scanProgress = progress
-                }
+            while operation.isLoading {
+                try? await Task.sleep(nanoseconds: 100_000_000)
             }
-            do {
-                _ = try await scanner.scan(rootURL: rootURL)
-
-                // Run duplicate detection after scan
-                let detector = makeDuplicateDetector()
-                let groups = try detector.detect()
-
-                await loadInitialData()
-                scanProgress.duplicatesFound = groups
-            } catch {
-                errorMessage = error.localizedDescription
-                scanProgress.isScanning = false
-                scanProgress.error = error.localizedDescription
-            }
+            await loadInitialData()
         }
     }
 
-    func makeScanner(onProgress: @Sendable @escaping (ScanProgress) async -> Void) -> Scanner {
-        Scanner(db: db, onProgress: onProgress)
-    }
-
-    func makeDuplicateDetector() -> DuplicateDetector {
-        DuplicateDetector(db: db)
-    }
-
-    // MARK: - Gallery
 
     func applyFilter(_ filter: PhotoFilter) {
         photoFilter = filter
@@ -220,36 +205,30 @@ final class AppState: ObservableObject {
     }
 
     func startOrganize(destination: URL, folderFormat: String, dryRun: Bool) {
-        guard !organizeProgress.isRunning else { return }
-        organizeProgress = OrganizeProgress(isRunning: true)
+        guard organizeOperation?.isLoading != true else { return }
+
+        let operation = OrganizeOperation(
+            container: container,
+            destination: destination,
+            folderFormat: folderFormat,
+            dryRun: dryRun
+        )
+        organizeOperation = operation
         errorMessage = nil
 
-        Task {
-            let organizer = makeOrganizer { [weak self] progress in
-                Task { @MainActor [weak self] in
-                    self?.organizeProgress = progress
-                }
-            }
-            do {
-                let job = try await organizer.organize(
-                    destination: destination,
-                    folderFormat: folderFormat,
-                    dryRun: dryRun
-                )
-                if let jobId = job.id {
-                    lastOrganizeResults = (try? db.fetchOrganizeResults(jobId: jobId)) ?? []
-                }
-                await loadOrganizeJobs()
-                await loadPhotos()
-            } catch {
-                errorMessage = error.localizedDescription
-                organizeProgress.isRunning = false
-            }
-        }
-    }
+        operation.execute()
 
-    func makeOrganizer(onProgress: @Sendable @escaping (OrganizeProgress) -> Void) -> Organizer {
-        Organizer(db: db, onProgress: onProgress)
+        Task {
+            while operation.isLoading {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+
+            if let jobId = operation.result?.id {
+                lastOrganizeResults = (try? db.fetchOrganizeResults(jobId: jobId)) ?? []
+            }
+            await loadOrganizeJobs()
+            await loadPhotos()
+        }
     }
 
     // MARK: - Backup
@@ -287,38 +266,31 @@ final class AppState: ObservableObject {
             errorMessage = "Select a vault before backing up."
             return
         }
-        guard !backupProgress.isRunning else { return }
-        backupProgress = BackupProgress(isRunning: true)
+        guard backupOperation?.isLoading != true else { return }
+
+        let operation = BackupOperation(
+            container: container,
+            vaultRootURL: vaultRootURL,
+            folderFormat: folderFormat,
+            filter: filter,
+            dryRun: dryRun
+        )
+        backupOperation = operation
         errorMessage = nil
 
+        operation.execute()
+
         Task {
-            let service = makeBackupService { [weak self] (progress: BackupProgress) in
-                Task { @MainActor [weak self] in
-                    self?.backupProgress = progress
-                }
+            while operation.isLoading {
+                try? await Task.sleep(nanoseconds: 100_000_000)
             }
-            do {
-                let job = try await service.backup(
-                    vaultRootURL: vaultRootURL,
-                    folderFormat: folderFormat,
-                    filter: filter,
-                    dryRun: dryRun
-                )
-                if let jobId = job.id {
-                    lastBackupResults = (try? db.fetchBackupResults(jobId: jobId)) ?? []
-                }
-                await loadBackupJobs()
-            } catch {
-                errorMessage = error.localizedDescription
-                backupProgress.isRunning = false
+
+            if let jobId = operation.result?.id {
+                lastBackupResults = (try? db.fetchBackupResults(jobId: jobId)) ?? []
             }
+            await loadBackupJobs()
         }
     }
-
-    func makeBackupService(onProgress: @Sendable @escaping (BackupProgress) -> Void) -> BackupService {
-        BackupService(db: db, onProgress: onProgress)
-    }
-
     // MARK: - Directory picker
 
     func pickDirectory() -> URL? {
@@ -351,12 +323,13 @@ final class AppState: ObservableObject {
         }
 
         vaultRootURL = newVaultRootURL
+        container = ServiceContainer(db: db)
         UserDefaults.standard.set(newVaultRootURL.path, forKey: "vaultRootPath")
         ThumbnailService.configure(vaultRootURL: newVaultRootURL)
         seedUITestDataIfNeeded()
 
         scanRuns = []
-        scanProgress = ScanProgress()
+        scanOperation = nil
         photos = []
         photoFilter = PhotoFilter()
         if ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" {
@@ -365,11 +338,12 @@ final class AppState: ObservableObject {
         cameraModels = []
         years = []
         duplicateGroups = []
+        duplicateDetectOperation = nil
         organizeJobs = []
-        organizeProgress = OrganizeProgress()
+        organizeOperation = nil
         lastOrganizeResults = []
         backupJobs = []
-        backupProgress = BackupProgress()
+        backupOperation = nil
         lastBackupResults = []
         errorMessage = nil
 

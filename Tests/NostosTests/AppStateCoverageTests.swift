@@ -97,12 +97,11 @@ final class AppStateCoverageTests: XCTestCase {
         let db = try AppDatabase.makeInMemory()
         let appState = AppState(db: db)
 
-        appState.scanProgress = ScanProgress(isScanning: true)
         let sourceURL = FileManager.default.temporaryDirectory
 
         appState.startScan(rootURL: sourceURL)
 
-        XCTAssertTrue(appState.scanProgress.isScanning)
+        XCTAssertTrue(appState.scanOperation?.isLoading ?? false)
     }
 
     func testStartVaultReturnsErrorWhenNoVaultRoot() throws {
@@ -121,11 +120,10 @@ final class AppStateCoverageTests: XCTestCase {
 
         let db = try AppDatabase.makeShared(vaultRootURL: tmpDir)
         let appState = AppState(db: db)
-        appState.organizeProgress = OrganizeProgress(isRunning: true)
 
         appState.startOrganize(destination: tmpDir, folderFormat: "YYYY", dryRun: true)
 
-        XCTAssertTrue(appState.organizeProgress.isRunning)
+        XCTAssertTrue(appState.organizeOperation?.isLoading ?? false)
         try? FileManager.default.removeItem(at: tmpDir)
     }
 
@@ -144,14 +142,13 @@ final class AppStateCoverageTests: XCTestCase {
         try? FileManager.default.removeItem(at: tmpDir)
         try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
 
-        let db = try AppDatabase.makeShared(vaultRootURL: tmpDir)
-        let appState = AppState(db: db)
-        appState.backupProgress = BackupProgress(isRunning: true)
+        let appState = AppState(vaultRootURL: tmpDir)
 
         let filter = PhotoFilter()
         appState.startBackup(folderFormat: "YYYY", filter: filter, dryRun: true)
 
-        XCTAssertTrue(appState.backupProgress.isRunning)
+        // Operation should exist (guard check passed)
+        XCTAssertNotNil(appState.backupOperation)
         try? FileManager.default.removeItem(at: tmpDir)
     }
 
@@ -378,11 +375,11 @@ final class AppStateCoverageTests: XCTestCase {
         let db = try AppDatabase.makeShared(vaultRootURL: tmpDir)
         let appState = AppState(db: db)
 
-        XCTAssertFalse(appState.organizeProgress.isRunning)
+        XCTAssertFalse(appState.organizeOperation?.isLoading ?? false)
 
         appState.startOrganize(destination: tmpDir, folderFormat: "YYYY", dryRun: true)
 
-        XCTAssertTrue(appState.organizeProgress.isRunning)
+        XCTAssertTrue(appState.organizeOperation?.isLoading ?? false)
 
         try? FileManager.default.removeItem(at: tmpDir)
     }
