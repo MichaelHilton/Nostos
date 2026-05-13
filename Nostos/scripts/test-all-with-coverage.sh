@@ -9,7 +9,7 @@ BUILD_CODECOV_DIR="$ROOT_DIR/.build/debug/codecov"
 OUTPUT_DIR="$ROOT_DIR/coverage"
 SCHEME="Nostos"
 ARCH=$(uname -m)   # arm64 on Apple Silicon, x86_64 on Intel
-DESTINATION="platform=macOS,arch=$ARCH"
+DESTINATION="platform=macOS,name=My Mac"
 UI_TEST_TARGET="NostosUITests"
 
 # SPM always builds into an arch-specific subdirectory; the .build/debug symlink
