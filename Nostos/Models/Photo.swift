@@ -70,6 +70,7 @@ struct PhotoFilter {
     // Include images without camera metadata (camera_model IS NULL)
     var includeNoCamera: Bool = false
 
-    var limit: Int = 100
+    // Load the full gallery by default; callers can opt into paging if needed.
+    var limit: Int = Int.max
     var offset: Int = 0
 }

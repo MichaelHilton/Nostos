@@ -177,6 +177,38 @@ final class AppStateMoreTests: XCTestCase {
         XCTAssertTrue(appState.photos.isEmpty)
     }
 
+    func testLoadPhotosLoadsMoreThanOneHundredPhotosByDefault() async throws {
+        let db = try AppDatabase.makeInMemory()
+
+        for index in 1...101 {
+            var photo = Photo(
+                id: nil,
+                path: "/tmp/photo-\(index).jpg",
+                hash: "hash-\(index)",
+                fileSize: 100,
+                width: 100,
+                height: 100,
+                takenAt: Date(),
+                cameraMake: nil,
+                cameraModel: nil,
+                gpsLat: nil,
+                gpsLon: nil,
+                thumbnailPath: nil,
+                duplicateGroupId: nil,
+                isKept: false,
+                status: .new,
+                scannedAt: Date(),
+                scanRunId: nil
+            )
+            try db.insertPhoto(&photo)
+        }
+
+        let appState = AppState(db: db)
+        await appState.loadPhotos()
+
+        XCTAssertEqual(appState.photos.count, 101)
+    }
+
     func testSetKeptPhotoUpdatesState() async throws {
         let db = try AppDatabase.makeInMemory()
 

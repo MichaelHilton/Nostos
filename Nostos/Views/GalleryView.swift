@@ -272,7 +272,7 @@ struct GalleryView: View {
                 .font(.nostosDisplay(size: 22, weight: .semibold))
                 .foregroundColor(.nostosFg1)
 
-            Text(String(group.year))
+            Text(String(format: "%d", group.year))
                 .font(.nostosDisplay(size: 16, weight: .regular))
                 .foregroundColor(.nostosFg3)
                 .italic()
@@ -1080,7 +1080,7 @@ struct VerticalYearRangeSlider: View {
             HStack {
                 Group {
                     if let from = yearFrom, let to = yearTo {
-                        Text("\(from) – \(to)")
+                        Text(String(format: "%d – %d", from, to))
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.nostosFg1)
                     } else {
@@ -1187,7 +1187,7 @@ struct VerticalYearRangeSlider: View {
                             onChange()
                         } label: {
                             HStack(spacing: 6) {
-                                Text("\(item.year)")
+                                Text(String(format: "%d", item.year))
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(.nostosFg1)
 
