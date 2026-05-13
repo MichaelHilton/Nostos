@@ -1,0 +1,35 @@
+appId: com.nostos.Nostos
+---
+# Gallery Photo Selection Test
+# Verifies clicking a photo tile opens detail panel and dismissing closes it
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Gallery tab
+- tapOn:
+    id: "galleryTabButton"
+
+# Click a photo tile
+- tapOn:
+    id: "galleryPhotoTile"
+
+# Verify detail panel opened - dismiss button should appear
+- assertVisible:
+    id: "galleryClearSelectionButton"
+
+# Dismiss the detail panel
+- tapOn:
+    id: "galleryClearSelectionButton"
+
+# Verify panel closed - dismiss button should disappear
+- assertNotVisible:
+    id: "galleryClearSelectionButton"

@@ -24,6 +24,8 @@ IGNORE_REGEX='(\.build|Tests)(/|$)'
 mkdir -p "$BUILD_CODECOV_DIR"
 mkdir -p "$OUTPUT_DIR"
 
+cd "$ROOT_DIR"
+
 # Phase 1: build the coverage-instrumented test binary.
 # swift test --enable-code-coverage compiles correctly but on Swift 5.9 / macOS 13
 # SPM's internal llvm-profdata merge call fails ("no input files") because the

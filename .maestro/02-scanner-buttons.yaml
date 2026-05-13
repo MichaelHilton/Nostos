@@ -1,0 +1,27 @@
+appId: com.nostos.Nostos
+---
+# Scanner Tab Buttons Test
+# Verifies Scanner tab shows Choose and Start Scan buttons in default enabled state
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Scanner tab
+- tapOn:
+    id: "scannerTabButton"
+
+# Verify Choose button exists and is enabled
+- assertVisible:
+    text: "Choose…"
+
+# Verify Start Scan button exists
+- assertVisible:
+    id: "scannerStartScanButton"

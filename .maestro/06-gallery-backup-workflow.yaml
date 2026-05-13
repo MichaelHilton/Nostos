@@ -1,0 +1,36 @@
+appId: com.nostos.Nostos
+---
+# Gallery Backup Workflow Test
+# Verifies Back Up to Vault and Back Up Again buttons work
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Gallery tab
+- tapOn:
+    id: "galleryTabButton"
+
+# Click Back Up to Vault button
+- tapOn:
+    id: "galleryBackUpToVaultButton"
+
+# Wait for backup to complete - Back Up Again button should appear
+- assertVisible:
+    id: "galleryBackUpAgainButton"
+    timeout: 30000
+
+# Click Back Up Again to reset
+- tapOn:
+    id: "galleryBackUpAgainButton"
+
+# After reset, primary backup button should be restored
+- assertVisible:
+    id: "galleryBackUpToVaultButton"

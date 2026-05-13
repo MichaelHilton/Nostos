@@ -1,0 +1,35 @@
+appId: com.nostos.Nostos
+---
+# Duplicates Group Interaction Test
+# Verifies expanding group, selecting photo, and Keep First functionality
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Duplicates tab
+- tapOn:
+    id: "duplicatesTabButton"
+
+# Expand a duplicate group
+- tapOn:
+    id: "duplicateExpandGroupButton"
+
+# Select a photo tile
+- tapOn:
+    id: "duplicatePhotoTile"
+
+# Clear selections
+- tapOn:
+    id: "duplicatesClearSelectionsButton"
+
+# Keep First button should be clickable
+- tapOn:
+    id: "duplicatesKeepFirstButton"

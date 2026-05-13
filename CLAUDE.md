@@ -24,9 +24,13 @@ swift test
 swift test --filter AppDatabaseTests
 swift test --filter AppDatabaseTests/testInsertAndFetchScanRun
 
-# UI tests (requires Xcode — from repo root)
+# UI tests with XCTest (requires Xcode — from repo root)
 ./Nostos/scripts/test-ui.sh
 ./Nostos/scripts/test-ui.sh testClicksPrimaryButtonsAcrossTheApp
+
+# UI tests with Maestro (requires Maestro CLI — from repo root)
+./Nostos/scripts/test-maestro.sh
+./Nostos/scripts/test-maestro.sh 01-tab-navigation
 
 # Tests with HTML coverage report (output → coverage/index.html)
 ./Nostos/scripts/test-with-coverage.sh
@@ -81,7 +85,26 @@ Vault setup (`VaultSetupView`) is shown instead of `ContentView` when `vaultRoot
 
 ## Testing patterns
 
-Unit tests use `AppDatabase.makeInMemory()` — never a real database file. UI tests communicate with the app via environment variables:
+### Unit Tests
+
+Unit tests use `AppDatabase.makeInMemory()` — never a real database file.
+
+### UI Tests
+
+Two UI testing frameworks are maintained in parallel for comparison:
+
+#### XCTest (`Tests/NostosUITests/`)
+- Native Apple framework, 14 test methods in `NostosUITests.swift`
+- Run with: `./Nostos/scripts/test-ui.sh`
+- Best for: complex scenarios, debugging, Swift API access
+
+#### Maestro (`.maestro/`)
+- YAML-based test flows, 12 test files
+- Run with: `./Nostos/scripts/test-maestro.sh`
+- Best for: rapid iteration, self-documenting tests, non-developer contributions
+- See `.maestro/README.md` for details and `.maestro/COMPARISON.md` for framework comparison
+
+Both test suites use the same environment variables to communicate with the app:
 
 | Env var | Purpose |
 |---|---|

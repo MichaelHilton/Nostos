@@ -1,0 +1,36 @@
+appId: com.nostos.Nostos
+---
+# Vault Change Cancel Test
+# Verifies change vault dialog can be cancelled without changing vault path
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Vault tab
+- tapOn:
+    id: "vaultTabButton"
+
+# Click Change Vault button
+- tapOn:
+    id: "vaultChangeVaultButton"
+
+# Dialog should appear with Cancel button
+- assertVisible:
+    text: "Cancel"
+    timeout: 5000
+
+# Click Cancel
+- tapOn:
+    text: "Cancel"
+
+# Dialog should be dismissed, vault button still present
+- assertVisible:
+    id: "vaultChangeVaultButton"

@@ -1,0 +1,39 @@
+appId: com.nostos.Nostos
+---
+# Vault Dry Run Toggle Test
+# Verifies toggling Dry Run switches between Preview and Save buttons
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Vault tab
+- tapOn:
+    id: "vaultTabButton"
+
+# Default: dry run on → preview button should be visible
+- assertVisible:
+    id: "vaultPreviewButton"
+
+# Turn off dry run
+- tapOn:
+    id: "vaultDryRunToggle"
+
+# Save button should now be visible
+- assertVisible:
+    id: "vaultSaveButton"
+
+# Turn dry run back on
+- tapOn:
+    id: "vaultDryRunToggle"
+
+# Preview button should be visible again
+- assertVisible:
+    id: "vaultPreviewButton"
