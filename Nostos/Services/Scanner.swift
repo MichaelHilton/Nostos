@@ -101,7 +101,7 @@ final class Scanner {
         return run
     }
 
-    private func processPhoto(url: URL, scanRunId: Int64, knownPaths: Set<String>, counter: ScanCounter) async {
+    private func processPhoto(url: URL, scanRunId: Int64?, knownPaths: Set<String>, counter: ScanCounter) async {
         // Skip if already scanned
         if knownPaths.contains(url.path) { return }
 

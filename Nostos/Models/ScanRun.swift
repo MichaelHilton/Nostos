@@ -7,7 +7,7 @@ enum ScanStatus: String, Codable {
 }
 
 struct ScanRun: Identifiable, Codable, FetchableRecord, MutablePersistableRecord {
-    var id: Int64 = 0
+    var id: Int64?
     var rootPath: String
     var startedAt: Date
     var finishedAt: Date?
@@ -45,5 +45,15 @@ extension Array where Element == ScanRun {
         guard let last = first, let finishedAt = last.finishedAt else { return "Never" }
         let formatter = RelativeDateTimeFormatter()
         return formatter.localizedString(for: finishedAt, relativeTo: Date())
+    }
+}
+
+extension ScanStatus {
+    var color: Color {
+        switch self {
+        case .running:   return .nostosOrange
+        case .completed: return .nostosGreen
+        case .failed:    return .nostosRed
+        }
     }
 }
