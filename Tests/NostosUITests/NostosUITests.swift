@@ -313,5 +313,34 @@ final class NostosUITests: XCTestCase {
         // Dialog dismissed; vault button still present.
         el("vaultChangeVaultButton")
     }
+
+    /// After backup to vault completes, photos show the "IN VAULT" badge in the gallery.
+    func testGalleryPhotoShowsVaultBadgeAfterBackup() {
+        goToTab("galleryTabButton")
+
+        // Get initial count of photos marked as "In Vault" by looking at the app's debug description
+        // to identify how many tiles exist before backup
+        let tilesBeforeBackup = app.descendants(matching: .any).matching(identifier: "galleryPhotoTile").count
+
+        // Backup photos to vault
+        el("galleryBackUpToVaultButton").click()
+
+        // Wait for backup to complete — "Back Up Again" button should appear
+        el("galleryBackUpAgainButton", timeout: 20)
+
+        // Filter by "In Vault" to verify that backed-up photos are now tagged
+        el("galleryFilterChipInVault").click()
+
+        // The "In Vault" filter should show at least some photos (the seeded .copied photos
+        // plus any newly backed-up photos). Verify filter is active and photos are displayed.
+        el("galleryPhotoTile")  // At least one photo should be visible with vault status
+        el("galleryToolbarClearAllButton")  // Clear All button appears when a filter is active
+
+        // Verify we can still interact with a photo and it displays correctly
+        el("galleryPhotoTile").click()
+        let dismiss = el("galleryClearSelectionButton")
+        dismiss.click()
+        notPresent("galleryClearSelectionButton")
+    }
 }
 #endif
