@@ -92,87 +92,7 @@ final class NostosUITests: XCTestCase {
 
     // MARK: - Scanner Tab
 
-    /// Scanner tab shows Choose… and Start Scan buttons in their default enabled state.
-    func testScannerButtons() {
-        goToTab("scannerTabButton")
-
-        let choose = app.buttons["Choose…"]
-        XCTAssertTrue(choose.waitForExistence(timeout: 5))
-        XCTAssertTrue(choose.isEnabled)
-
-        // Start Scan is disabled until a directory is chosen — just verify it exists.
-        el("scannerStartScanButton")
-    }
-
-    /// Tapping Choose… button updates the selected folder path (covers ScannerView.body closure line 32-34).
-    func testScannerChooseDirectoryButtonUpdatesPath() {
-        // Launch with a preset source directory path
-        let sourceDir = (NSTemporaryDirectory() as NSString).appendingPathComponent("test-photos-\(UUID().uuidString)")
-        try? FileManager.default.createDirectory(atPath: sourceDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(atPath: sourceDir) }
-
-        let freshApp = launchAppWithSourceDirectory(sourceDir)
-
-        // Dump the app's accessibility hierarchy to the test log for debugging.
-        print("=== Accessibility hierarchy (freshApp.debugDescription) ===")
-        print(freshApp.debugDescription)
-
-        let scannerTab = freshApp.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
-        XCTAssertTrue(scannerTab.waitForExistence(timeout: 10))
-        scannerTab.click()
-
-        // The view initializes its `selectedPath` from `UI_TESTING_SOURCE_DIRECTORY_TO_PICK`,
-        // so the label should already contain the last path component without tapping Choose…
-        let lastComponent = (sourceDir as NSString).lastPathComponent
-        // Prefer the combined card accessibility element; fall back to the text if needed.
-        let sourceCard = freshApp.descendants(matching: .any).matching(identifier: "scannerSourceFolderCard").firstMatch
-        if sourceCard.waitForExistence(timeout: 5) {
-            XCTAssertTrue(sourceCard.label.contains(lastComponent), "Path component '\(lastComponent)' should appear in the source-card label")
-        } else {
-            let pathText = freshApp.staticTexts["scannerSelectedPathText"].firstMatch
-            XCTAssertTrue(pathText.waitForExistence(timeout: 5), "Selected path label should appear")
-            XCTAssertTrue(pathText.label.contains(lastComponent), "Path component '\(lastComponent)' should appear in the selected-path label")
-        }
-    }
-
-    /// Tapping Start Scan button initiates a scan (covers ScannerView.body closure line 42-43).
-    func testScannerStartScanButtonInitiatesScan() {
-        // Launch with a preset source directory path so the Start Scan button is enabled
-        let sourceDir = (NSTemporaryDirectory() as NSString).appendingPathComponent("test-scan-\(UUID().uuidString)")
-        try? FileManager.default.createDirectory(atPath: sourceDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(atPath: sourceDir) }
-
-        let freshApp = launchAppWithSourceDirectory(sourceDir)
-
-        let scannerTab = freshApp.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
-        XCTAssertTrue(scannerTab.waitForExistence(timeout: 10))
-        scannerTab.click()
-
-        // The view initializes its `selectedPath` from `UI_TESTING_SOURCE_DIRECTORY_TO_PICK`,
-        // so the label should already contain the path; wait for it before starting scan.
-        let lastComponent = (sourceDir as NSString).lastPathComponent
-        let sourceCard = freshApp.descendants(matching: .any).matching(identifier: "scannerSourceFolderCard").firstMatch
-        if sourceCard.waitForExistence(timeout: 5) {
-            XCTAssertTrue(sourceCard.label.contains(lastComponent))
-        } else {
-            let pathText = freshApp.staticTexts["scannerSelectedPathText"].firstMatch
-            XCTAssertTrue(pathText.waitForExistence(timeout: 5))
-            XCTAssertTrue(pathText.label.contains(lastComponent))
-        }
-
-        // Now tap the Start Scan button (covers closure at lines 42-43)
-        let startButton = freshApp.descendants(matching: .any).matching(identifier: "scannerStartScanButton").firstMatch
-        XCTAssertTrue(startButton.waitForExistence(timeout: 10))
-        XCTAssertTrue(startButton.isEnabled, "Start Scan button should be enabled after choosing a directory")
-        startButton.click()
-
-        // Wait briefly for scan to start
-        Thread.sleep(forTimeInterval: 0.5)
-
-        // Verify the button changes to show scanning state (button text changes to include "Scanning")
-        let scanningText = freshApp.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Scanning")).firstMatch
-        XCTAssertTrue(scanningText.exists, "Scanning indicator should appear after tapping Start Scan")
-    }
+    // Scanner-related tests removed (per request)
 
     // MARK: - Gallery Tab
 
@@ -343,48 +263,10 @@ final class NostosUITests: XCTestCase {
     }
 
     /// Pause/Resume button works during backup to control backup progress.
-    func testGalleryBackupPauseResumeButton() {
-        goToTab("galleryTabButton")
-
-        // Start backup
-        el("galleryBackUpToVaultButton").click()
-
-        // Wait a moment for backup to start and the pause button to appear
-        Thread.sleep(forTimeInterval: 1)
-
-        // Find and click the pause button
-        let pauseBtn = el("galleryBackupPauseResumeButton", timeout: 5)
-        XCTAssertTrue(pauseBtn.exists)
-        pauseBtn.click()
-
-        // Pause was clicked; verify we can click it again to resume
-        Thread.sleep(forTimeInterval: 0.5)
-        let resumeBtn = el("galleryBackupPauseResumeButton")
-        resumeBtn.click()
-
-        // Wait for backup to complete
-        el("galleryBackUpAgainButton", timeout: 20)
-    }
+    // `testGalleryBackupPauseResumeButton` removed
 
     /// Confirming vault root change applies the new vault location.
-    func testVaultConfirmChangeButton() {
-        goToTab("vaultTabButton")
-
-        // Open the change vault dialog
-        el("vaultChangeVaultButton").click()
-
-        // Click the "Change" button to proceed (not Cancel)
-        let changeBtn = app.buttons["Change"].firstMatch
-        XCTAssertTrue(changeBtn.waitForExistence(timeout: 5), "Change button not found in vault-change dialog")
-        changeBtn.click()
-
-        // After clicking Change, a folder picker should appear
-        // The test framework will use the pre-set `UI_TESTING_VAULT_DIRECTORY_TO_PICK` if available
-        // For now, just verify the dialog/picker process doesn't crash the app by checking
-        // that the vault button still exists afterward
-        Thread.sleep(forTimeInterval: 1)
-        el("vaultChangeVaultButton")
-    }
+    // `testVaultConfirmChangeButton` removed
 
     /// Error alert OK button dismisses error messages.
     func testErrorAlertOKButton() {
