@@ -381,6 +381,11 @@ final class AppState: ObservableObject {
     private func seedUITestDataIfNeeded() {
         guard ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" else { return }
 
+        // Avoid seeding twice into the same vault (tests may launch multiple app instances
+        // pointing at the same `vaultRootPath`). If the `photos` table already has rows,
+        // assume the seed has already run.
+        if ((try? db.photoCount()) ?? 0) > 0 { return }
+
         do {
             let now = Date()
 

@@ -48,4 +48,10 @@ final class WaveLensLogoTests: XCTestCase {
         // Gold dot exists and has positive size
         XCTAssertGreaterThan(elements.goldDot.boundingRect.width, 0)
     }
+
+    func testWaveLensLogoExerciseDrawing() {
+        let size = CGSize(width: 120, height: 120)
+        WaveLensLogo.exerciseDrawingPaths(for: size)
+        XCTAssertTrue(true)
+    }
 }

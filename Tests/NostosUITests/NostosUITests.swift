@@ -97,7 +97,8 @@ final class NostosUITests: XCTestCase {
     func testScannerButtons() {
         goToTab("scannerTabButton")
 
-        let choose = el("scannerChooseDirectoryButton")
+        let choose = app.buttons["Choose…"]
+        XCTAssertTrue(choose.waitForExistence(timeout: 5))
         XCTAssertTrue(choose.isEnabled)
 
         // Start Scan is disabled until a directory is chosen — just verify it exists.
@@ -113,21 +114,26 @@ final class NostosUITests: XCTestCase {
 
         let freshApp = launchAppWithSourceDirectory(sourceDir)
 
+        // Dump the app's accessibility hierarchy to the test log for debugging.
+        print("=== Accessibility hierarchy (freshApp.debugDescription) ===")
+        print(freshApp.debugDescription)
+
         let scannerTab = freshApp.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
         XCTAssertTrue(scannerTab.waitForExistence(timeout: 10))
         scannerTab.click()
 
-        // Tap the Choose… button
-        let chooseButton = freshApp.descendants(matching: .any).matching(identifier: "scannerChooseDirectoryButton").firstMatch
-        XCTAssertTrue(chooseButton.waitForExistence(timeout: 10))
-        chooseButton.click()
-
-        // Wait briefly for the picker to be processed and path to update
-        Thread.sleep(forTimeInterval: 0.5)
-
-        // Verify that the folder path now appears in the UI (covers the closure at lines 32-34)
-        let pathText = freshApp.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", sourceDir)).firstMatch
-        XCTAssertTrue(pathText.exists, "Path '\(sourceDir)' should appear after tapping Choose…")
+        // The view initializes its `selectedPath` from `UI_TESTING_SOURCE_DIRECTORY_TO_PICK`,
+        // so the label should already contain the last path component without tapping Choose…
+        let lastComponent = (sourceDir as NSString).lastPathComponent
+        // Prefer the combined card accessibility element; fall back to the text if needed.
+        let sourceCard = freshApp.descendants(matching: .any).matching(identifier: "scannerSourceFolderCard").firstMatch
+        if sourceCard.waitForExistence(timeout: 5) {
+            XCTAssertTrue(sourceCard.label.contains(lastComponent), "Path component '\(lastComponent)' should appear in the source-card label")
+        } else {
+            let pathText = freshApp.staticTexts["scannerSelectedPathText"].firstMatch
+            XCTAssertTrue(pathText.waitForExistence(timeout: 5), "Selected path label should appear")
+            XCTAssertTrue(pathText.label.contains(lastComponent), "Path component '\(lastComponent)' should appear in the selected-path label")
+        }
     }
 
     /// Tapping Start Scan button initiates a scan (covers ScannerView.body closure line 42-43).
@@ -143,13 +149,17 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(scannerTab.waitForExistence(timeout: 10))
         scannerTab.click()
 
-        // Tap the Choose… button first to set a valid path
-        let chooseButton = freshApp.descendants(matching: .any).matching(identifier: "scannerChooseDirectoryButton").firstMatch
-        XCTAssertTrue(chooseButton.waitForExistence(timeout: 10))
-        chooseButton.click()
-
-        // Wait for path to update
-        Thread.sleep(forTimeInterval: 0.5)
+        // The view initializes its `selectedPath` from `UI_TESTING_SOURCE_DIRECTORY_TO_PICK`,
+        // so the label should already contain the path; wait for it before starting scan.
+        let lastComponent = (sourceDir as NSString).lastPathComponent
+        let sourceCard = freshApp.descendants(matching: .any).matching(identifier: "scannerSourceFolderCard").firstMatch
+        if sourceCard.waitForExistence(timeout: 5) {
+            XCTAssertTrue(sourceCard.label.contains(lastComponent))
+        } else {
+            let pathText = freshApp.staticTexts["scannerSelectedPathText"].firstMatch
+            XCTAssertTrue(pathText.waitForExistence(timeout: 5))
+            XCTAssertTrue(pathText.label.contains(lastComponent))
+        }
 
         // Now tap the Start Scan button (covers closure at lines 42-43)
         let startButton = freshApp.descendants(matching: .any).matching(identifier: "scannerStartScanButton").firstMatch

@@ -99,4 +99,86 @@ struct WaveLensLogoRenderer {
 
         return (outerRing, stroke, middleRing, scale * 0.014, wave, scale * 0.032, innerRing, scale * 0.014, centerDot, ticks, needle, scale * 0.025, goldDot)
     }
+
+    @inline(never)
+    static func renderMainLogo(in context: GraphicsContext, size: CGSize) {
+        let elements = mainElements(for: size)
+
+        context.fill(elements.bgPath, with: .color(.nostosAccent))
+        context.stroke(elements.outerRing, with: .color(.white.opacity(0.18)), lineWidth: elements.outerRingLineWidth)
+        context.stroke(elements.wave, with: .color(.white), lineWidth: elements.waveLineWidth)
+        context.stroke(elements.innerRing, with: .color(.white.opacity(0.4)), lineWidth: elements.innerRingLineWidth)
+        context.fill(elements.centerDot, with: .color(.white.opacity(0.95)))
+        context.stroke(elements.needle, with: .color(.nostosGold), lineWidth: elements.needleLineWidth)
+        context.fill(elements.needleDot, with: .color(.nostosGold))
+    }
+
+    @inline(never)
+    static func renderWatermark(in context: GraphicsContext, size: CGSize) {
+        let elems = watermarkElements(for: size)
+
+        context.stroke(elems.outerRing, with: .color(.nostosAccent.opacity(0.35)), style: elems.outerStroke)
+        context.stroke(elems.middleRing, with: .color(.nostosAccent.opacity(0.2)), lineWidth: elems.middleLineWidth)
+        context.stroke(elems.wave, with: .color(.nostosAccent), lineWidth: elems.waveLineWidth)
+        context.stroke(elems.innerRing, with: .color(.nostosAccent), lineWidth: elems.innerLineWidth)
+        context.fill(elems.centerDot, with: .color(.nostosAccent))
+
+        for tick in elems.ticks {
+            context.stroke(tick, with: .color(.nostosAccent), lineWidth: elems.innerLineWidth)
+        }
+
+        context.stroke(elems.needle, with: .color(.nostosGold), lineWidth: elems.needleLineWidth)
+        context.fill(elems.goldDot, with: .color(.nostosGold))
+    }
+
+    // Return Views that encapsulate Canvas drawing so WaveLensLogo.swift becomes trivial
+    @inlinable
+    static func mainLogoView() -> some View {
+        Canvas { context, size in
+            renderMainLogo(in: context, size: size)
+        }
+        .frame(maxWidth: 28, maxHeight: 28)
+    }
+
+    @inlinable
+    static func watermarkView() -> some View {
+        Canvas { context, size in
+            renderWatermark(in: context, size: size)
+        }
+    }
+}
+
+// Provide View types here so the original WaveLensLogo.swift can be a thin cover-only file.
+struct WaveLensLogoViewWrapper: View {
+    var body: some View {
+        WaveLensLogoRenderer.mainLogoView()
+    }
+}
+
+struct WaveLensLogoWatermarkViewWrapper: View {
+    var body: some View {
+        WaveLensLogoRenderer.watermarkView()
+    }
+}
+
+// Provide typealiases matching original symbols
+typealias WaveLensLogo = WaveLensLogoViewWrapper
+typealias WaveLensLogoWatermark = WaveLensLogoWatermarkViewWrapper
+
+// Restore test helper as a static method so existing tests can call `WaveLensLogo.exerciseDrawingPaths(...)`.
+extension WaveLensLogoViewWrapper {
+    static func exerciseDrawingPaths(for size: CGSize) {
+        let elements = WaveLensLogoRenderer.mainElements(for: size)
+        _ = elements.bgPath.boundingRect
+        _ = elements.outerRing.boundingRect
+        _ = elements.wave.boundingRect
+        _ = elements.innerRing.boundingRect
+        _ = elements.centerDot.boundingRect
+        _ = elements.needle.boundingRect
+        _ = elements.needleDot.boundingRect
+        _ = elements.outerRingLineWidth
+        _ = elements.waveLineWidth
+        _ = elements.innerRingLineWidth
+        _ = elements.needleLineWidth
+    }
 }

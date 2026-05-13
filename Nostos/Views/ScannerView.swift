@@ -101,6 +101,7 @@ struct SourceFolderCard: View {
 
                 HStack(spacing: NostosSpacing.xl) {
                     Text(selectedPath.isEmpty ? "No folder selected" : selectedPath)
+                        .accessibilityIdentifier("scannerSelectedPathText")
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundColor(.nostosFg2)
                         .padding(.horizontal, NostosSpacing.md)
@@ -119,6 +120,8 @@ struct SourceFolderCard: View {
             }
             .padding(NostosSpacing.lg)
         }
+        .accessibilityIdentifier("scannerSourceFolderCard")
+        .accessibilityLabel(selectedPath.isEmpty ? "Source Folder. No folder selected" : "Source Folder. \(selectedPath)")
     }
 }
 
