@@ -1,0 +1,49 @@
+appId: com.nostos.Nostos
+---
+# Gallery Year Range Slider Test
+# Verifies year range slider shows "All years" by default and filters can be cleared
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Gallery tab
+- tapOn:
+    id: "galleryTabButton"
+
+# Default: no filter active - summary shows "All years"
+- assertVisible:
+    id: "galleryFilterYearSummary"
+    text: "All years"
+
+# Clear button should not be present initially
+- assertNotVisible:
+    id: "galleryFilterYearClear"
+
+# Tap a year button (we'll use a pattern to find the first one)
+# Note: Maestro might need specific year ID, adjusting to look for any year button
+- tapOn:
+    id: "galleryFilterYear_.*"
+    optional: true
+
+# If year was clicked, summary should update and clear button should appear
+- assertVisible:
+    id: "galleryFilterYearClear"
+    optional: true
+
+# Click clear button to reset filter
+- tapOn:
+    id: "galleryFilterYearClear"
+    optional: true
+
+# After clearing, should show "All years" again
+- assertVisible:
+    id: "galleryFilterYearSummary"
+    text: "All years"

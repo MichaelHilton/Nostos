@@ -9,7 +9,7 @@ BUILD_CODECOV_DIR="$ROOT_DIR/.build/debug/codecov"
 OUTPUT_DIR="$ROOT_DIR/coverage"
 SCHEME="Nostos"
 ARCH=$(uname -m)   # arm64 on Apple Silicon, x86_64 on Intel
-DESTINATION="platform=macOS,arch=$ARCH"
+DESTINATION="platform=macOS,name=My Mac"
 UI_TEST_TARGET="NostosUITests"
 
 # SPM always builds into an arch-specific subdirectory; the .build/debug symlink
@@ -23,6 +23,8 @@ IGNORE_REGEX='(\.build|Tests)(/|$)'
 
 mkdir -p "$BUILD_CODECOV_DIR"
 mkdir -p "$OUTPUT_DIR"
+
+cd "$ROOT_DIR"
 
 # Phase 1: build the coverage-instrumented test binary.
 # swift test --enable-code-coverage compiles correctly but on Swift 5.9 / macOS 13

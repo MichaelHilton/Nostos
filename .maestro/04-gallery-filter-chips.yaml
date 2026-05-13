@@ -1,0 +1,39 @@
+appId: com.nostos.Nostos
+---
+# Gallery Toolbar Filter Chips Test
+# Verifies filter chips toggle and Clear All button appears/disappears correctly
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Gallery tab
+- tapOn:
+    id: "galleryTabButton"
+
+# Click Duplicates filter chip
+- tapOn:
+    id: "galleryFilterChipDuplicates"
+
+# Clear All button should appear after activating a chip
+- assertVisible:
+    id: "galleryToolbarClearAllButton"
+
+# Click In Vault filter chip
+- tapOn:
+    id: "galleryFilterChipInVault"
+
+# Click Clear All button
+- tapOn:
+    id: "galleryToolbarClearAllButton"
+
+# Clear All button should disappear after clearing filters
+- assertNotVisible:
+    id: "galleryToolbarClearAllButton"

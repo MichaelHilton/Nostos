@@ -1,0 +1,50 @@
+appId: com.nostos.Nostos
+---
+# Gallery Vault Badge Test
+# Verifies photos show "IN VAULT" badge after backup completes
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Gallery tab
+- tapOn:
+    id: "galleryTabButton"
+
+# Start backup to vault
+- tapOn:
+    id: "galleryBackUpToVaultButton"
+
+# Wait for backup to complete
+- assertVisible:
+    id: "galleryBackUpAgainButton"
+    timeout: 30000
+
+# Filter by "In Vault" to verify backed-up photos
+- tapOn:
+    id: "galleryFilterChipInVault"
+
+# Should show at least one photo with vault status
+- assertVisible:
+    id: "galleryPhotoTile"
+
+# Clear All button should appear when filter is active
+- assertVisible:
+    id: "galleryToolbarClearAllButton"
+
+# Verify we can interact with a photo
+- tapOn:
+    id: "galleryPhotoTile"
+- assertVisible:
+    id: "galleryClearSelectionButton"
+- tapOn:
+    id: "galleryClearSelectionButton"
+- assertNotVisible:
+    id: "galleryClearSelectionButton"

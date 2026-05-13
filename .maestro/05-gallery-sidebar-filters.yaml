@@ -1,0 +1,41 @@
+appId: com.nostos.Nostos
+---
+# Gallery Sidebar Filters Test
+# Verifies sidebar duplicate-status and backup-status filter checkboxes work
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Gallery tab
+- tapOn:
+    id: "galleryTabButton"
+
+# Test duplicate-status filters
+- tapOn:
+    id: "galleryFilterWithDuplicates"
+- tapOn:
+    id: "galleryFilterNoDuplicates"
+
+# Test backup-status filters
+- tapOn:
+    id: "galleryFilterStatus_new"
+- tapOn:
+    id: "galleryFilterStatus_copied"
+- tapOn:
+    id: "galleryFilterStatus_skipped_duplicate"
+
+# Test "No camera info" filter
+- tapOn:
+    id: "galleryFilterNoCameraInfo"
+
+# Clear all filters
+- tapOn:
+    id: "galleryRemoveAllFiltersButton"

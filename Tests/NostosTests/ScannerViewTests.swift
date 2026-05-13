@@ -247,7 +247,10 @@ final class ScannerViewTests: XCTestCase {
 
     func testScannerViewProgressCardShownWhenScanning() throws {
         let state = AppState(db: db)
-        state.scanProgress = ScanProgress(total: 100, processed: 42, duplicatesFound: 2, isScanning: true)
+        let operation = ScanOperation(container: state.container, rootURL: FileManager.default.temporaryDirectory)
+        operation.isLoading = true
+        operation.scanProgress = ScanProgress(total: 100, processed: 42, duplicatesFound: 2, isScanning: true)
+        state.scanOperation = operation
 
         let view = ScannerView().environmentObject(state)
         let sut = try view.inspect()
@@ -260,7 +263,10 @@ final class ScannerViewTests: XCTestCase {
 
     func testScannerViewProgressCardNotShownWhenIdleAndNothingProcessed() throws {
         let state = AppState(db: db)
-        state.scanProgress = ScanProgress(total: 0, processed: 0, duplicatesFound: 0, isScanning: false)
+        let operation = ScanOperation(container: state.container, rootURL: FileManager.default.temporaryDirectory)
+        operation.isLoading = false
+        operation.scanProgress = ScanProgress(total: 0, processed: 0, duplicatesFound: 0, isScanning: false)
+        state.scanOperation = operation
 
         let view = ScannerView().environmentObject(state)
         let sut = try view.inspect()
@@ -290,7 +296,9 @@ final class ScannerViewTests: XCTestCase {
 
     func testScannerViewStartScanButtonText() throws {
         let state = AppState(db: db)
-        state.scanProgress = ScanProgress(total: 0, processed: 0, duplicatesFound: 0, isScanning: false)
+        let operation = ScanOperation(container: state.container, rootURL: FileManager.default.temporaryDirectory)
+        operation.isLoading = false
+        state.scanOperation = operation
 
         let view = ScannerView().environmentObject(state)
         let sut = try view.inspect()
@@ -303,7 +311,9 @@ final class ScannerViewTests: XCTestCase {
 
     func testScannerViewScanningButtonText() throws {
         let state = AppState(db: db)
-        state.scanProgress = ScanProgress(total: 0, processed: 0, duplicatesFound: 0, isScanning: true)
+        let operation = ScanOperation(container: state.container, rootURL: FileManager.default.temporaryDirectory)
+        operation.isLoading = true
+        state.scanOperation = operation
 
         let view = ScannerView().environmentObject(state)
         let sut = try view.inspect()
@@ -460,7 +470,7 @@ final class ScannerViewTests: XCTestCase {
         do {
             try sut.find(button: "▶  Start Scan").tap()
             // If tap succeeds, the closure at lines 42-43 is covered
-            XCTAssertTrue(state.scanProgress.isScanning)
+            XCTAssertTrue(state.scanOperation?.isLoading ?? false)
         } catch {
             // If tapping fails due to ViewInspector limitations, the inline closure
             // at lines 42-43 remains uncovered but the action is tested via subcomponent unit tests

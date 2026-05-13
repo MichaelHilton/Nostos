@@ -1,0 +1,16 @@
+# Maestro Configuration for Nostos
+# This file is optional but can configure common settings
+
+# App identifier for macOS
+appId: com.nostos.Nostos
+
+# Common environment variables for all flows
+env:
+  UI_TESTING: "1"
+  UI_TESTING_SEED_DATA: "1"
+
+# Default timeout values (milliseconds)
+# Can be overridden in individual flows
+defaults:
+  timeout: 10000
+  retryInterval: 500

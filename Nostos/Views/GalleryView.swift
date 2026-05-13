@@ -984,8 +984,8 @@ struct BackupFooterBar: View {
     }
 
     private func startBackup() {
-        // If running under XCTest, avoid scheduling timers – make it deterministic for tests.
-        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+        // If running under UI tests, complete instantly instead of using a timer.
+        if ProcessInfo.processInfo.environment["UI_TESTING"] != nil {
             backupState = .running
             progress = 100
             backupState = .done

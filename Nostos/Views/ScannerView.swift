@@ -36,26 +36,26 @@ struct ScannerView: View {
 
                     // Scan button
                     ScanActionBar(
-                        isScanning: state.scanProgress.isScanning,
-                        isDisabled: selectedPath.isEmpty || state.scanProgress.isScanning,
+                        isScanning: state.scanOperation?.isLoading ?? false,
+                        isDisabled: selectedPath.isEmpty || (state.scanOperation?.isLoading ?? false),
                         onStartScan: {
                             state.startScan(rootURL: URL(fileURLWithPath: selectedPath))
                         }
                     )
 
                     // Progress card
-                    if state.scanProgress.isScanning || state.scanProgress.processed > 0 {
+                    if (state.scanOperation?.isLoading ?? false) || (state.scanOperation?.scanProgress.processed ?? 0) > 0 {
                         CardView {
                             VStack(alignment: .leading, spacing: NostosSpacing.lg) {
                                 SectionLabel("Progress")
 
-                                let progress = Double(state.scanProgress.processed) / Double(max(1, state.scanProgress.total))
+                                let progress = Double(state.scanOperation?.scanProgress.processed ?? 0) / Double(max(1, state.scanOperation?.scanProgress.total ?? 0))
                                 NostosProgressBar(progress, total: 1.0)
 
                                 HStack(spacing: 40) {
-                                    Stat("Files Found", value: "\(state.scanProgress.total)")
-                                    Stat("Processed", value: "\(state.scanProgress.processed)")
-                                    Stat("Duplicates", value: "\(state.scanProgress.duplicatesFound)")
+                                    Stat("Files Found", value: "\(state.scanOperation?.scanProgress.total ?? 0)")
+                                    Stat("Processed", value: "\(state.scanOperation?.scanProgress.processed ?? 0)")
+                                    Stat("Duplicates", value: "\(state.scanOperation?.scanProgress.duplicatesFound ?? 0)")
                                 }
                             }
                             .padding(NostosSpacing.lg)

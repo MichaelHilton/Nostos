@@ -73,7 +73,7 @@ final class Scanner {
                     await group.next()
                     active -= 1
                 }
-                let runId = run.id
+                let runId = run.id!
                 group.addTask { [self] in
                     await self.processPhoto(url: url, scanRunId: runId, knownPaths: knownPaths, counter: counter)
                 }

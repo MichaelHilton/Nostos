@@ -73,12 +73,11 @@ final class AppStateMoreTests: XCTestCase {
         let db = try! AppDatabase.makeInMemory()
         let appState = AppState(db: db)
 
-        appState.scanProgress = ScanProgress(isScanning: true)
         let sourceURL = FileManager.default.temporaryDirectory
 
         appState.startScan(rootURL: sourceURL)
 
-        XCTAssertTrue(appState.scanProgress.isScanning)
+        XCTAssertTrue(appState.scanOperation?.isLoading ?? false)
     }
 
     func testStartVaultWithoutVaultRootSetsError() {
@@ -100,7 +99,7 @@ final class AppStateMoreTests: XCTestCase {
 
         appState.startOrganize(destination: tmpDir, folderFormat: "YYYY", dryRun: true)
 
-        XCTAssertTrue(appState.organizeProgress.isRunning)
+        XCTAssertTrue(appState.organizeOperation?.isLoading ?? false)
 
         try? FileManager.default.removeItem(at: tmpDir)
     }
@@ -255,7 +254,7 @@ final class AppStateMoreTests: XCTestCase {
 
         try await Task.sleep(nanoseconds: 500_000_000)
 
-        XCTAssertFalse(appState.scanProgress.isScanning)
+        XCTAssertFalse(appState.scanOperation?.isLoading ?? false)
 
         try? FileManager.default.removeItem(at: sourceDir)
     }
@@ -276,7 +275,7 @@ final class AppStateMoreTests: XCTestCase {
 
         try await Task.sleep(nanoseconds: 200_000_000)
 
-        XCTAssertTrue(appState.organizeProgress.isRunning || appState.organizeJobs.count >= 0)
+        XCTAssertTrue((appState.organizeOperation?.isLoading ?? false) || appState.organizeJobs.count >= 0)
 
         try? FileManager.default.removeItem(at: vaultDir)
         try? FileManager.default.removeItem(at: sourceDir)
@@ -296,7 +295,7 @@ final class AppStateMoreTests: XCTestCase {
 
         try await Task.sleep(nanoseconds: 300_000_000)
 
-        XCTAssertTrue(appState.organizeProgress.isRunning || appState.lastOrganizeResults.count >= 0)
+        XCTAssertTrue((appState.organizeOperation?.isLoading ?? false) || appState.lastOrganizeResults.count >= 0)
 
         try? FileManager.default.removeItem(at: vaultDir)
     }
@@ -315,7 +314,7 @@ final class AppStateMoreTests: XCTestCase {
 
         try await Task.sleep(nanoseconds: 300_000_000)
 
-        XCTAssertTrue(appState.backupProgress.isRunning || appState.lastBackupResults.count >= 0)
+        XCTAssertTrue((appState.backupOperation?.isLoading ?? false) || appState.lastBackupResults.count >= 0)
 
         try? FileManager.default.removeItem(at: vaultDir)
     }
@@ -475,14 +474,11 @@ final class AppStateMoreTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
-    func testScanProgressUpdatesWhenNotScanning() {
+    func testScanOperationIsNilInitially() {
         let db = try! AppDatabase.makeInMemory()
         let appState = AppState(db: db)
 
-        XCTAssertFalse(appState.scanProgress.isScanning)
-
-        appState.scanProgress = ScanProgress(isScanning: true)
-        XCTAssertTrue(appState.scanProgress.isScanning)
+        XCTAssertNil(appState.scanOperation)
     }
 
     func testErrorMessageIsNilInitially() {

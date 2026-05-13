@@ -1,0 +1,43 @@
+appId: com.nostos.Nostos
+---
+# Tab Navigation Test
+# Verifies clicking each sidebar tab button navigates to that tab's content
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Default tab is Gallery
+- assertVisible:
+    id: "galleryPhotoTile"
+
+# Navigate to Scanner tab
+- tapOn:
+    id: "scannerTabButton"
+- assertVisible:
+    id: "scannerStartScanButton"
+
+# Navigate to Duplicates tab
+- tapOn:
+    id: "duplicatesTabButton"
+- assertVisible:
+    id: "duplicatesKeepFirstButton"
+
+# Navigate to Vault tab
+- tapOn:
+    id: "vaultTabButton"
+- assertVisible:
+    id: "vaultChangeVaultButton"
+
+# Back to Gallery tab
+- tapOn:
+    id: "galleryTabButton"
+- assertVisible:
+    id: "galleryPhotoTile"

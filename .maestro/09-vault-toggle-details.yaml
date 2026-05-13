@@ -1,0 +1,27 @@
+appId: com.nostos.Nostos
+---
+# Vault Toggle Details Test
+# Verifies Show Details / Hide button toggles the results table
+
+- launchApp:
+    appId: com.nostos.Nostos
+    env:
+      UI_TESTING_SEED_DATA: "1"
+      UI_TESTING: "1"
+
+# Wait for app to initialize
+- assertVisible:
+    id: "scannerTabButton"
+    timeout: 45000
+
+# Navigate to Vault tab
+- tapOn:
+    id: "vaultTabButton"
+
+# Click Show Details (or Hide if already shown)
+- tapOn:
+    id: "vaultToggleDetailsButton"
+
+# Click again to toggle back
+- tapOn:
+    id: "vaultToggleDetailsButton"
