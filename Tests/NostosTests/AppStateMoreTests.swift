@@ -169,7 +169,8 @@ final class AppStateMoreTests: XCTestCase {
 
         XCTAssertEqual(appState.photos.count, 1)
 
-        let filter = PhotoFilter(limit: 0)
+        var filter = PhotoFilter()
+        filter.status = [.copied]
         appState.applyFilter(filter)
 
         try await Task.sleep(nanoseconds: 100_000_000)

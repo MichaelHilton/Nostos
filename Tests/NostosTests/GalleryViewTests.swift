@@ -115,7 +115,15 @@ final class GalleryViewTests: XCTestCase {
         state.totalPhotoCount = 1
 
         // Inspect BackupFooterBar directly to avoid inspecting the whole GalleryView
-        let footer0 = BackupFooterBar(matchCount: 0).environmentObject(state)
+        let footer0 = BackupFooterBar(
+            matchCount: 0,
+            filterStatus: [],
+            filterCameraModels: [],
+            filterIncludeNoCamera: false,
+            filterHasDuplicates: [],
+            filterYearFrom: nil,
+            filterYearTo: nil
+        ).environmentObject(state)
         let sut0 = try footer0.inspect()
         var foundText0: String?
         for t in try sut0.findAll(ViewType.Text.self) {
@@ -126,7 +134,15 @@ final class GalleryViewTests: XCTestCase {
         }
         XCTAssertEqual(foundText0, "0 photos to back up")
 
-        let footer1 = BackupFooterBar(matchCount: 2).environmentObject(state)
+        let footer1 = BackupFooterBar(
+            matchCount: 2,
+            filterStatus: [],
+            filterCameraModels: [],
+            filterIncludeNoCamera: false,
+            filterHasDuplicates: [],
+            filterYearFrom: nil,
+            filterYearTo: nil
+        ).environmentObject(state)
         let sut1 = try footer1.inspect()
         var foundText1: String?
         for t in try sut1.findAll(ViewType.Text.self) {

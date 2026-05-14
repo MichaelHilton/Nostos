@@ -277,7 +277,7 @@ final class AppStateCoverageTests: XCTestCase {
 
         let appState = AppState(vaultRootURL: tmpDir)
 
-        XCTAssertEqual(appState.photoFilter.limit, 10)
+        XCTAssertEqual(appState.photoFilter.limit, 0)
 
         try? FileManager.default.removeItem(at: tmpDir)
     }

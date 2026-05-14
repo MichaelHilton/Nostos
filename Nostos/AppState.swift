@@ -56,9 +56,7 @@ final class AppState: ObservableObject {
         }
         self.container = ServiceContainer(db: db)
         ThumbnailService.configure(vaultRootURL: defaultVaultRoot)
-        // Start with a reasonable page size for the gallery to avoid loading
-        // thousands of photos into memory at once. Use `0` for no limit.
-        photoFilter.limit = 200
+        photoFilter.limit = 0
         Task { await loadInitialData() }
     }
 
@@ -72,13 +70,8 @@ final class AppState: ObservableObject {
         }
         self.container = ServiceContainer(db: db)
         ThumbnailService.configure(vaultRootURL: vaultRootURL)
-        // Start with a reasonable page size for the gallery to avoid loading
-        // thousands of photos into memory at once. Use `0` for no limit.
-        photoFilter.limit = 200
+        photoFilter.limit = 0
         seedUITestDataIfNeeded()
-        if ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" {
-            photoFilter.limit = 10
-        }
         Task { await loadInitialData() }
     }
 
@@ -353,9 +346,7 @@ final class AppState: ObservableObject {
         scanOperation = nil
         photos = []
         photoFilter = PhotoFilter()
-        if ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" {
-            photoFilter.limit = 10
-        }
+        photoFilter.limit = 0
         cameraModels = []
         years = []
         duplicateGroups = []

@@ -38,24 +38,6 @@ struct GalleryView: View {
                                 }
                                 .padding(.horizontal, NostosSpacing.lg)
                                 .padding(.vertical, NostosSpacing.xxxl)
-
-                                // Load more control for large galleries
-                                if state.photos.count < state.totalPhotoCount {
-                                    HStack {
-                                        Spacer()
-                                        Button(action: { state.loadMorePhotos() }) {
-                                            Text(state.isLoadingMorePhotos ? "Loading..." : "Load more photos")
-                                                .font(.system(size: 12, weight: .semibold))
-                                        }
-                                        .buttonStyle(.bordered)
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, NostosSpacing.lg)
-                                    .onAppear {
-                                        // Auto-load when user scrolls near the bottom
-                                        state.loadMorePhotos()
-                                    }
-                                }
                             }
                             .background(Color.nostosBg)
                         }
@@ -71,7 +53,15 @@ struct GalleryView: View {
                     }
 
                     // Backup footer bar
-                    BackupFooterBar(matchCount: backupCandidateCount)
+                    BackupFooterBar(
+                        matchCount: backupCandidateCount,
+                        filterStatus: filterStatus,
+                        filterCameraModels: filterCameraModels,
+                        filterIncludeNoCamera: filterIncludeNoCamera,
+                        filterHasDuplicates: filterHasDuplicates,
+                        filterYearFrom: filterYearFrom,
+                        filterYearTo: filterYearTo
+                    )
                 }
                 .frame(maxHeight: .infinity, alignment: .topLeading)
 
@@ -252,15 +242,9 @@ struct GalleryView: View {
             monthHeader(group)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: tileSize, maximum: tileSize), spacing: 5)], spacing: 5) {
-                let prefetchThreshold = 30
                 ForEach(group.photos.indices, id: \.self) { idx in
                     let photo = group.photos[idx]
                     GalleryPhotoTile(photo: photo, tileSize: tileSize, selectedPhoto: $selectedPhoto, hoveredPhotoId: $hoveredPhotoId)
-                        .onAppear {
-                            if idx >= group.photos.count - prefetchThreshold {
-                                state.loadMorePhotos()
-                            }
-                        }
                 }
             }
         }
@@ -965,8 +949,13 @@ struct GalleryFilterSidebar: View {
 // MARK: - Backup Footer Bar
 struct BackupFooterBar: View {
     let matchCount: Int
-    @State private var backupState: BackupState = .idle
-    @State private var progress: Double = 0
+    let filterStatus: Set<PhotoStatus>
+    let filterCameraModels: Set<String>
+    let filterIncludeNoCamera: Bool
+    let filterHasDuplicates: Set<Bool>
+    let filterYearFrom: Int?
+    let filterYearTo: Int?
+
     @EnvironmentObject var state: AppState
 
     var body: some View {
@@ -976,7 +965,12 @@ struct BackupFooterBar: View {
                 .foregroundColor(.nostosAccent)
 
             VStack(alignment: .leading, spacing: 0) {
-                if backupState == .done {
+                if state.backupOperation?.isLoading == true {
+                    let progress = state.backupOperation?.backupProgress
+                    Text("\(progress?.copied ?? 0) of \(progress?.total ?? 0) photos backed up")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.nostosFg2)
+                } else if state.lastBackupResults.count > 0, state.backupOperation?.isLoading != true {
                     HStack(spacing: 5) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 11))
@@ -991,26 +985,29 @@ struct BackupFooterBar: View {
                 }
             }
 
-            if backupState == .running || backupState == .paused {
-                NostosProgressBar(progress / 100.0, total: 1.0)
+            if state.backupOperation?.isLoading == true {
+                let progress = state.backupOperation?.backupProgress
+                let total = progress?.total ?? 1
+                let copied = progress?.copied ?? 0
+                let percentage = total > 0 ? Double(copied) / Double(total) : 0
+                NostosProgressBar(percentage, total: 1.0)
                     .frame(width: 100)
 
-                Text("\(Int(progress))%")
+                Text("\(Int(percentage * 100))%")
                     .font(.system(size: 11, weight: .regular))
                     .foregroundColor(.nostosFg3)
             }
 
             Spacer()
 
-            if backupState == .done {
+            if state.lastBackupResults.count > 0, state.backupOperation?.isLoading != true {
                 Button("Back Up Again") {
-                    backupState = .idle
-                    progress = 0
+                    startBackup()
                 }
                 .buttonStyle(.bordered)
                 .font(.system(size: 12, weight: .medium))
                 .accessibilityIdentifier("galleryBackUpAgainButton")
-            } else if backupState == .idle {
+            } else if state.backupOperation?.isLoading != true {
                 Button(action: { startBackup() }) {
                     Image(systemName: "play.fill")
                     Text("Back Up to Vault")
@@ -1020,13 +1017,6 @@ struct BackupFooterBar: View {
                 .font(.system(size: 12, weight: .medium))
                 .disabled(matchCount == 0)
                 .accessibilityIdentifier("galleryBackUpToVaultButton")
-            } else {
-                Button(action: { backupState = backupState == .running ? .paused : .running }) {
-                    Image(systemName: backupState == .running ? "pause.fill" : "play.fill")
-                }
-                .frame(width: 28, height: 28)
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("galleryBackupPauseResumeButton")
             }
         }
         .padding(.horizontal, NostosSpacing.lg)
@@ -1036,35 +1026,16 @@ struct BackupFooterBar: View {
     }
 
     private func startBackup() {
-        // If running under UI tests, complete instantly instead of using a timer.
-        if ProcessInfo.processInfo.environment["UI_TESTING"] != nil {
-            backupState = .running
-            progress = 100
-            backupState = .done
-            return
-        }
+        var filter = PhotoFilter()
+        filter.status = filterStatus
+        filter.cameraModels = filterCameraModels
+        filter.includeNoCamera = filterIncludeNoCamera
+        filter.hasDuplicates = filterHasDuplicates
+        filter.yearFrom = filterYearFrom
+        filter.yearTo = filterYearTo
+        filter.limit = 0
 
-        backupState = .running
-        progress = 0
-
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
-            progress += Double.random(in: 0.5...3)
-            if progress >= 100 {
-                progress = 100
-                backupState = .done
-                Timer.scheduledTimer(withTimeInterval: 0.01, repeats: false) { _ in
-                    // Backup complete
-                }
-            }
-        }
-        _ = timer
-    }
-
-    enum BackupState {
-        case idle
-        case running
-        case paused
-        case done
+        state.startBackup(folderFormat: "YYYY/MM/DD", filter: filter, dryRun: false)
     }
 }
 
