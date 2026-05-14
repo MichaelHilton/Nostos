@@ -99,8 +99,11 @@ struct VaultView: View {
                                         .padding(.vertical, NostosSpacing.sm)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .background(Color.nostosSurface2)
-                                        .border(Color.nostosBorder, width: 1)
                                         .cornerRadius(NostosRadii.md)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: NostosRadii.md)
+                                                .stroke(Color.nostosBorder, lineWidth: 1)
+                                        )
 
                                     Button(action: {
                                         pendingVaultURL = state.pickVaultDirectory()
@@ -124,8 +127,11 @@ struct VaultView: View {
                                         .padding(.horizontal, NostosSpacing.md)
                                         .padding(.vertical, NostosSpacing.sm)
                                         .background(Color.nostosSurface2)
-                                        .border(Color.nostosBorder, width: 1)
                                         .cornerRadius(NostosRadii.md)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: NostosRadii.md)
+                                                .stroke(Color.nostosBorder, lineWidth: 1)
+                                        )
 
                                     Text("YYYY, MM, DD")
                                         .font(.system(size: 10, weight: .regular))

@@ -191,8 +191,11 @@ struct DupGroupCard: View {
             }
         }
         .background(Color.nostosSurface)
-        .border(borderColor, width: 1.5)
         .cornerRadius(NostosRadii.xl)
+        .overlay(
+            RoundedRectangle(cornerRadius: NostosRadii.xl)
+                .stroke(borderColor, lineWidth: 1.5)
+        )
     }
 }
 

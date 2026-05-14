@@ -56,8 +56,11 @@ struct CardView<Content: View>: View {
             content
         }
         .background(Color.nostosSurface)
-        .border(Color.nostosBorder, width: 1)
         .cornerRadius(NostosRadii.xl)
+        .overlay(
+            RoundedRectangle(cornerRadius: NostosRadii.xl)
+                .stroke(Color.nostosBorder, lineWidth: 1)
+        )
         .padding(.horizontal, NostosSpacing.xxxl)
     }
 }
@@ -113,8 +116,11 @@ struct NostosStatCard: View {
         .padding(NostosSpacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.nostosSurface)
-        .border(Color.nostosBorder, width: 1)
         .cornerRadius(NostosRadii.xl)
+        .overlay(
+            RoundedRectangle(cornerRadius: NostosRadii.xl)
+                .stroke(Color.nostosBorder, lineWidth: 1)
+        )
     }
 }
 

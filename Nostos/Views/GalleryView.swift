@@ -280,16 +280,20 @@ struct GalleryView: View {
             .animation(.easeInOut(duration: 0.15), value: hoveredPhotoId)
 
             // Badges (top-left)
-            HStack(spacing: 3) {
-                if photo.duplicateGroupId != nil {
-                    Badge(label: "DUP", bg: Color.nostosOrange)
-                }
-                if photo.status == .copied {
-                    VaultBadge()
+            VStack(alignment: .leading) {
+                HStack(spacing: 3) {
+                    if photo.duplicateGroupId != nil {
+                        Badge(label: "DUP", bg: Color.nostosOrange)
+                    }
+                    if photo.status == .copied || (photo.status == .skippedDuplicate && photo.isKept) {
+                        VaultBadge()
+                    }
+                    Spacer()
                 }
                 Spacer()
             }
             .padding(4)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             // Selection checkmark (top-right)
             if selectedPhoto?.id == photo.id {
@@ -307,7 +311,10 @@ struct GalleryView: View {
         .frame(height: tileSize)
         .cornerRadius(NostosRadii.md)
         .clipped()
-        .border(selectedPhoto?.id == photo.id ? Color.nostosAccent : Color.clear, width: 2.5)
+        .overlay(
+            RoundedRectangle(cornerRadius: NostosRadii.md)
+                .stroke(selectedPhoto?.id == photo.id ? Color.nostosAccent : Color.clear, lineWidth: 2.5)
+        )
         .accessibilityIdentifier("galleryPhotoTile")
         .onHover { hovering in
             hoveredPhotoId = hovering ? photo.id : nil
@@ -699,17 +706,6 @@ struct GalleryPhotoTile: View {
             .opacity(hoveredPhotoId == photo.id || selectedPhoto?.id == photo.id ? 1 : 0)
             .animation(.easeInOut(duration: 0.15), value: hoveredPhotoId)
 
-            HStack(spacing: 3) {
-                if photo.duplicateGroupId != nil {
-                    Badge(label: "DUP", bg: Color.nostosOrange)
-                }
-                if photo.status == .copied {
-                    VaultBadge()
-                }
-                Spacer()
-            }
-            .padding(4)
-
             if selectedPhoto?.id == photo.id {
                 Circle()
                     .fill(Color.nostosAccent)
@@ -725,7 +721,22 @@ struct GalleryPhotoTile: View {
         .frame(height: tileSize)
         .cornerRadius(NostosRadii.md)
         .clipped()
-        .border(selectedPhoto?.id == photo.id ? Color.nostosAccent : Color.clear, width: 2.5)
+        .overlay(alignment: .topLeading) {
+            HStack(spacing: 3) {
+                if photo.duplicateGroupId != nil {
+                    Badge(label: "DUP", bg: Color.nostosOrange)
+                }
+                if photo.status == .copied || (photo.status == .skippedDuplicate && photo.isKept) {
+                    VaultBadge()
+                }
+                Spacer()
+            }
+            .padding(4)
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: NostosRadii.md)
+                .stroke(selectedPhoto?.id == photo.id ? Color.nostosAccent : Color.clear, lineWidth: 2.5)
+        )
         .accessibilityIdentifier("galleryPhotoTile")
         .onHover { hovering in
             hoveredPhotoId = hovering ? photo.id : nil

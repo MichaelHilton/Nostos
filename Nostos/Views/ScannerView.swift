@@ -108,8 +108,11 @@ struct SourceFolderCard: View {
                         .padding(.vertical, NostosSpacing.sm)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.nostosSurface2)
-                        .border(Color.nostosBorder, width: 1)
                         .cornerRadius(NostosRadii.md)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: NostosRadii.md)
+                                .stroke(Color.nostosBorder, lineWidth: 1)
+                        )
 
                     Button(action: onChoose) {
                         Text("Choose…")
