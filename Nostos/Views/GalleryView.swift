@@ -153,59 +153,19 @@ struct GalleryView: View {
 
                 Spacer()
 
-                HStack(spacing: 6) {
-                    Text("Filter:")
-                        .font(.system(size: 10, weight: .regular))
+                HStack(spacing: 7) {
+                    Image(systemName: "square")
+                        .font(.system(size: 11))
                         .foregroundColor(.nostosFg3)
 
-                    filterChip("Duplicates", isActive: filterHasDuplicates.contains(true)) {
-                        if filterHasDuplicates.contains(true) {
-                            filterHasDuplicates.remove(true)
-                        } else {
-                            filterHasDuplicates.insert(true)
-                        }
-                        applyLocalFilters()
-                    }
-                    .accessibilityIdentifier("galleryFilterChipDuplicates")
+                    Slider(value: $tileSize, in: 80...220, step: 10)
+                        .tint(Color.nostosAccent)
+                        .frame(width: 72)
 
-                    filterChip("In Vault", isActive: filterStatus.contains(.copied)) {
-                        if filterStatus.contains(.copied) {
-                            filterStatus.remove(.copied)
-                        } else {
-                            filterStatus.insert(.copied)
-                        }
-                        applyLocalFilters()
-                    }
-                    .accessibilityIdentifier("galleryFilterChipInVault")
-
-                    if isFiltered {
-                        Button("Clear all") {
-                            clearFilters()
-                        }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(.nostosAccent)
-                        .accessibilityIdentifier("galleryToolbarClearAllButton")
-                    }
-
-                    Divider()
-                        .frame(height: 16)
-
-                    HStack(spacing: 7) {
-                        Image(systemName: "square")
-                            .font(.system(size: 11))
-                            .foregroundColor(.nostosFg3)
-
-                        Slider(value: $tileSize, in: 80...220, step: 10)
-                            .tint(Color.nostosAccent)
-                            .frame(width: 72)
-
-                        Image(systemName: "square")
-                            .font(.system(size: 15))
-                            .foregroundColor(.nostosFg3)
-                    }
+                    Image(systemName: "square")
+                        .font(.system(size: 15))
+                        .foregroundColor(.nostosFg3)
                 }
-                .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .padding(.horizontal, NostosSpacing.lg)
             .padding(.vertical, 7)
