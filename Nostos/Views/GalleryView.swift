@@ -13,6 +13,8 @@ struct GalleryView: View {
     @State private var filterYearFrom: Int?
     @State private var filterYearTo: Int?
     @State private var tileSize: CGFloat = 145
+    @State private var cachedFilteredPhotos: [Photo] = []
+    @State private var cachedMonthGroups: [MonthGroup] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,19 +25,37 @@ struct GalleryView: View {
                     toolbarArea
 
                     // Photos grid with month grouping
-                    if filteredPhotos.isEmpty {
+                    if cachedFilteredPhotos.isEmpty {
                         emptyStateArea
                     } else {
                         ScrollView {
-                            VStack(alignment: .leading, spacing: 22) {
+                            LazyVStack(alignment: .leading, spacing: 22) {
                                 StarDotBackground()
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                                ForEach(Array(monthGroups.enumerated()), id: \.offset) { _, group in
+                                ForEach(Array(cachedMonthGroups.enumerated()), id: \.offset) { _, group in
                                     monthGroupSection(group)
                                 }
                                 .padding(.horizontal, NostosSpacing.lg)
                                 .padding(.vertical, NostosSpacing.xxxl)
+
+                                // Load more control for large galleries
+                                if state.photos.count < state.totalPhotoCount {
+                                    HStack {
+                                        Spacer()
+                                        Button(action: { state.loadMorePhotos() }) {
+                                            Text(state.isLoadingMorePhotos ? "Loading..." : "Load more photos")
+                                                .font(.system(size: 12, weight: .semibold))
+                                        }
+                                        .buttonStyle(.bordered)
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, NostosSpacing.lg)
+                                    .onAppear {
+                                        // Auto-load when user scrolls near the bottom
+                                        state.loadMorePhotos()
+                                    }
+                                }
                             }
                             .background(Color.nostosBg)
                         }
@@ -67,11 +87,28 @@ struct GalleryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { rebuildCache() }
+        .onChange(of: state.photos.count) { _ in rebuildCache() }
+        .onChange(of: filterStatus) { _ in rebuildCache() }
+        .onChange(of: filterCameraModels) { _ in rebuildCache() }
+        .onChange(of: filterIncludeNoCamera) { _ in rebuildCache() }
+        .onChange(of: filterHasDuplicates) { _ in rebuildCache() }
+        .onChange(of: filterYearFrom) { _ in rebuildCache() }
+        .onChange(of: filterYearTo) { _ in rebuildCache() }
     }
 
     // MARK: - Computed properties
 
-    private var filteredPhotos: [Photo] {
+    private var backupCandidateCount: Int {
+        cachedFilteredPhotos.filter { $0.status != .copied }.count
+    }
+
+    private func rebuildCache() {
+        cachedFilteredPhotos = computeFilteredPhotos()
+        cachedMonthGroups = computeMonthGroups(from: cachedFilteredPhotos)
+    }
+
+    private func computeFilteredPhotos() -> [Photo] {
         state.photos.filter { photo in
             if !filterStatus.isEmpty && !filterStatus.contains(photo.status) { return false }
             if !filterCameraModels.isEmpty || filterIncludeNoCamera {
@@ -95,9 +132,9 @@ struct GalleryView: View {
         }
     }
 
-    private var monthGroups: [MonthGroup] {
+    private func computeMonthGroups(from photos: [Photo]) -> [MonthGroup] {
         var groups: [MonthKey: [Photo]] = [:]
-        for photo in filteredPhotos {
+        for photo in photos {
             let key: MonthKey
             if let date = photo.takenAt {
                 let components = Calendar.current.dateComponents([.year, .month], from: date)
@@ -114,17 +151,13 @@ struct GalleryView: View {
             }
     }
 
-    private var backupCandidateCount: Int {
-        filteredPhotos.filter { $0.status != .copied }.count
-    }
-
     // MARK: - UI Components
 
     @ViewBuilder
     private var toolbarArea: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text("\(filteredPhotos.count) of \(state.totalPhotoCount) photos")
+                Text("\(cachedFilteredPhotos.count) of \(state.totalPhotoCount) photos")
                     .font(.system(size: 11, weight: .regular))
                     .foregroundColor(.nostosFg3)
 
@@ -219,8 +252,15 @@ struct GalleryView: View {
             monthHeader(group)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: tileSize, maximum: tileSize), spacing: 5)], spacing: 5) {
-                ForEach(group.photos) { photo in
-                    photoTile(photo)
+                let prefetchThreshold = 30
+                ForEach(group.photos.indices, id: \.self) { idx in
+                    let photo = group.photos[idx]
+                    GalleryPhotoTile(photo: photo, tileSize: tileSize, selectedPhoto: $selectedPhoto, hoveredPhotoId: $hoveredPhotoId)
+                        .onAppear {
+                            if idx >= group.photos.count - prefetchThreshold {
+                                state.loadMorePhotos()
+                            }
+                        }
                 }
             }
         }
@@ -666,12 +706,13 @@ struct GalleryPhotoTile: View {
     let tileSize: CGFloat
     @Binding var selectedPhoto: Photo?
     @Binding var hoveredPhotoId: Int64?
+    @StateObject private var loader = ThumbnailLoader()
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             LinearGradient(gradient: Gradient(colors: [Color.nostosAccent.opacity(0.3), Color.nostosAccent.opacity(0.1)]), startPoint: .topLeading, endPoint: .bottomTrailing)
 
-            if let thumbPath = photo.thumbnailPath, let img = ThumbnailService.loadImage(path: thumbPath) {
+            if let img = loader.image {
                 Image(nsImage: img)
                     .resizable()
                     .scaledToFill()
@@ -734,6 +775,17 @@ struct GalleryPhotoTile: View {
             } else {
                 selectedPhoto = photo
             }
+        }
+        .onAppear {
+            loader.load(thumbnailPath: photo.thumbnailPath) {
+                if let id = photo.id {
+                    return ThumbnailService.thumbnail(for: id, sourceURL: URL(fileURLWithPath: photo.path))
+                }
+                return nil
+            }
+        }
+        .onDisappear {
+            loader.cancel()
         }
     }
 

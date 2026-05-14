@@ -251,19 +251,22 @@ struct DupPhotoThumb: View {
     private func loadThumbnail() {
         guard image == nil else { return }
         Task.detached(priority: .userInitiated) {
-            let loaded: NSImage? = {
-                if let path = photo.thumbnailPath {
-                    return ThumbnailService.loadImage(path: path)
+            let loaded: NSImage?
+            if let path = photo.thumbnailPath {
+                loaded = await ThumbnailService.loadImageAsync(path: path)
+            } else if let photoId = photo.id {
+                let path = ThumbnailService.thumbnail(
+                    for: photoId,
+                    sourceURL: URL(fileURLWithPath: photo.path)
+                )
+                if let p = path {
+                    loaded = await ThumbnailService.loadImageAsync(path: p)
+                } else {
+                    loaded = nil
                 }
-                if let photoId = photo.id {
-                    let path = ThumbnailService.thumbnail(
-                        for: photoId,
-                        sourceURL: URL(fileURLWithPath: photo.path)
-                    )
-                    return path.flatMap { ThumbnailService.loadImage(path: $0) }
-                }
-                return nil
-            }()
+            } else {
+                loaded = nil
+            }
             await MainActor.run { image = loaded }
         }
     }

@@ -256,10 +256,14 @@ extension AppDatabase {
                 }
                 // if both or neither are selected -> no extra filter (any)
             }
-            return try query
-                .order(Column("taken_at").desc)
-                .limit(filter.limit, offset: filter.offset)
-                .fetchAll(db)
+            let ordered = query.order(Column("taken_at").desc)
+            if filter.limit > 0 {
+                return try ordered
+                    .limit(filter.limit, offset: filter.offset)
+                    .fetchAll(db)
+            } else {
+                return try ordered.fetchAll(db)
+            }
         }
     }
 

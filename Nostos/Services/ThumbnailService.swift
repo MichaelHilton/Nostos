@@ -97,6 +97,54 @@ enum ThumbnailService {
         if let loader = Self.testImageLoader {
             return loader(path)
         }
-        return NSImage(contentsOfFile: path)
+
+        if let cached = ImageCache.shared.image(forKey: path) {
+            return cached
+        }
+
+        if let img = NSImage(contentsOfFile: path) {
+            ImageCache.shared.insert(img, forKey: path)
+            return img
+        }
+        return nil
+    }
+
+    static func loadImageAsync(path: String) async -> NSImage? {
+        if let cached = ImageCache.shared.image(forKey: path) {
+            return cached
+        }
+
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                // Use Image I/O to downsample while loading to avoid creating large images
+                let url = URL(fileURLWithPath: path)
+                if let src = CGImageSourceCreateWithURL(url as CFURL, nil) {
+                    let options: [CFString: Any] = [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true,
+                        kCGImageSourceThumbnailMaxPixelSize: size,
+                        kCGImageSourceShouldCacheImmediately: false
+                    ]
+                    if let cgThumb = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary) {
+                        // Create NSImage on the main thread (AppKit is not thread-safe).
+                        DispatchQueue.main.async {
+                            let img = NSImage(cgImage: cgThumb, size: NSSize(width: cgThumb.width, height: cgThumb.height))
+                            ImageCache.shared.insert(img, forKey: path)
+                            continuation.resume(returning: img)
+                        }
+                        return
+                    }
+                }
+
+                // Fallback to NSImage on main thread if Image I/O failed
+                DispatchQueue.main.async {
+                    let loadedImage = NSImage(contentsOfFile: path)
+                    if let img = loadedImage {
+                        ImageCache.shared.insert(img, forKey: path)
+                    }
+                    continuation.resume(returning: loadedImage)
+                }
+            }
+        }
     }
 }

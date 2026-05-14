@@ -17,6 +17,7 @@ final class AppState: ObservableObject {
     @Published var photos: [Photo] = []
     @Published var totalPhotoCount: Int = 0
     @Published var photoFilter = PhotoFilter()
+    @Published var isLoadingMorePhotos: Bool = false
     @Published var cameraModels: [String] = []
     @Published var years: [Int] = []
 
@@ -55,6 +56,9 @@ final class AppState: ObservableObject {
         }
         self.container = ServiceContainer(db: db)
         ThumbnailService.configure(vaultRootURL: defaultVaultRoot)
+        // Start with a reasonable page size for the gallery to avoid loading
+        // thousands of photos into memory at once. Use `0` for no limit.
+        photoFilter.limit = 200
         Task { await loadInitialData() }
     }
 
@@ -68,6 +72,9 @@ final class AppState: ObservableObject {
         }
         self.container = ServiceContainer(db: db)
         ThumbnailService.configure(vaultRootURL: vaultRootURL)
+        // Start with a reasonable page size for the gallery to avoid loading
+        // thousands of photos into memory at once. Use `0` for no limit.
+        photoFilter.limit = 200
         seedUITestDataIfNeeded()
         if ProcessInfo.processInfo.environment["UI_TESTING_SEED_DATA"] == "1" {
             photoFilter.limit = 10
@@ -181,6 +188,20 @@ final class AppState: ObservableObject {
     func applyFilter(_ filter: PhotoFilter) {
         photoFilter = filter
         Task { await loadPhotos() }
+    }
+
+    func loadMorePhotos() {
+        guard !isLoadingMorePhotos else { return }
+        guard photoFilter.limit != 0 else { return } // already unlimited
+
+        isLoadingMorePhotos = true
+        let pageSize = max(photoFilter.limit, 200)
+        let (newLimit, overflow) = photoFilter.limit.addingReportingOverflow(pageSize)
+        photoFilter.limit = overflow ? Int.max : newLimit
+        Task {
+            await loadPhotos()
+            isLoadingMorePhotos = false
+        }
     }
 
     // MARK: - Duplicates
