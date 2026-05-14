@@ -43,6 +43,7 @@ final class BackupService {
         var skipped = 0
         var results: [BackupResult] = []
         var vaultPhotos: [VaultPhoto] = []
+        var photoStatusUpdates: [Int64: PhotoStatus] = [:]
         results.reserveCapacity(candidates.count)
 
         for photo in candidates {
@@ -84,12 +85,14 @@ final class BackupService {
                         backedUpAt: Date(),
                         backupJobId: job.id
                     ))
+                    photoStatusUpdates[photoId] = .copied
                     copied += 1
                 } catch {
                     result.reason = error.localizedDescription
                     skipped += 1
                 }
             } else if action == .copy {
+                photoStatusUpdates[photoId] = .copied
                 copied += 1
             } else {
                 skipped += 1
@@ -102,6 +105,14 @@ final class BackupService {
         // Batch-write all results and vault photos in single transactions
         try db.insertVaultPhotosBatch(vaultPhotos)
         try db.insertBackupResultsBatch(results)
+
+        // Update photo statuses to .copied for successfully backed-up photos
+        for (photoId, status) in photoStatusUpdates {
+            if var updatedPhoto = try db.fetchPhoto(id: photoId) {
+                updatedPhoto.status = status
+                try db.updatePhoto(updatedPhoto)
+            }
+        }
 
         job.finishedAt = Date()
         job.copiedFiles = copied

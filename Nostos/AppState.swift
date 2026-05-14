@@ -303,6 +303,7 @@ final class AppState: ObservableObject {
                 lastBackupResults = (try? db.fetchBackupResults(jobId: jobId)) ?? []
             }
             await loadBackupJobs()
+            await loadPhotos()
         }
     }
     // MARK: - Directory picker

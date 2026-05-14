@@ -101,25 +101,42 @@ struct GalleryView: View {
     private func computeFilteredPhotos() -> [Photo] {
         state.photos.filter { photo in
             if !filterStatus.isEmpty && !filterStatus.contains(photo.status) { return false }
-            if !filterCameraModels.isEmpty || filterIncludeNoCamera {
-                let hasCamera = photo.cameraModel != nil
-                if filterIncludeNoCamera && !hasCamera { return true }
-                if !filterCameraModels.isEmpty && hasCamera && filterCameraModels.contains(photo.cameraModel!) { return true }
-                return false
-            }
-            if !filterHasDuplicates.isEmpty {
-                let hasDup = photo.duplicateGroupId != nil
-                if filterHasDuplicates.contains(hasDup) { return true }
-                return false
-            }
-            if let yearFrom = filterYearFrom, let date = photo.takenAt {
-                if Calendar.current.component(.year, from: date) < yearFrom { return false }
-            }
-            if let yearTo = filterYearTo, let date = photo.takenAt {
-                if Calendar.current.component(.year, from: date) > yearTo { return false }
-            }
+
+            let cameraMatches = computeCameraFilter(photo)
+            if !cameraMatches { return false }
+
+            let duplicateMatches = computeDuplicateFilter(photo)
+            if !duplicateMatches { return false }
+
+            let yearMatches = computeYearFilter(photo)
+            if !yearMatches { return false }
+
             return true
         }
+    }
+
+    private func computeCameraFilter(_ photo: Photo) -> Bool {
+        guard !filterCameraModels.isEmpty || filterIncludeNoCamera else { return true }
+        let hasCamera = photo.cameraModel != nil
+        if filterIncludeNoCamera && !hasCamera { return true }
+        if !filterCameraModels.isEmpty && hasCamera && filterCameraModels.contains(photo.cameraModel!) { return true }
+        return false
+    }
+
+    private func computeDuplicateFilter(_ photo: Photo) -> Bool {
+        guard !filterHasDuplicates.isEmpty else { return true }
+        let hasDup = photo.duplicateGroupId != nil
+        return filterHasDuplicates.contains(hasDup)
+    }
+
+    private func computeYearFilter(_ photo: Photo) -> Bool {
+        guard let date = photo.takenAt else { return true }
+        let year = Calendar.current.component(.year, from: date)
+
+        if let yearFrom = filterYearFrom, year < yearFrom { return false }
+        if let yearTo = filterYearTo, year > yearTo { return false }
+
+        return true
     }
 
     private func computeMonthGroups(from photos: [Photo]) -> [MonthGroup] {
