@@ -94,6 +94,29 @@ final class NostosUITests: XCTestCase {
 
     // Scanner-related tests removed (per request)
 
+    /// Choosing a source directory updates the source path label to the picked folder.
+    func testScannerChooseSourceDirectory() {
+        let sourcePath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: sourcePath, withIntermediateDirectories: true)
+
+        app.terminate()
+        app = launchAppWithSourceDirectory(sourcePath.path)
+
+        goToTab("scannerTabButton")
+
+        let scanButton = el("scannerStartScanButton")
+        XCTAssertFalse(scanButton.isEnabled)
+
+        let chooseButton = app.buttons["Choose…"].firstMatch
+        XCTAssertTrue(chooseButton.waitForExistence(timeout: 10), "'Choose…' button not found within 10s")
+        chooseButton.click()
+
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: scanButton)
+        waitForExpectations(timeout: 10)
+    }
+
     // MARK: - Gallery Tab
 
     /// Clicking a photo tile opens the detail panel; dismissing it closes the panel.

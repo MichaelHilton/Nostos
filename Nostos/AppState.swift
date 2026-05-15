@@ -208,6 +208,24 @@ final class AppState: ObservableObject {
         }
     }
 
+    func setKeptAllInGroup(groupId: Int64) {
+        do {
+            try db.setKeptAllInGroup(groupId: groupId)
+            Task { await loadDuplicates() }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func clearKeptInGroup(groupId: Int64) {
+        do {
+            try db.clearKeptInGroup(groupId: groupId)
+            Task { await loadDuplicates() }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Vault
 
     func startVault(folderFormat: String, dryRun: Bool) {

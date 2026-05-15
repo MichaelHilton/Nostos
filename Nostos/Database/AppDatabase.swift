@@ -377,6 +377,20 @@ extension AppDatabase {
             try db.execute(sql: "UPDATE duplicate_groups SET kept_photo_id = ? WHERE id = ?", arguments: [photoId, groupId])
         }
     }
+
+    func setKeptAllInGroup(groupId: Int64) throws {
+        try dbWriter.write { db in
+            try db.execute(sql: "UPDATE photos SET is_kept = 1 WHERE duplicate_group_id = ?", arguments: [groupId])
+            try db.execute(sql: "UPDATE duplicate_groups SET kept_photo_id = NULL WHERE id = ?", arguments: [groupId])
+        }
+    }
+
+    func clearKeptInGroup(groupId: Int64) throws {
+        try dbWriter.write { db in
+            try db.execute(sql: "UPDATE photos SET is_kept = 0 WHERE duplicate_group_id = ?", arguments: [groupId])
+            try db.execute(sql: "UPDATE duplicate_groups SET kept_photo_id = NULL WHERE id = ?", arguments: [groupId])
+        }
+    }
 }
 
 // MARK: - OrganizeJob queries

@@ -5,8 +5,7 @@ struct ScannerView: View {
     @State var selectedPath: String
 
     init() {
-        let sourcePath = ProcessInfo.processInfo.environment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] ?? ""
-        _selectedPath = State(initialValue: sourcePath)
+        _selectedPath = State(initialValue: "")
     }
 
     var body: some View {
@@ -123,8 +122,8 @@ struct SourceFolderCard: View {
             }
             .padding(NostosSpacing.lg)
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("scannerSourceFolderCard")
-        .accessibilityLabel(selectedPath.isEmpty ? "Source Folder. No folder selected" : "Source Folder. \(selectedPath)")
     }
 }
 

@@ -38,6 +38,7 @@
 	80000000000000000000001D /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001D /* ServiceContainer.swift */; };
 	80000000000000000000001E /* Operation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001E /* Operation.swift */; };
 	80000000000000000000001F /* OperationProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001F /* OperationProgress.swift */; };
+	800000000000000000000026 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000026 /* ImageCache.swift */; };
 	800000000000000000000022 /* ScanOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000022 /* ScanOperation.swift */; };
 	800000000000000000000023 /* OrganizeOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000023 /* OrganizeOperation.swift */; };
 	800000000000000000000024 /* BackupOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000024 /* BackupOperation.swift */; };
@@ -86,6 +87,7 @@
 	20000000000000000000001D /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Core/DependencyInjection/ServiceContainer.swift; sourceTree = SOURCE_ROOT; };
 	20000000000000000000001E /* Operation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Core/Operations/Operation.swift; sourceTree = SOURCE_ROOT; };
 	20000000000000000000001F /* OperationProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Core/Operations/OperationProgress.swift; sourceTree = SOURCE_ROOT; };
+	200000000000000000000026 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Services/ImageCache.swift; sourceTree = SOURCE_ROOT; };
 	200000000000000000000020 /* Nostos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nostos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 	200000000000000000000021 /* NostosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NostosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 	200000000000000000000022 /* ScanOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostos/Core/Operations/ScanOperation.swift; sourceTree = SOURCE_ROOT; };
@@ -376,6 +378,7 @@
 			80000000000000000000001D /* ServiceContainer.swift in Sources */,
 			80000000000000000000001E /* Operation.swift in Sources */,
 			80000000000000000000001F /* OperationProgress.swift in Sources */,
+			800000000000000000000026 /* ImageCache.swift in Sources */,
 			800000000000000000000022 /* ScanOperation.swift in Sources */,
 			800000000000000000000023 /* OrganizeOperation.swift in Sources */,
 			800000000000000000000024 /* BackupOperation.swift in Sources */,
