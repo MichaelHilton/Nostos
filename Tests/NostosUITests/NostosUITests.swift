@@ -26,20 +26,37 @@ final class NostosUITests: XCTestCase {
                 withIntermediateDirectories: true
             )
             sourceDirectoryPath = sourcePath
+        } else if name.contains("testScannerStartScan") {
+            let sourcePath = (NSTemporaryDirectory() as NSString)
+                .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
+            try FileManager.default.createDirectory(
+                atPath: sourcePath,
+                withIntermediateDirectories: true
+            )
+            let imageData = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2m8ZkAAAAASUVORK5CYII=")!
+            try imageData.write(to: URL(fileURLWithPath: sourcePath).appendingPathComponent("scan-test.png"))
+            sourceDirectoryPath = sourcePath
         }
 
         app = XCUIApplication()
         app.launchEnvironment["UI_TESTING_SEED_DATA"] = "1"
         app.launchEnvironment["UI_TESTING_VAULT_ROOT"] = vaultRootPath
+        app.launchEnvironment["UI_TESTING_VAULT_DIRECTORY_TO_PICK"] = vaultRootPath
         app.launchEnvironment["UI_TESTING"] = "1"
         if let sourceDirectoryPath {
             app.launchEnvironment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] = sourceDirectoryPath
         }
         app.launch()
 
-        // Wait for app to be ready (app initializes and loads data)
+        // Wait for app to be ready (app initializes and loads data).
         let tabButton = app.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
-        XCTAssertTrue(tabButton.waitForExistence(timeout: 45), "App failed to initialize within 45s")
+        if !tabButton.waitForExistence(timeout: 20) {
+            let chooseVaultButton = app.buttons["chooseVaultButton"].firstMatch
+            if chooseVaultButton.waitForExistence(timeout: 5) {
+                chooseVaultButton.click()
+            }
+        }
+        XCTAssertTrue(tabButton.waitForExistence(timeout: 25), "App failed to initialize within 45s")
     }
 
     override func tearDownWithError() throws {
@@ -121,6 +138,25 @@ final class NostosUITests: XCTestCase {
 
         let seededScanPath = app.staticTexts["/tmp/ui-test-source"].firstMatch
         XCTAssertTrue(seededScanPath.waitForExistence(timeout: 3), "Seeded scan run row not found")
+    }
+
+    /// Starting a scan shows progress for a generated PNG fixture.
+    func testScannerStartScan() {
+        goToTab("scannerTabButton")
+
+        let chooseButton = app.buttons["Choose…"].firstMatch
+        XCTAssertTrue(chooseButton.waitForExistence(timeout: 3), "Choose… button not found within 3s")
+        chooseButton.click()
+
+        let scanButton = el("scannerStartScanButton")
+        XCTAssertTrue(scanButton.isEnabled, "Scan button should be enabled after choosing a source folder")
+        scanButton.click()
+
+        let progressSection = app.staticTexts["Progress"].firstMatch
+        XCTAssertTrue(progressSection.waitForExistence(timeout: 10), "Progress section not found after starting scan")
+
+        let filesFound = app.staticTexts["Files Found"].firstMatch
+        XCTAssertTrue(filesFound.waitForExistence(timeout: 10), "Progress metrics not shown after starting scan")
     }
 
     // MARK: - Gallery Tab

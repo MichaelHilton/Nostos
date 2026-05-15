@@ -5,7 +5,7 @@ This table lists user-facing actions and the corresponding UI test(s) found in `
 | Action | UI Test(s) | UI Elements |
 |---|---|---|
 | Pick Source Directory | testScannerChooseSourceDirectory | Scanner tab → `scannerChooseDirectoryButton` / source path label `scannerSelectedPathText` |
-| Start Scan | NA | Scanner tab → `scannerStartScanButton` (Start Scan button) |
+| Start Scan | testScannerStartScan | Scanner tab → `scannerStartScanButton` (Start Scan button) |
 | Cancel/Stop Scan | NA | Scanner tab → Cancel/Stop button shown during scan (progress UI) |
 | View Scan Runs | testScannerViewScanRuns | Scanner tab → Scan runs list / Scan history panel (scan run rows) |
 | Inspect Scanned File | NA | Scanner/Scan run details → per-file row with metadata panel (hash, size) |
