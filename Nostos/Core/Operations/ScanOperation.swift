@@ -43,6 +43,8 @@ final class ScanOperation: Operation<ScanRun> {
                 _ = try detector.detect()
 
                 result = run
+            } catch is CancellationError {
+                // User cancelled — not an error
             } catch {
                 self.error = error.localizedDescription
             }

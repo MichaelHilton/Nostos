@@ -39,6 +39,9 @@ struct ScannerView: View {
                         isDisabled: selectedPath.isEmpty || (state.scanOperation?.isLoading ?? false),
                         onStartScan: {
                             state.startScan(rootURL: URL(fileURLWithPath: selectedPath))
+                        },
+                        onCancelScan: {
+                            state.cancelScan()
                         }
                     )
 
@@ -131,6 +134,7 @@ struct ScanActionBar: View {
     let isScanning: Bool
     let isDisabled: Bool
     let onStartScan: () -> Void
+    let onCancelScan: () -> Void
 
     var body: some View {
         HStack(spacing: NostosSpacing.md) {
@@ -142,6 +146,10 @@ struct ScanActionBar: View {
             .accessibilityIdentifier("scannerStartScanButton")
 
             if isScanning {
+                Button("Cancel", action: onCancelScan)
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("scannerCancelButton")
+
                 SpinnerView()
             }
         }

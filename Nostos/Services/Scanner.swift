@@ -41,6 +41,10 @@ final class Scanner {
 
         await onProgress(ScanProgress(total: 0, processed: 0, isScanning: true))
 
+        if ProcessInfo.processInfo.environment["UI_TESTING_SLOW_SCAN"] == "1" {
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+        }
+
         let counter = ScanCounter()
         let knownPaths = (try? db.fetchAllPaths()) ?? []
 

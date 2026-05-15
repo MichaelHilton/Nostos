@@ -177,6 +177,10 @@ final class AppState: ObservableObject {
         }
     }
 
+    func cancelScan() {
+        scanOperation?.cancel()
+    }
+
 
     func applyFilter(_ filter: PhotoFilter) {
         photoFilter = filter

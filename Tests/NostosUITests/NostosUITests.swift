@@ -36,12 +36,25 @@ final class NostosUITests: XCTestCase {
             let imageData = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2m8ZkAAAAASUVORK5CYII=")!
             try imageData.write(to: URL(fileURLWithPath: sourcePath).appendingPathComponent("scan-test.png"))
             sourceDirectoryPath = sourcePath
+        } else if name.contains("testScannerCancelScan") {
+            let sourcePath = (NSTemporaryDirectory() as NSString)
+                .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
+            try FileManager.default.createDirectory(
+                atPath: sourcePath,
+                withIntermediateDirectories: true
+            )
+            let imageData = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2m8ZkAAAAASUVORK5CYII=")!
+            try imageData.write(to: URL(fileURLWithPath: sourcePath).appendingPathComponent("scan-test.png"))
+            sourceDirectoryPath = sourcePath
         }
 
         app = XCUIApplication()
         app.launchEnvironment["UI_TESTING_SEED_DATA"] = "1"
         app.launchEnvironment["UI_TESTING_VAULT_ROOT"] = vaultRootPath
         app.launchEnvironment["UI_TESTING_VAULT_DIRECTORY_TO_PICK"] = vaultRootPath
+        if name.contains("testScannerCancelScan") {
+            app.launchEnvironment["UI_TESTING_SLOW_SCAN"] = "1"
+        }
         app.launchEnvironment["UI_TESTING"] = "1"
         if let sourceDirectoryPath {
             app.launchEnvironment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] = sourceDirectoryPath
@@ -157,6 +170,30 @@ final class NostosUITests: XCTestCase {
 
         let filesFound = app.staticTexts["Files Found"].firstMatch
         XCTAssertTrue(filesFound.waitForExistence(timeout: 10), "Progress metrics not shown after starting scan")
+    }
+
+    /// Clicking Cancel during a scan stops it and re-enables the Start Scan button.
+    func testScannerCancelScan() {
+        goToTab("scannerTabButton")
+
+        let chooseButton = app.buttons["Choose…"].firstMatch
+        XCTAssertTrue(chooseButton.waitForExistence(timeout: 3), "Choose… button not found")
+        chooseButton.click()
+
+        let scanButton = el("scannerStartScanButton")
+        XCTAssertTrue(scanButton.isEnabled, "Scan button should be enabled after choosing a source folder")
+        scanButton.click()
+
+        // Cancel button appears while scanning
+        let cancelButton = el("scannerCancelButton", timeout: 10)
+        cancelButton.click()
+
+        // After cancel, isLoading becomes false → start button re-enabled, cancel button gone
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: scanButton)
+        waitForExpectations(timeout: 5)
+
+        notPresent("scannerCancelButton")
     }
 
     // MARK: - Gallery Tab
