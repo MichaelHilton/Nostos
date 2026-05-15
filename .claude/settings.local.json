@@ -48,10 +48,15 @@
       "Bash(open /Users/michaelhilton/Development/AI-Projects/Nostos/Nostos.xcodeproj)",
       "Bash(./scripts/test-all-with-coverage.sh)",
       "Bash(echo \"Exit: $?\")",
-      "Bash(./Nostos/scripts/test-ui.sh testScannerCancelScan)"
+      "Bash(./Nostos/scripts/test-ui.sh testScannerCancelScan)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(./Nostos/scripts/test-ui.sh testGalleryBackupToVaultAndBackUpAgain)",
+      "Bash(./Nostos/scripts/test-ui.sh testGalleryBackupToVault)",
+      "Bash(./Nostos/scripts/test-all-with-coverage.sh > /tmp/coverage_run3.txt 2>&1; echo \"EXIT: $?\")"
     ],
     "additionalDirectories": [
-      "/Users/michaelhilton/Library/Developer/Xcode/DerivedData"
+      "/Users/michaelhilton/Library/Developer/Xcode/DerivedData",
+      "/tmp"
     ]
   }
 }

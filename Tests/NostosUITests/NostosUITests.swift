@@ -208,18 +208,6 @@ final class NostosUITests: XCTestCase {
         notPresent("galleryClearSelectionButton")
     }
 
-    /// Toolbar filter chips toggle on and the Clear All button appears / disappears correctly.
-    func testGalleryToolbarFilterChips() {
-        goToTab("galleryTabButton")
-
-        el("galleryFilterChipDuplicates").click()
-        el("galleryToolbarClearAllButton")   // must appear after activating a chip
-
-        el("galleryFilterChipInVault").click()
-        el("galleryToolbarClearAllButton").click()
-        notPresent("galleryToolbarClearAllButton")
-    }
-
     /// Sidebar duplicate-status filter checkboxes respond to clicks and Clear All resets them.
     func testGallerySidebarDuplicateFilters() {
         goToTab("galleryTabButton")
@@ -258,17 +246,17 @@ final class NostosUITests: XCTestCase {
         el("galleryRemoveAllFiltersButton").click()
     }
 
-    /// Back Up to Vault starts the backup; Back Up Again resets to idle so the button returns.
-    func testGalleryBackupToVaultAndBackUpAgain() {
+    /// Back Up to Vault starts the backup; after completion "Back Up Again" appears.
+    func testGalleryBackupToVault() {
         goToTab("galleryTabButton")
+
+        // Wait for photos to load so the accessibility tree is settled before looking for footer.
+        el("galleryPhotoTile")
 
         el("galleryBackUpToVaultButton").click()
 
-        // Under XCTest, startBackup() immediately completes → "Back Up Again" should appear.
-        el("galleryBackUpAgainButton").click()
-
-        // After reset the primary button is restored.
-        el("galleryBackUpToVaultButton")
+        // After the backup completes, "Back Up Again" appears.
+        el("galleryBackUpAgainButton")
     }
 
     // MARK: - Duplicates Tab

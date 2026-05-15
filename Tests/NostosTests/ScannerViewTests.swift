@@ -406,13 +406,13 @@ final class ScannerViewTests: XCTestCase {
     // MARK: - ScanActionBar Tests
 
     func testScanActionBarShowsStartScanWhenIdle() throws {
-        let view = ScanActionBar(isScanning: false, isDisabled: false, onStartScan: {})
+        let view = ScanActionBar(isScanning: false, isDisabled: false, onStartScan: {}, onCancelScan: {})
         let texts = try view.inspect().findAll(ViewType.Text.self).map { try? $0.string() }
         XCTAssertTrue(texts.contains { $0?.contains("Start Scan") ?? false })
     }
 
     func testScanActionBarShowsScanningTextWhenScanning() throws {
-        let view = ScanActionBar(isScanning: true, isDisabled: true, onStartScan: {})
+        let view = ScanActionBar(isScanning: true, isDisabled: true, onStartScan: {}, onCancelScan: {})
         let texts = try view.inspect().findAll(ViewType.Text.self).map { try? $0.string() }
         XCTAssertTrue(texts.contains { $0?.contains("Scanning") ?? false })
     }
@@ -420,7 +420,7 @@ final class ScannerViewTests: XCTestCase {
     func testScanActionBarOnStartScanIsCalled() throws {
         var called = false
         let action = { called = true }
-        let view = ScanActionBar(isScanning: false, isDisabled: false, onStartScan: action)
+        let view = ScanActionBar(isScanning: false, isDisabled: false, onStartScan: action, onCancelScan: {})
         _ = try view.inspect()
         action()
         XCTAssertTrue(called)
