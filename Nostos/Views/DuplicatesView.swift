@@ -200,6 +200,8 @@ struct DupGroupCard: View {
                         .font(.system(size: 10))
                     Text("Resolved")
                         .font(.nostosLabel)
+                        .lineLimit(1)
+                        .fixedSize()
                 }
                 .foregroundColor(.nostosGreen)
                 .padding(.horizontal, NostosSpacing.sm)
@@ -212,11 +214,11 @@ struct DupGroupCard: View {
 
             // Action buttons
             HStack(spacing: NostosSpacing.xs) {
-                cardActionButton(icon: "1.circle.fill", color: .nostosGreen, help: "Keep first", action: onKeepFirst)
+                cardActionButton(icon: "1.circle", color: .nostosGreen, help: "Keep first", action: onKeepFirst)
                     .accessibilityIdentifier("duplicateKeepFirstButton")
-                cardActionButton(icon: "checkmark.circle.fill", color: .nostosAccent, help: "Keep all", action: onKeepAll)
+                cardActionButton(icon: "checkmark.circle", color: .nostosAccent, help: "Keep all", action: onKeepAll)
                     .accessibilityIdentifier("duplicateKeepAllButton")
-                cardActionButton(icon: "xmark.circle.fill", color: .nostosRed, help: "Clear selection", action: onClear)
+                cardActionButton(icon: "xmark.circle", color: .nostosRed, help: "Clear selection", action: onClear)
                     .accessibilityIdentifier("duplicateClearGroupButton")
             }
         }

@@ -6,6 +6,7 @@ final class NostosUITests: XCTestCase {
 
     private var app: XCUIApplication!
     private var vaultRootPath: String!
+    private var sourceDirectoryPath: String?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -17,10 +18,23 @@ final class NostosUITests: XCTestCase {
             withIntermediateDirectories: true
         )
 
+        if name.contains("testScannerChooseSourceDirectory") {
+            let sourcePath = (NSTemporaryDirectory() as NSString)
+                .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
+            try FileManager.default.createDirectory(
+                atPath: sourcePath,
+                withIntermediateDirectories: true
+            )
+            sourceDirectoryPath = sourcePath
+        }
+
         app = XCUIApplication()
         app.launchEnvironment["UI_TESTING_SEED_DATA"] = "1"
         app.launchEnvironment["UI_TESTING_VAULT_ROOT"] = vaultRootPath
         app.launchEnvironment["UI_TESTING"] = "1"
+        if let sourceDirectoryPath {
+            app.launchEnvironment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] = sourceDirectoryPath
+        }
         app.launch()
 
         // Wait for app to be ready (app initializes and loads data)
@@ -28,24 +42,12 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(tabButton.waitForExistence(timeout: 45), "App failed to initialize within 45s")
     }
 
-    /// Launches a fresh app instance with the given source directory preset in the picker mock.
-    private func launchAppWithSourceDirectory(_ sourcePath: String) -> XCUIApplication {
-        let freshApp = XCUIApplication()
-        freshApp.launchEnvironment["UI_TESTING_SEED_DATA"] = "1"
-        freshApp.launchEnvironment["UI_TESTING_VAULT_ROOT"] = vaultRootPath
-        freshApp.launchEnvironment["UI_TESTING"] = "1"
-        freshApp.launchEnvironment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] = sourcePath
-        freshApp.launch()
-
-        let tabButton = freshApp.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
-        XCTAssertTrue(tabButton.waitForExistence(timeout: 45), "App failed to initialize within 45s")
-
-        return freshApp
-    }
-
     override func tearDownWithError() throws {
         app.terminate()
         try? FileManager.default.removeItem(atPath: vaultRootPath)
+        if let sourceDirectoryPath {
+            try? FileManager.default.removeItem(atPath: sourceDirectoryPath)
+        }
     }
 
     // MARK: - Helpers
@@ -96,25 +98,18 @@ final class NostosUITests: XCTestCase {
 
     /// Choosing a source directory updates the source path label to the picked folder.
     func testScannerChooseSourceDirectory() {
-        let sourcePath = FileManager.default.temporaryDirectory
-            .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
-        try? FileManager.default.createDirectory(at: sourcePath, withIntermediateDirectories: true)
-
-        app.terminate()
-        app = launchAppWithSourceDirectory(sourcePath.path)
-
         goToTab("scannerTabButton")
 
         let scanButton = el("scannerStartScanButton")
         XCTAssertFalse(scanButton.isEnabled)
 
         let chooseButton = app.buttons["Choose…"].firstMatch
-        XCTAssertTrue(chooseButton.waitForExistence(timeout: 10), "'Choose…' button not found within 10s")
+        XCTAssertTrue(chooseButton.waitForExistence(timeout: 3), "'Choose…' button not found within 3s")
         chooseButton.click()
 
         let enabled = NSPredicate(format: "isEnabled == true")
         expectation(for: enabled, evaluatedWith: scanButton)
-        waitForExpectations(timeout: 10)
+        waitForExpectations(timeout: 3)
     }
 
     // MARK: - Gallery Tab
