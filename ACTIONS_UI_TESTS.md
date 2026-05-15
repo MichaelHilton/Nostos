@@ -7,7 +7,7 @@ This table lists user-facing actions and the corresponding UI test(s) found in `
 | Pick Source Directory | testScannerChooseSourceDirectory | Scanner tab → `scannerChooseDirectoryButton` / source path label `scannerSelectedPathText` |
 | Start Scan | NA | Scanner tab → `scannerStartScanButton` (Start Scan button) |
 | Cancel/Stop Scan | NA | Scanner tab → Cancel/Stop button shown during scan (progress UI) |
-| View Scan Runs | NA | Scanner tab → Scan runs list / Scan history panel (scan run rows) |
+| View Scan Runs | testScannerViewScanRuns | Scanner tab → Scan runs list / Scan history panel (scan run rows) |
 | Inspect Scanned File | NA | Scanner/Scan run details → per-file row with metadata panel (hash, size) |
 | Open Gallery | testTabNavigation, testGalleryPhotoSelectionAndDismiss | Sidebar → `galleryTabButton`; Gallery grid → `galleryPhotoTile` |
 | Filter Photos | testGalleryToolbarFilterChips, testGallerySidebarDuplicateFilters, testGallerySidebarStatusFilters, testGalleryYearRangeSlider | Toolbar filter chips (`galleryFilterChip*`), sidebar checkboxes (`galleryFilter*`), year-range slider (`galleryFilterYear_*`) |

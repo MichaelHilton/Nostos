@@ -112,6 +112,17 @@ final class NostosUITests: XCTestCase {
         waitForExpectations(timeout: 3)
     }
 
+    /// The seeded scan history appears on the Scanner tab.
+    func testScannerViewScanRuns() {
+        goToTab("scannerTabButton")
+
+        let recentScans = app.staticTexts["Recent Scans"]
+        XCTAssertTrue(recentScans.waitForExistence(timeout: 3), "Recent Scans section not found")
+
+        let seededScanPath = app.staticTexts["/tmp/ui-test-source"].firstMatch
+        XCTAssertTrue(seededScanPath.waitForExistence(timeout: 3), "Seeded scan run row not found")
+    }
+
     // MARK: - Gallery Tab
 
     /// Clicking a photo tile opens the detail panel; dismissing it closes the panel.
