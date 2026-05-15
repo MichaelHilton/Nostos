@@ -2,7 +2,251 @@ import Foundation
 import XCTest
 
 #if os(macOS) && !SWIFT_PACKAGE
+
+// MARK: - Read-only tests — one shared app launch for the entire class
+//
+// These tests navigate and inspect state but never mutate the database. Sharing
+// a single cold-start across 13 tests avoids ~60s of repeated boot overhead.
+
 final class NostosUITests: XCTestCase {
+
+    private static var sharedApp: XCUIApplication!
+    private static var sharedVaultRootPath: String!
+    private static var sharedSourceDirPath: String!
+
+    private var app: XCUIApplication { Self.sharedApp }
+
+    override class func setUp() {
+        super.setUp()
+
+        sharedVaultRootPath = (NSTemporaryDirectory() as NSString)
+            .appendingPathComponent("nostos-ui-shared-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(
+            atPath: sharedVaultRootPath,
+            withIntermediateDirectories: true
+        )
+
+        sharedSourceDirPath = (NSTemporaryDirectory() as NSString)
+            .appendingPathComponent("nostos-ui-shared-src-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(
+            atPath: sharedSourceDirPath,
+            withIntermediateDirectories: true
+        )
+
+        sharedApp = XCUIApplication()
+        sharedApp.launchEnvironment["UI_TESTING_SEED_DATA"] = "1"
+        sharedApp.launchEnvironment["UI_TESTING_VAULT_ROOT"] = sharedVaultRootPath
+        sharedApp.launchEnvironment["UI_TESTING_VAULT_DIRECTORY_TO_PICK"] = sharedVaultRootPath
+        sharedApp.launchEnvironment["UI_TESTING_SOURCE_DIRECTORY_TO_PICK"] = sharedSourceDirPath
+        sharedApp.launchEnvironment["UI_TESTING"] = "1"
+        sharedApp.launch()
+
+        let tabButton = sharedApp.buttons.matching(identifier: "scannerTabButton").firstMatch
+        if !tabButton.waitForExistence(timeout: 20) {
+            let chooseVaultButton = sharedApp.buttons["chooseVaultButton"].firstMatch
+            if chooseVaultButton.waitForExistence(timeout: 5) {
+                chooseVaultButton.click()
+            }
+        }
+        _ = tabButton.waitForExistence(timeout: 25)
+    }
+
+    override class func tearDown() {
+        sharedApp.terminate()
+        if let path = sharedVaultRootPath { try? FileManager.default.removeItem(atPath: path) }
+        if let path = sharedSourceDirPath { try? FileManager.default.removeItem(atPath: path) }
+        super.tearDown()
+    }
+
+    override func setUp() {
+        continueAfterFailure = false
+    }
+
+    // MARK: - Helpers
+
+    /// Waits for an element to exist, fails the test if it doesn't, then returns it.
+    /// Defaults to `.button` (the most common element type) for a faster tree query;
+    /// pass `.any` for tiles or other non-button elements.
+    @discardableResult
+    private func el(_ id: String, type: XCUIElement.ElementType = .button, timeout: TimeInterval = 5) -> XCUIElement {
+        let match = app.descendants(matching: type).matching(identifier: id).firstMatch
+        XCTAssertTrue(match.waitForExistence(timeout: timeout), "'\(id)' not found within \(timeout)s")
+        return match
+    }
+
+    private func notPresent(_ id: String, type: XCUIElement.ElementType = .button, within timeout: TimeInterval = 2) {
+        let match = app.descendants(matching: type).matching(identifier: id).firstMatch
+        XCTAssertFalse(
+            match.waitForExistence(timeout: timeout),
+            "'\(id)' was still present after \(timeout)s"
+        )
+    }
+
+    private func goToTab(_ id: String) {
+        el(id).click()
+    }
+
+    // MARK: - Tab Navigation
+
+    func testTabNavigation() {
+        el("galleryPhotoTile", type: .any)
+
+        goToTab("scannerTabButton")
+        el("scannerStartScanButton")
+
+        goToTab("duplicatesTabButton")
+        el("duplicatesKeepFirstButton")
+
+        goToTab("vaultTabButton")
+        el("vaultChangeVaultButton")
+
+        goToTab("galleryTabButton")
+        el("galleryPhotoTile", type: .any)
+    }
+
+    // MARK: - Scanner Tab
+
+    func testScannerChooseSourceDirectory() {
+        goToTab("scannerTabButton")
+
+        let scanButton = el("scannerStartScanButton")
+        XCTAssertFalse(scanButton.isEnabled)
+
+        let chooseButton = app.buttons["Choose…"].firstMatch
+        XCTAssertTrue(chooseButton.waitForExistence(timeout: 3), "'Choose…' button not found within 3s")
+        chooseButton.click()
+
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: scanButton)
+        waitForExpectations(timeout: 3)
+    }
+
+    func testScannerViewScanRuns() {
+        goToTab("scannerTabButton")
+
+        let recentScans = app.staticTexts["Recent Scans"]
+        XCTAssertTrue(recentScans.waitForExistence(timeout: 3), "Recent Scans section not found")
+
+        let seededScanPath = app.staticTexts["/tmp/ui-test-source"].firstMatch
+        XCTAssertTrue(seededScanPath.waitForExistence(timeout: 3), "Seeded scan run row not found")
+    }
+
+    // MARK: - Gallery Tab
+
+    func testGalleryPhotoSelectionAndDismiss() {
+        goToTab("galleryTabButton")
+
+        el("galleryPhotoTile", type: .any).click()
+        el("galleryClearSelectionButton").click()
+        notPresent("galleryClearSelectionButton")
+    }
+
+    func testGallerySidebarDuplicateFilters() {
+        goToTab("galleryTabButton")
+
+        el("galleryFilterWithDuplicates").click()
+        el("galleryFilterNoDuplicates").click()
+        el("galleryRemoveAllFiltersButton").click()
+    }
+
+    func testGallerySidebarStatusFilters() {
+        goToTab("galleryTabButton")
+
+        el("galleryFilterStatus_new").click()
+        el("galleryFilterStatus_copied").click()
+        el("galleryFilterStatus_skipped_duplicate").click()
+        el("galleryRemoveAllFiltersButton").click()
+    }
+
+    func testGallerySidebarNoCameraInfoFilter() {
+        goToTab("galleryTabButton")
+
+        el("galleryFilterNoCameraInfo").click()
+        el("galleryRemoveAllFiltersButton").click()
+    }
+
+    func testGallerySidebarCameraModelFilter() {
+        goToTab("galleryTabButton")
+
+        let cameraModelButton = app.buttons["Canon EOS R5"].firstMatch
+        XCTAssertTrue(cameraModelButton.waitForExistence(timeout: 10), "Camera model filter not found")
+        cameraModelButton.click()
+
+        el("galleryRemoveAllFiltersButton").click()
+    }
+
+    func testGalleryYearRangeSlider() {
+        goToTab("galleryTabButton")
+
+        XCTAssertEqual(el("galleryFilterYearSummary", type: .any).label, "All years")
+        notPresent("galleryFilterYearClear")
+
+        let yearButton = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'galleryFilterYear_'")
+        ).firstMatch
+        XCTAssertTrue(yearButton.waitForExistence(timeout: 5), "No year labels found in year range slider")
+        yearButton.click()
+
+        XCTAssertNotEqual(el("galleryFilterYearSummary", type: .any).label, "All years")
+
+        el("galleryFilterYearClear").click()
+        XCTAssertEqual(el("galleryFilterYearSummary", type: .any).label, "All years")
+        notPresent("galleryFilterYearClear")
+    }
+
+    // MARK: - Vault Tab
+
+    func testVaultDryRunToggle() {
+        goToTab("vaultTabButton")
+
+        el("vaultPreviewButton")
+
+        el("vaultDryRunToggle").click()
+        el("vaultSaveButton")
+
+        el("vaultDryRunToggle").click()
+        el("vaultPreviewButton")
+    }
+
+    func testVaultToggleDetails() {
+        goToTab("vaultTabButton")
+
+        el("vaultToggleDetailsButton").click()
+        el("vaultToggleDetailsButton").click()
+    }
+
+    func testVaultChangeVaultCancelPath() {
+        goToTab("vaultTabButton")
+
+        el("vaultChangeVaultButton").click()
+
+        let cancelBtn = app.buttons["Cancel"].firstMatch
+        XCTAssertTrue(cancelBtn.waitForExistence(timeout: 5), "Cancel button not found in vault-change dialog")
+        cancelBtn.click()
+
+        el("vaultChangeVaultButton")
+    }
+
+    func testErrorAlertOKButton() {
+        goToTab("vaultTabButton")
+
+        let errorOKBtn = app.buttons.matching(identifier: "errorAlertOKButton").firstMatch
+        if errorOKBtn.waitForExistence(timeout: 2) {
+            errorOKBtn.click()
+            XCTAssertFalse(
+                errorOKBtn.waitForExistence(timeout: 2),
+                "Error alert should be dismissed after clicking OK"
+            )
+        }
+    }
+}
+
+// MARK: - Mutating tests — isolated app launch per test
+//
+// These tests write to the database (backup, resolve duplicates, start scans).
+// Each needs a clean app launch to avoid state bleed between tests.
+
+final class NostosUIMutatingTests: XCTestCase {
 
     private var app: XCUIApplication!
     private var vaultRootPath: String!
@@ -18,25 +262,7 @@ final class NostosUITests: XCTestCase {
             withIntermediateDirectories: true
         )
 
-        if name.contains("testScannerChooseSourceDirectory") {
-            let sourcePath = (NSTemporaryDirectory() as NSString)
-                .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
-            try FileManager.default.createDirectory(
-                atPath: sourcePath,
-                withIntermediateDirectories: true
-            )
-            sourceDirectoryPath = sourcePath
-        } else if name.contains("testScannerStartScan") {
-            let sourcePath = (NSTemporaryDirectory() as NSString)
-                .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
-            try FileManager.default.createDirectory(
-                atPath: sourcePath,
-                withIntermediateDirectories: true
-            )
-            let imageData = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2m8ZkAAAAASUVORK5CYII=")!
-            try imageData.write(to: URL(fileURLWithPath: sourcePath).appendingPathComponent("scan-test.png"))
-            sourceDirectoryPath = sourcePath
-        } else if name.contains("testScannerCancelScan") {
+        if name.contains("testScannerStartScan") || name.contains("testScannerCancelScan") {
             let sourcePath = (NSTemporaryDirectory() as NSString)
                 .appendingPathComponent("nostos-ui-source-\(UUID().uuidString)")
             try FileManager.default.createDirectory(
@@ -61,8 +287,7 @@ final class NostosUITests: XCTestCase {
         }
         app.launch()
 
-        // Wait for app to be ready (app initializes and loads data).
-        let tabButton = app.descendants(matching: .any).matching(identifier: "scannerTabButton").firstMatch
+        let tabButton = app.buttons.matching(identifier: "scannerTabButton").firstMatch
         if !tabButton.waitForExistence(timeout: 20) {
             let chooseVaultButton = app.buttons["chooseVaultButton"].firstMatch
             if chooseVaultButton.waitForExistence(timeout: 5) {
@@ -82,16 +307,15 @@ final class NostosUITests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Waits for an element to exist, fails the test if it doesn't, then returns it.
     @discardableResult
-    private func el(_ id: String, timeout: TimeInterval = 10) -> XCUIElement {
-        let match = app.descendants(matching: .any).matching(identifier: id).firstMatch
+    private func el(_ id: String, type: XCUIElement.ElementType = .button, timeout: TimeInterval = 5) -> XCUIElement {
+        let match = app.descendants(matching: type).matching(identifier: id).firstMatch
         XCTAssertTrue(match.waitForExistence(timeout: timeout), "'\(id)' not found within \(timeout)s")
         return match
     }
 
-    private func notPresent(_ id: String, within timeout: TimeInterval = 2) {
-        let match = app.descendants(matching: .any).matching(identifier: id).firstMatch
+    private func notPresent(_ id: String, type: XCUIElement.ElementType = .button, within timeout: TimeInterval = 2) {
+        let match = app.descendants(matching: type).matching(identifier: id).firstMatch
         XCTAssertFalse(
             match.waitForExistence(timeout: timeout),
             "'\(id)' was still present after \(timeout)s"
@@ -102,58 +326,8 @@ final class NostosUITests: XCTestCase {
         el(id).click()
     }
 
-    // MARK: - Tab Navigation
-
-    /// Clicking each sidebar tab button lands on that tab's content.
-    func testTabNavigation() {
-        // Default tab is Gallery — navigate through all tabs and confirm unique elements.
-        el("galleryPhotoTile")
-
-        goToTab("scannerTabButton")
-        el("scannerStartScanButton")
-
-        goToTab("duplicatesTabButton")
-        el("duplicatesKeepFirstButton")
-
-        goToTab("vaultTabButton")
-        el("vaultChangeVaultButton")
-
-        goToTab("galleryTabButton")
-        el("galleryPhotoTile")
-    }
-
     // MARK: - Scanner Tab
 
-    // Scanner-related tests removed (per request)
-
-    /// Choosing a source directory updates the source path label to the picked folder.
-    func testScannerChooseSourceDirectory() {
-        goToTab("scannerTabButton")
-
-        let scanButton = el("scannerStartScanButton")
-        XCTAssertFalse(scanButton.isEnabled)
-
-        let chooseButton = app.buttons["Choose…"].firstMatch
-        XCTAssertTrue(chooseButton.waitForExistence(timeout: 3), "'Choose…' button not found within 3s")
-        chooseButton.click()
-
-        let enabled = NSPredicate(format: "isEnabled == true")
-        expectation(for: enabled, evaluatedWith: scanButton)
-        waitForExpectations(timeout: 3)
-    }
-
-    /// The seeded scan history appears on the Scanner tab.
-    func testScannerViewScanRuns() {
-        goToTab("scannerTabButton")
-
-        let recentScans = app.staticTexts["Recent Scans"]
-        XCTAssertTrue(recentScans.waitForExistence(timeout: 3), "Recent Scans section not found")
-
-        let seededScanPath = app.staticTexts["/tmp/ui-test-source"].firstMatch
-        XCTAssertTrue(seededScanPath.waitForExistence(timeout: 3), "Seeded scan run row not found")
-    }
-
-    /// Starting a scan shows progress for a generated PNG fixture.
     func testScannerStartScan() {
         goToTab("scannerTabButton")
 
@@ -172,7 +346,6 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(filesFound.waitForExistence(timeout: 10), "Progress metrics not shown after starting scan")
     }
 
-    /// Clicking Cancel during a scan stops it and re-enables the Start Scan button.
     func testScannerCancelScan() {
         goToTab("scannerTabButton")
 
@@ -184,11 +357,9 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(scanButton.isEnabled, "Scan button should be enabled after choosing a source folder")
         scanButton.click()
 
-        // Cancel button appears while scanning
         let cancelButton = el("scannerCancelButton", timeout: 10)
         cancelButton.click()
 
-        // After cancel, isLoading becomes false → start button re-enabled, cancel button gone
         let enabled = NSPredicate(format: "isEnabled == true")
         expectation(for: enabled, evaluatedWith: scanButton)
         waitForExpectations(timeout: 5)
@@ -198,79 +369,38 @@ final class NostosUITests: XCTestCase {
 
     // MARK: - Gallery Tab
 
-    /// Clicking a photo tile opens the detail panel; dismissing it closes the panel.
-    func testGalleryPhotoSelectionAndDismiss() {
-        goToTab("galleryTabButton")
-
-        el("galleryPhotoTile").click()
-        let dismiss = el("galleryClearSelectionButton")
-        dismiss.click()
-        notPresent("galleryClearSelectionButton")
-    }
-
-    /// Sidebar duplicate-status filter checkboxes respond to clicks and Clear All resets them.
-    func testGallerySidebarDuplicateFilters() {
-        goToTab("galleryTabButton")
-
-        el("galleryFilterWithDuplicates").click()
-        el("galleryFilterNoDuplicates").click()
-        el("galleryRemoveAllFiltersButton").click()
-    }
-
-    /// Sidebar backup-status filter checkboxes (New, Copied, Skipped Duplicate) are clickable.
-    func testGallerySidebarStatusFilters() {
-        goToTab("galleryTabButton")
-
-        el("galleryFilterStatus_new").click()
-        el("galleryFilterStatus_copied").click()
-        el("galleryFilterStatus_skipped_duplicate").click()
-        el("galleryRemoveAllFiltersButton").click()
-    }
-
-    /// Sidebar "No camera info" checkbox is clickable.
-    func testGallerySidebarNoCameraInfoFilter() {
-        goToTab("galleryTabButton")
-
-        el("galleryFilterNoCameraInfo").click()
-        el("galleryRemoveAllFiltersButton").click()
-    }
-
-    /// Sidebar camera-model checkboxes are clickable.
-    func testGallerySidebarCameraModelFilter() {
-        goToTab("galleryTabButton")
-
-        let cameraModelButton = app.buttons["Canon EOS R5"].firstMatch
-        XCTAssertTrue(cameraModelButton.waitForExistence(timeout: 10), "Camera model filter not found")
-        cameraModelButton.click()
-
-        el("galleryRemoveAllFiltersButton").click()
-    }
-
-    /// Back Up to Vault starts the backup; after completion "Back Up Again" appears.
     func testGalleryBackupToVault() {
         goToTab("galleryTabButton")
 
-        // Wait for photos to load so the accessibility tree is settled before looking for footer.
-        el("galleryPhotoTile")
+        el("galleryPhotoTile", type: .any)
+        el("galleryBackUpToVaultButton").click()
+        el("galleryBackUpAgainButton")
+    }
+
+    func testGalleryPhotoShowsVaultBadgeAfterBackup() {
+        goToTab("galleryTabButton")
 
         el("galleryBackUpToVaultButton").click()
+        el("galleryBackUpAgainButton", timeout: 20)
 
-        // After the backup completes, "Back Up Again" appears.
-        el("galleryBackUpAgainButton")
+        let vaultBadge = app.staticTexts["IN VAULT"].firstMatch
+        XCTAssertTrue(vaultBadge.waitForExistence(timeout: 10), "IN VAULT badge not found after backup")
+
+        el("galleryPhotoTile", type: .any).click()
+        el("galleryClearSelectionButton").click()
+        notPresent("galleryClearSelectionButton")
     }
 
     // MARK: - Duplicates Tab
 
-    /// Expanding a group shows photo tiles; selecting one enables Clear Selections; Keep First runs.
     func testDuplicatesGroupInteraction() {
         goToTab("duplicatesTabButton")
 
-        el("duplicatePhotoTile").click()
+        el("duplicatePhotoTile", type: .any).click()
         el("duplicatesClearSelectionsButton").click()
         el("duplicatesKeepFirstButton").click()
     }
 
-    /// Keep All in All Groups marks the seeded duplicate group resolved.
     func testDuplicatesKeepAllInAllGroups() {
         goToTab("duplicatesTabButton")
 
@@ -280,7 +410,6 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(resolvedBadge.waitForExistence(timeout: 5), "Resolved badge not found after Keep All")
     }
 
-    /// Keeping the first photo from a duplicate card resolves the group.
     func testDuplicateGroupCardKeepFirstButton() {
         goToTab("duplicatesTabButton")
 
@@ -288,122 +417,6 @@ final class NostosUITests: XCTestCase {
 
         let resolvedBadge = app.staticTexts["Resolved"].firstMatch
         XCTAssertTrue(resolvedBadge.waitForExistence(timeout: 5), "Resolved badge not found after Keep First")
-    }
-
-    // MARK: - Vault Tab
-
-    /// Toggling Dry Run switches the organise button between vaultPreviewButton and vaultSaveButton.
-    func testVaultDryRunToggle() {
-        goToTab("vaultTabButton")
-
-        // Default: dry run on → preview button
-        el("vaultPreviewButton")
-
-        el("vaultDryRunToggle").click()   // turn off dry run
-        el("vaultSaveButton")
-
-        el("vaultDryRunToggle").click()   // back to dry run
-        el("vaultPreviewButton")
-    }
-
-    /// Show Details / Hide toggles the results table (seeded organize job populates results).
-    func testVaultToggleDetails() {
-        goToTab("vaultTabButton")
-
-        el("vaultToggleDetailsButton").click()   // "Show Details" → show table
-        el("vaultToggleDetailsButton").click()   // "Hide" → hide table
-    }
-
-    /// Year range slider shows "All years" by default; tapping a year activates a filter; Clear resets it.
-    func testGalleryYearRangeSlider() {
-        goToTab("galleryTabButton")
-
-        // Default: no filter active — summary shows "All years", Clear is absent
-        XCTAssertEqual(el("galleryFilterYearSummary").label, "All years")
-        notPresent("galleryFilterYearClear")
-
-        // Tap the first year button that appears in the slider
-        let yearButton = app.buttons.matching(
-            NSPredicate(format: "identifier BEGINSWITH 'galleryFilterYear_'")
-        ).firstMatch
-        XCTAssertTrue(yearButton.waitForExistence(timeout: 5), "No year labels found in year range slider")
-        yearButton.click()
-
-        // Summary updates to a specific year (no longer "All years")
-        XCTAssertNotEqual(el("galleryFilterYearSummary").label, "All years")
-
-        // Clear button appears; clicking it resets the filter
-        el("galleryFilterYearClear").click()
-        XCTAssertEqual(el("galleryFilterYearSummary").label, "All years")
-        notPresent("galleryFilterYearClear")
-    }
-
-    /// Change vault dialog can be cancelled without changing the vault path.
-    func testVaultChangeVaultCancelPath() {
-        goToTab("vaultTabButton")
-
-        el("vaultChangeVaultButton").click()
-
-        // confirmationDialog creates a native macOS sheet; locate Cancel by its button label.
-        let cancelBtn = app.buttons["Cancel"].firstMatch
-        XCTAssertTrue(cancelBtn.waitForExistence(timeout: 5), "Cancel button not found in vault-change dialog")
-        cancelBtn.click()
-
-        // Dialog dismissed; vault button still present.
-        el("vaultChangeVaultButton")
-    }
-
-    /// After backup to vault completes, photos show the "IN VAULT" badge in the gallery.
-    func testGalleryPhotoShowsVaultBadgeAfterBackup() {
-        goToTab("galleryTabButton")
-
-        // Backup photos to vault
-        el("galleryBackUpToVaultButton").click()
-
-        // Wait for backup to complete — "Back Up Again" button should appear
-        el("galleryBackUpAgainButton", timeout: 20)
-
-        // The gallery should render an IN VAULT badge for backed-up/copied photos.
-        let vaultBadge = app.staticTexts["IN VAULT"].firstMatch
-        XCTAssertTrue(vaultBadge.waitForExistence(timeout: 10), "IN VAULT badge not found after backup")
-
-        // Verify we can still interact with a photo and it displays correctly
-        el("galleryPhotoTile").click()
-        let dismiss = el("galleryClearSelectionButton")
-        dismiss.click()
-        notPresent("galleryClearSelectionButton")
-    }
-
-    /// Pause/Resume button works during backup to control backup progress.
-    // `testGalleryBackupPauseResumeButton` removed
-
-    /// Confirming vault root change applies the new vault location.
-    // `testVaultConfirmChangeButton` removed
-
-    /// Error alert OK button dismisses error messages.
-    func testErrorAlertOKButton() {
-        // Try to trigger an error by starting vault without a vault root
-        // First, go to Vault tab
-        goToTab("vaultTabButton")
-
-        // Try to change vault to an invalid path by using the confirm button
-        // Actually, a more direct way: try to start organize/backup with invalid state
-        // But with seeded data this is hard to trigger. Instead, verify that if an error
-        // is displayed, the OK button can dismiss it.
-
-        // Look for error alert OK button — it might not exist initially
-        let errorOKBtn = app.buttons.matching(identifier: "errorAlertOKButton").firstMatch
-
-        // If the button exists (error is shown), click it to dismiss
-        if errorOKBtn.waitForExistence(timeout: 2) {
-            errorOKBtn.click()
-            // Verify the button is gone after clicking
-            XCTAssertFalse(
-                errorOKBtn.waitForExistence(timeout: 2),
-                "Error alert should be dismissed after clicking OK"
-            )
-        }
-        // If no error is shown, that's also valid — the app is in a good state
     }
 }
 #endif
