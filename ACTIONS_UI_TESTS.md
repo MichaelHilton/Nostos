@@ -10,7 +10,7 @@ This table lists user-facing actions and the corresponding UI test(s) found in `
 | View Scan Runs | testScannerViewScanRuns | Scanner tab → Scan runs list / Scan history panel (scan run rows) |
 | Inspect Scanned File | NA | Scanner/Scan run details → per-file row with metadata panel (hash, size) |
 | Open Gallery | testTabNavigation, testGalleryPhotoSelectionAndDismiss | Sidebar → `galleryTabButton`; Gallery grid → `galleryPhotoTile` |
-| Filter Photos | testGalleryToolbarFilterChips, testGallerySidebarDuplicateFilters, testGallerySidebarStatusFilters, testGalleryYearRangeSlider | Toolbar filter chips (`galleryFilterChip*`), sidebar checkboxes (`galleryFilter*`), year-range slider (`galleryFilterYear_*`) |
+| Filter Photos | testGalleryToolbarFilterChips, testGallerySidebarDuplicateFilters, testGallerySidebarStatusFilters, testGallerySidebarCameraModelFilter, testGalleryYearRangeSlider | Toolbar filter chips (`galleryFilterChip*`), sidebar checkboxes (`galleryFilter*`), year-range slider (`galleryFilterYear_*`) |
 | Search Photos | NA | Gallery toolbar → search field (filename/metadata search box) |
 | Sort Photos | NA | Gallery toolbar → sort menu / dropdown (sort by date/name/size) |
 | Select Photo(s) | testGalleryPhotoSelectionAndDismiss | Click photo tiles (`galleryPhotoTile`) — supports multi-select (shift/cmd) |

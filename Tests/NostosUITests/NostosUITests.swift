@@ -210,6 +210,17 @@ final class NostosUITests: XCTestCase {
         el("galleryRemoveAllFiltersButton").click()
     }
 
+    /// Sidebar camera-model checkboxes are clickable.
+    func testGallerySidebarCameraModelFilter() {
+        goToTab("galleryTabButton")
+
+        let cameraModelButton = app.buttons["Canon EOS R5"].firstMatch
+        XCTAssertTrue(cameraModelButton.waitForExistence(timeout: 10), "Camera model filter not found")
+        cameraModelButton.click()
+
+        el("galleryRemoveAllFiltersButton").click()
+    }
+
     /// Back Up to Vault starts the backup; Back Up Again resets to idle so the button returns.
     func testGalleryBackupToVaultAndBackUpAgain() {
         goToTab("galleryTabButton")
