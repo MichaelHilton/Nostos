@@ -1,0 +1,4 @@
+targets:
+- Nostos
+- NostosTests
+- NostosUITests
