@@ -244,6 +244,16 @@ final class NostosUITests: XCTestCase {
         XCTAssertTrue(resolvedBadge.waitForExistence(timeout: 5), "Resolved badge not found after Keep All")
     }
 
+    /// Keeping the first photo from a duplicate card resolves the group.
+    func testDuplicateGroupCardKeepFirstButton() {
+        goToTab("duplicatesTabButton")
+
+        el("duplicateKeepFirstButton").click()
+
+        let resolvedBadge = app.staticTexts["Resolved"].firstMatch
+        XCTAssertTrue(resolvedBadge.waitForExistence(timeout: 5), "Resolved badge not found after Keep First")
+    }
+
     // MARK: - Vault Tab
 
     /// Toggling Dry Run switches the organise button between vaultPreviewButton and vaultSaveButton.
