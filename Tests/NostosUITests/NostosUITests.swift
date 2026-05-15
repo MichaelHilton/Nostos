@@ -229,10 +229,19 @@ final class NostosUITests: XCTestCase {
     func testDuplicatesGroupInteraction() {
         goToTab("duplicatesTabButton")
 
-        el("duplicateExpandGroupButton").click()
         el("duplicatePhotoTile").click()
         el("duplicatesClearSelectionsButton").click()
         el("duplicatesKeepFirstButton").click()
+    }
+
+    /// Keep All in All Groups marks the seeded duplicate group resolved.
+    func testDuplicatesKeepAllInAllGroups() {
+        goToTab("duplicatesTabButton")
+
+        el("duplicatesKeepAllButton").click()
+
+        let resolvedBadge = app.staticTexts["Resolved"].firstMatch
+        XCTAssertTrue(resolvedBadge.waitForExistence(timeout: 5), "Resolved badge not found after Keep All")
     }
 
     // MARK: - Vault Tab

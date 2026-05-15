@@ -24,6 +24,7 @@ This table lists user-facing actions and the corresponding UI test(s) found in `
 | Run Duplicate Detection | NA (covered in unit tests) | Scanner completion triggers Duplicate detection automatically; duplicates view has controls to run manually (if available) |
 | View Duplicate Groups | testDuplicatesGroupInteraction | `duplicatesTabButton` in sidebar → Duplicate groups list; expand button `duplicateExpandGroupButton` and photo tiles `duplicatePhotoTile` |
 | Mark Kept Photo | testDuplicatesGroupInteraction | Duplicate group UI → select photo tile and click `duplicatesKeepFirstButton` or contextual "Keep" action |
+| Keep All in All Groups | testDuplicatesKeepAllInAllGroups | Duplicate group UI → footer button `duplicatesKeepAllButton` resolves all groups |
 | Resolve Duplicate Group | testDuplicatesGroupInteraction | Duplicate group actions → Keep/Delete/Resolve buttons; `duplicatesClearSelectionsButton` to clear selection |
 | Inspect Duplicate Details | testDuplicatesGroupInteraction | Duplicate group expand view → side-by-side previews and metadata rows for each photo |
 | Configure Vault Root / Setup Vault | testVaultChangeVaultCancelPath | Vault tab → `vaultChangeVaultButton` opens change-vault sheet (path picker + Confirm/Cancel) |
